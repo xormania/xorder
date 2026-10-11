@@ -71,29 +71,34 @@ def release_measurements(line, revision, artifact, accepted, evidence, measured_
     return measurements
 
 
-def stage_assurance(source_tag, source, artifact, evidence, destination):
+def stage_assurance(source_tag, source, artifact, evidence, destination, *, release_target=None):
     """Persist evidence before its commit record; content-named assets survive retries."""
     from image_assurance import create, receipt_link, validate_receipt, verify_local
+    target = release_target if release_target is not None else source
     releases = json.loads(gh("api", "--paginate", "--slurp", f"repos/{os.environ['GITHUB_REPOSITORY']}/releases"))
     matching = [release for page in releases for release in page if release["tag_name"] == source_tag]
     if not matching:
-        run("gh", "release", "create", source_tag, "--target", source, "--draft", "--title", source_tag,
+        run("gh", "release", "create", source_tag, "--target", target, "--draft", "--title", source_tag,
             "--notes", "Exact image candidate is undergoing scan, signing, and public verification.")
         assets = {}
     else:
         release = matching[0]
-        if release["target_commitish"] != source:
-            raise RuntimeError("Assurance Release already names another source commit")
+        if release["target_commitish"] != target:
+            raise RuntimeError("Assurance Release already names another target commit")
         assets = {asset["name"]: asset for asset in release["assets"]}
     destination.mkdir(parents=True, exist_ok=True)
     if "assurance.json" in assets:
         run("gh", "release", "download", source_tag, "--pattern", "assurance.json", "--dir", str(destination))
         receipt = validate_receipt(read(destination / "assurance.json"), artifact, source)
+        if release_target is not None and receipt.get("assurance_workflow_commit") != release_target:
+            raise RuntimeError("Assurance receipt producer differs from its evidence Release target")
         for facts in receipt["files"].values():
             run("gh", "release", "download", source_tag, "--pattern", facts["filename"], "--dir", str(destination))
         verify_local(receipt, destination)
     else:
         receipt = create(artifact, source, evidence, destination)
+        if release_target is not None and receipt.get("assurance_workflow_commit") != release_target:
+            raise RuntimeError("Assurance receipt producer differs from its evidence Release target")
         # A scan rerun may have newer database/time inputs. Content-addressed
         # filenames avoid overwriting partial earlier uploads; receipt uploads last.
         for facts in receipt["files"].values():

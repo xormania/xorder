@@ -262,6 +262,9 @@ def assure_existing(record_path, folder):
     if not path.is_relative_to(ROOT / "release-records") or path.is_relative_to(ROOT / "release-records/artifacts"):
         raise ValueError("Assurance-only publication requires a committed image release record")
     record = validate_record(read(path))
+    workflow_commit = os.environ.get("GITHUB_SHA", "")
+    if not re.fullmatch(r"[a-f0-9]{40}", workflow_commit):
+        raise ValueError("Assurance-only publication requires the executing workflow's exact commit")
     folder.mkdir(parents=True, exist_ok=True)
     artifact = record["publication"]["repository"] + "@" + record["publication"]["digest"]
     resolved = resolve(artifact)
@@ -269,9 +272,11 @@ def assure_existing(record_path, folder):
         raise ValueError("The recorded exact digest is no longer publicly accessible")
     tag = f"image-assurance/{record['line_id']}/v{record['version']}/{os.environ['GITHUB_RUN_ID']}-{os.environ.get('GITHUB_RUN_ATTEMPT', '1')}"
     evidence = f"https://github.com/xormania/xorder/actions/runs/{os.environ['GITHUB_RUN_ID']}"
-    summary = stage_assurance(tag, record["source_commit"], artifact, evidence, folder / "assurance")
+    summary = stage_assurance(tag, record["source_commit"], artifact, evidence, folder / "assurance",
+                              release_target=workflow_commit)
     run("gh", "release", "edit", tag, "--draft=false", "--notes",
         f"New image scan, SBOM and keyless signatures for {artifact}. Original image source: {record['source_commit']}. "
+        f"Assurance producer and evidence Release target: {workflow_commit}. "
         "This evidence does not repeat behavior tests or replace the historical release record.")
     publication = {"artifact": artifact, "source_commit": record["source_commit"], "assurance": summary}
     verify_published(publication, artifact, folder / "public-assurance")
