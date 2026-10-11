@@ -143,6 +143,24 @@ class DependencySnapshotTests(unittest.TestCase):
 
 
 class HostBudgetTests(unittest.TestCase):
+    def test_gc_recognizes_only_exact_current_and_historical_source_labels(self):
+        images = [{"Id": name, "Config": {"Labels": {"org.opencontainers.image.source": source}}}
+                  for name, source in (("current", "https://github.com/xormania/xorder"),
+                                       ("legacy", "https://github.com/xormania/docker-image-library"),
+                                       ("unowned", "https://github.com/xormania/docker-image-library-extra"))]
+        def inspect(command, **kwargs):
+            if command[1:3] == ["ps", "-aq"]:
+                return ""
+            if command[1:3] == ["image", "ls"]:
+                return "current legacy unowned"
+            return json.dumps(images)
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(runtime.subprocess, "check_output", side_effect=inspect), \
+                patch.object(runtime.subprocess, "run") as mutate, redirect_stdout(io.StringIO()) as output:
+            runtime.gc(dict(os.environ, XDG_CACHE_HOME=directory))
+        mutate.assert_not_called()
+        self.assertEqual(json.loads(output.getvalue())["unused_images"], ["current", "legacy"])
+
     def test_low_free_space_warns_even_when_host_capacity_is_large(self):
         facts = {"disk_free": int(1.8 * 1024**3), "disk_used": int(36.5 * 1024**3),
                  "disk_total": 256 * 1024**3, "cpus": 4, "load": 1, "memory_available": None}

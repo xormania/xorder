@@ -10,6 +10,7 @@ import uuid
 from urllib.parse import urlsplit, urlunsplit
 
 from proxy_relay import OWNER_LABEL, ensure, owner_label, stop
+from runtime import docker_observation
 
 PROXIES = ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy")
 
@@ -19,8 +20,8 @@ def local_engine(env):
     endpoint = env.get("DOCKER_HOST") if not context else None
     if not endpoint:
         command = ["docker", "context", "inspect"] + ([context] if context else [])
-        endpoint = json.loads(subprocess.check_output(
-            [*command, "--format", "{{json .Endpoints.docker.Host}}"], env=env, text=True))
+        endpoint = json.loads(docker_observation(
+            [*command[1:], "--format", "{{json .Endpoints.docker.Host}}"], env))
     return isinstance(endpoint, str) and endpoint.startswith(("unix://", "npipe://"))
 
 
@@ -28,7 +29,7 @@ def bridge_address(env):
     if not local_engine(env):
         raise ValueError("Loopback proxy forwarding needs the proxy and Docker bridge on this host; "
                          "configure a container-reachable proxy for the remote engine")
-    networks = json.loads(subprocess.check_output(["docker", "network", "inspect", "bridge"], env=env, text=True))
+    networks = json.loads(docker_observation(["network", "inspect", "bridge"], env))
     for config in networks[0]["IPAM"]["Config"]:
         address = config.get("Gateway", "")
         if address and ipaddress.ip_address(address).version == 4:
