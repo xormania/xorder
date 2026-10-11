@@ -15,8 +15,13 @@ This appends one `UserPromptSubmit` command hook to
 `.claude/settings.local.json`. Existing settings and other hooks are preserved;
 repeating the command does not append duplicates. Invalid existing JSON or hook
 structure is reported before any write. A new settings file is private (`0600`);
-existing permissions are retained. No consumer repository is modified merely by
-using an xorder image or starting a stack.
+existing permissions are retained. In a Git checkout, installation adds the local
+settings path to Git's `info/exclude`, including linked worktrees, so machine-specific
+hook paths do not appear as files to commit. The installer refuses an already
+tracked local settings file without changing it; untrack that file explicitly
+before installing. If the project has no Git repository or Git is unavailable,
+`local_git_excluded` is false and the local file is still private. No consumer
+repository is modified merely by using an xorder image or starting a stack.
 
 The installer uses Claude Code's documented exec form:
 
