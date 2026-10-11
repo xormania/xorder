@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "id": "profile/php-http",
+  "revision": "1.0.0",
+  "purpose": "PHP 8.5/Symfony HTTP and worker development with project-owned Caddy configuration.",
+  "roles": [
+    {
+      "name": "runtime",
+      "alternatives": [
+        {
+          "id": "image/php-frankenphp/8.5-trixie",
+          "version": "1.1.1"
+        }
+      ]
+    }
+  ]
+}

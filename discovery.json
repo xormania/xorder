@@ -1,0 +1,753 @@
+{
+  "generated_at": "2026-10-10T20:34:02.648679Z",
+  "groups": [
+    {
+      "applies_to": [
+        "CLI development",
+        "unit and integration tests",
+        "project-owned lockfiles"
+      ],
+      "id": "general-toolchains",
+      "layer": "toolchain",
+      "profiles": [
+        "profile/php-base",
+        "profile/python-base",
+        "profile/rust-base"
+      ],
+      "resources": [
+        "image/php-dev/8.4-trixie",
+        "image/php-dev/8.5-trixie",
+        "image/python-dev/3.14-trixie",
+        "image/rust-dev/1.99-trixie"
+      ],
+      "title": "General bases and toolchains",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "Symfony applications",
+        "FrankenPHP HTTP and workers",
+        "native devenv setup"
+      ],
+      "id": "php-frameworks",
+      "layer": "framework",
+      "profiles": [
+        "profile/php-http",
+        "profile/php-project"
+      ],
+      "resources": [
+        "image/php-frankenphp/8.4-trixie",
+        "image/php-frankenphp/8.5-trixie",
+        "environment/php-symfony"
+      ],
+      "title": "PHP/Symfony HTTP and native environments",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "Panther with Chromium",
+        "Playwright browser tasks matching the consuming project lock"
+      ],
+      "id": "browser-tasks",
+      "layer": "task",
+      "profiles": [],
+      "resources": [
+        "image/php-browser/8.4-trixie",
+        "image/php-browser/8.5-trixie",
+        "image/playwright-browser/1.58-trixie"
+      ],
+      "title": "Browser test execution",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "project-locked PHPUnit",
+        "per-process coverage",
+        "isolated prepared PHPStan"
+      ],
+      "id": "php-tests",
+      "layer": "task",
+      "profiles": [
+        "profile/php-tests"
+      ],
+      "resources": [
+        "image/php-dev/8.4-trixie",
+        "image/php-dev/8.5-trixie"
+      ],
+      "title": "PHP coverage and analysis",
+      "usage": "docs/php-tests.md"
+    },
+    {
+      "applies_to": [
+        "Serena v2 REPL",
+        "PHP language-server navigation"
+      ],
+      "id": "serena",
+      "layer": "task",
+      "profiles": [],
+      "resources": [
+        "image/php-serena/8.5-trixie"
+      ],
+      "title": "PHP/Symfony code navigation with Serena",
+      "usage": "docs/serena.md"
+    },
+    {
+      "applies_to": [
+        "locked kit validation",
+        "fresh Symfony recipe installation"
+      ],
+      "id": "toolkit",
+      "layer": "task",
+      "profiles": [
+        "profile/php-toolkit"
+      ],
+      "resources": [
+        "image/php-toolkit/8.4-trixie",
+        "image/php-toolkit/8.5-trixie"
+      ],
+      "title": "Isolated Symfony UX Toolkit validation",
+      "usage": "docs/php-toolkit.md"
+    },
+    {
+      "applies_to": [
+        "xormania/uxor",
+        "parallel worktrees",
+        "FrankenPHP and project-locked Playwright"
+      ],
+      "id": "uxor",
+      "layer": "project",
+      "profiles": [
+        "profile/uxor"
+      ],
+      "resources": [
+        "image/flowbite-xor-dev/8.4-trixie",
+        "image/flowbite-xor-dev/8.5-trixie"
+      ],
+      "title": "uxor development and tests",
+      "usage": "docs/uxor.md"
+    },
+    {
+      "applies_to": [
+        "standalone package management",
+        "owned formatting configuration",
+        "explicit Codex project guidance"
+      ],
+      "id": "selected-support",
+      "layer": "support",
+      "profiles": [
+        "profile/composer"
+      ],
+      "resources": [
+        "binary/composer",
+        "configuration/editorconfig",
+        "context/project-guidance"
+      ],
+      "title": "Independently selected supporting resources",
+      "usage": "docs/resources/index.md"
+    }
+  ],
+  "history": "catalog-v2.json",
+  "layers": [
+    {
+      "id": "toolchain",
+      "title": "General bases and toolchains"
+    },
+    {
+      "id": "framework",
+      "title": "Framework environments"
+    },
+    {
+      "id": "task",
+      "title": "Focused tasks"
+    },
+    {
+      "id": "project",
+      "title": "Project-specific environments"
+    },
+    {
+      "id": "support",
+      "title": "Independent supporting resources"
+    }
+  ],
+  "profiles": [
+    {
+      "applies_to": [
+        "target already supplies compatible PHP"
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/composer",
+      "purpose": "An exact standalone Composer PHAR for a target that already has compatible PHP.",
+      "readiness": "docs/resources/binary-composer.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "binary/composer",
+              "version": "1.0.0"
+            }
+          ],
+          "name": "package-manager"
+        }
+      ],
+      "source": "profiles/composer.json",
+      "usage": "docs/resources/binary-composer.md"
+    },
+    {
+      "applies_to": [
+        "General PHP 8.5/Symfony CLI development with project-owned dependencies."
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/php-base",
+      "purpose": "General PHP 8.5/Symfony CLI development with project-owned dependencies.",
+      "readiness": "docs/compatibility.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/php-dev/8.5-trixie",
+              "version": "1.2.1"
+            }
+          ],
+          "name": "runtime"
+        }
+      ],
+      "runner": "scripts/run-image.sh",
+      "source": "profiles/php-base.json",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "Symfony HTTP and worker applications"
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/php-http",
+      "purpose": "PHP 8.5/Symfony HTTP and worker development with project-owned Caddy configuration.",
+      "readiness": "docs/compatibility.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/php-frankenphp/8.5-trixie",
+              "version": "1.1.1"
+            }
+          ],
+          "name": "runtime"
+        }
+      ],
+      "runner": "scripts/run-image.sh",
+      "source": "profiles/php-http.json",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "native Linux amd64 PHP/Symfony",
+        "Nix and devenv available",
+        "optional Codex project context"
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/php-project",
+      "purpose": "PHP project setup with a devenv runtime, EditorConfig, and optional Codex project guidance.",
+      "readiness": "docs/resources/environment-php-symfony.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "environment/php-symfony",
+              "version": "1.0.0"
+            }
+          ],
+          "name": "runtime"
+        },
+        {
+          "alternatives": [
+            {
+              "id": "configuration/editorconfig",
+              "version": "1.0.0"
+            }
+          ],
+          "name": "formatting"
+        },
+        {
+          "alternatives": [
+            {
+              "id": "context/project-guidance",
+              "version": "1.0.0"
+            }
+          ],
+          "name": "project-context",
+          "optional": true,
+          "when": {
+            "harness": "codex",
+            "scope": "project"
+          }
+        }
+      ],
+      "source": "profiles/php-project.json",
+      "usage": "docs/profiles.md"
+    },
+    {
+      "applies_to": [
+        "project-locked PHPUnit and PHPStan"
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/php-tests",
+      "purpose": "PHP 8.5 project testing with opt-in PCOV, independent lock-owned PHPUnit/PHPStan tasks, and explicitly selected isolated PHPStan tooling.",
+      "readiness": "docs/php-tests.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/php-dev/8.5-trixie",
+              "version": "1.2.0"
+            }
+          ],
+          "name": "runtime"
+        }
+      ],
+      "runner": "scripts/run-image.sh",
+      "source": "profiles/php-tests.json",
+      "usage": "docs/php-tests.md"
+    },
+    {
+      "applies_to": [
+        "isolated Symfony UX Toolkit fixture"
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/php-toolkit",
+      "purpose": "Independent locked UX Toolkit kit validation and fresh Symfony 7.4 recipe-install testing.",
+      "readiness": "docs/php-toolkit.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/php-toolkit/8.5-trixie",
+              "version": "1.0.0"
+            }
+          ],
+          "name": "toolkit-testing"
+        }
+      ],
+      "runner": "examples/php-toolkit/run.sh",
+      "source": "profiles/php-toolkit.json",
+      "usage": "docs/php-toolkit.md"
+    },
+    {
+      "applies_to": [
+        "General Python 3.14 development with project-owned uv locks."
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/python-base",
+      "purpose": "General Python 3.14 development with project-owned uv locks.",
+      "readiness": "docs/compatibility.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/python-dev/3.14-trixie",
+              "version": "1.1.2"
+            }
+          ],
+          "name": "runtime"
+        }
+      ],
+      "runner": "scripts/run-image.sh",
+      "source": "profiles/python-base.json",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "General Rust 1.99 development with project-owned Cargo locks."
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/rust-base",
+      "purpose": "General Rust 1.99 development with project-owned Cargo locks.",
+      "readiness": "docs/compatibility.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/rust-dev/1.99-trixie",
+              "version": "1.1.2"
+            }
+          ],
+          "name": "runtime"
+        }
+      ],
+      "runner": "scripts/run-image.sh",
+      "source": "profiles/rust-base.json",
+      "usage": "docs/usage.md"
+    },
+    {
+      "applies_to": [
+        "xormania/uxor PHP 8.5",
+        "browser version from package-lock.json"
+      ],
+      "catalog_status": "required_releases_available",
+      "id": "profile/uxor",
+      "purpose": "uxor PHP 8.5 development using its project-locked official Playwright companion through the uxor runner.",
+      "readiness": "docs/claude-cloud.md",
+      "revision": "1.0.0",
+      "roles": [
+        {
+          "alternatives": [
+            {
+              "id": "image/flowbite-xor-dev/8.5-trixie",
+              "version": "1.2.1"
+            }
+          ],
+          "name": "runtime"
+        }
+      ],
+      "runner": "examples/uxor/run.sh",
+      "source": "profiles/uxor.json",
+      "usage": "docs/uxor.md"
+    }
+  ],
+  "resources": [
+    {
+      "documentation": "docs/resources/binary-composer.md",
+      "id": "binary/composer",
+      "identity": "sha256:7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6",
+      "kind": "binary",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "php"
+        ],
+        "requirements": [
+          "PHP CLI 7.2.5 or later with PHAR support; this resource does not install PHP.",
+          "The consuming project's extensions, services, archive tools and dependencies remain explicit."
+        ]
+      },
+      "purpose": "Exact upstream Composer PHAR for a target that already has compatible PHP CLI.",
+      "release_record": "release-records/artifacts/binary/composer/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "documentation": "docs/resources/configuration-editorconfig.md",
+      "id": "configuration/editorconfig",
+      "identity": "sha256:5aa2360af22e47bb84708bd2262268527f7359e94f224f04213c0fc929dbddea",
+      "kind": "configuration",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [],
+        "requirements": [
+          "An editor with EditorConfig support is needed to apply the formatting settings."
+        ]
+      },
+      "purpose": "Small project-local EditorConfig starting point for PHP and common repository files.",
+      "release_record": "release-records/artifacts/configuration/editorconfig/1.0.0.json",
+      "targets": [
+        "any"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "documentation": "docs/resources/context-project-guidance.md",
+      "id": "context/project-guidance",
+      "identity": "sha256:4a1c7ff451e8f835c1d921c9a212af8d129e3ed166789d3cd52c9c01aef442ff",
+      "kind": "context",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [],
+        "requirements": [
+          "Select only when project-local Codex guidance is wanted; review the sample before adoption."
+        ]
+      },
+      "purpose": "Example Codex project-local guidance delivered explicitly as AGENTS.md.",
+      "release_record": "release-records/artifacts/context/project-guidance/1.0.0.json",
+      "targets": [
+        "any"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "documentation": "docs/resources/environment-php-symfony.md",
+      "id": "environment/php-symfony",
+      "identity": "sha256:59ae1dd08d906bb3c897e7c4b26ad2dcfe0d9cd7bc76a3fe08132a1908be3c6f",
+      "kind": "environment",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "nix",
+          "devenv"
+        ],
+        "requirements": [
+          "Nix with nix-command and flakes enabled",
+          "devenv 2.4.0",
+          "Writable Nix store and access to the locked upstream inputs and binary caches"
+        ]
+      },
+      "purpose": "A reusable native devenv PHP 8.4 and Symfony development toolchain for a project on Linux amd64.",
+      "release_record": "release-records/artifacts/environment/php-symfony/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "documentation": "docs/images/flowbite-xor-dev-8.4-trixie.md",
+      "id": "image/flowbite-xor-dev/8.4-trixie",
+      "identity": "ghcr.io/xormania/flowbite-xor-dev@sha256:19a3edd4ddaefcc024106d593121b3d86d6910cae9ea7ae8c555a8d35f5cfa39",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for flowbite-xor development and Playwright orchestration.",
+      "release_record": "release-records/flowbite-xor-dev/8.4-trixie/1.1.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.1.1"
+    },
+    {
+      "documentation": "docs/images/flowbite-xor-dev-8.5-trixie.md",
+      "id": "image/flowbite-xor-dev/8.5-trixie",
+      "identity": "ghcr.io/xormania/flowbite-xor-dev@sha256:7c795be0d818b4458d7c8730ddebab68878684d0ec52cd3ef5b41f80e29efcd2",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for flowbite-xor development and Playwright orchestration.",
+      "release_record": "release-records/flowbite-xor-dev/8.5-trixie/1.2.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.2.1"
+    },
+    {
+      "documentation": "docs/images/php-browser-8.4-trixie.md",
+      "id": "image/php-browser/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-browser@sha256:730e67ff5d712550b7cce91387e9891e13092af05f70ae719f55f4c12f0a7f05",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "PHP and Symfony development plus real Chromium and Panther browser tests.",
+      "release_record": "release-records/php-browser/8.4-trixie/1.2.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.2.1"
+    },
+    {
+      "documentation": "docs/images/php-browser-8.5-trixie.md",
+      "id": "image/php-browser/8.5-trixie",
+      "identity": "ghcr.io/xormania/php-browser@sha256:3bd07aa66ea6af93ee3e690be1cb2e09352d3fa2e19f522f458e7020d664aded",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "PHP and Symfony development plus real Chromium and Panther browser tests.",
+      "release_record": "release-records/php-browser/8.5-trixie/1.2.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.2.1"
+    },
+    {
+      "documentation": "docs/images/php-dev-8.4-trixie.md",
+      "id": "image/php-dev/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-dev@sha256:e00b85cb224a1f9ded14529d4c640c69bf5758237ec4720e67b9016282704a8f",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Loaded PHP and Symfony development, CLI tasks, unit and PostgreSQL integration tests.",
+      "release_record": "release-records/php-dev/8.4-trixie/1.2.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.2.1"
+    },
+    {
+      "documentation": "docs/images/php-dev-8.5-trixie.md",
+      "id": "image/php-dev/8.5-trixie",
+      "identity": "ghcr.io/xormania/php-dev@sha256:cd670b7c7b9624ce7dc7ee6b7b2a4d5b19ce36d6226f077a417667ae8505e000",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Loaded PHP and Symfony development, CLI tasks, unit and PostgreSQL integration tests.",
+      "release_record": "release-records/php-dev/8.5-trixie/1.2.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.2.1"
+    },
+    {
+      "documentation": "docs/images/php-frankenphp-8.4-trixie.md",
+      "id": "image/php-frankenphp/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-frankenphp@sha256:111d101fb9f59aa1284533505070ebf9534cb7c22c909603074a2fa0046339e5",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
+      "release_record": "release-records/php-frankenphp/8.4-trixie/1.1.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.1.1"
+    },
+    {
+      "documentation": "docs/images/php-frankenphp-8.5-trixie.md",
+      "id": "image/php-frankenphp/8.5-trixie",
+      "identity": "ghcr.io/xormania/php-frankenphp@sha256:905faba01fd159953b9fd0e3878f0b2e4cb2661584515c087c95bd5474408afc",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
+      "release_record": "release-records/php-frankenphp/8.5-trixie/1.1.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.1.1"
+    },
+    {
+      "documentation": "docs/images/php-serena-8.5-trixie.md",
+      "id": "image/php-serena/8.5-trixie",
+      "identity": "ghcr.io/xormania/php-serena@sha256:f2d9b40e72a4bc029f56fa152b4e25363b38898be9dc1b19262c2a29705b04a6",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.",
+      "release_record": "release-records/php-serena/8.5-trixie/1.1.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.1.0"
+    },
+    {
+      "documentation": "docs/images/php-toolkit-8.4-trixie.md",
+      "id": "image/php-toolkit/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-toolkit@sha256:85f60474582b2d43a8a121e8c7ebc7c2d6e619245973db3dab2404f0f61b4a23",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.",
+      "release_record": "release-records/php-toolkit/8.4-trixie/1.0.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.1"
+    },
+    {
+      "documentation": "docs/images/php-toolkit-8.5-trixie.md",
+      "id": "image/php-toolkit/8.5-trixie",
+      "identity": "ghcr.io/xormania/php-toolkit@sha256:8170abf3fadcf200a342bedcc3e85c53305afbfdae3061dad1017c9119bb95e1",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.",
+      "release_record": "release-records/php-toolkit/8.5-trixie/1.0.1.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.1"
+    },
+    {
+      "documentation": "docs/images/playwright-browser-1.58-trixie.md",
+      "id": "image/playwright-browser/1.58-trixie",
+      "identity": "ghcr.io/xormania/playwright-browser@sha256:48c7089b8ca4353f74ba66bda332f94e8ace76743ebd9a98560c83f9f82c3627",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Version-matched Chromium, Firefox and WebKit browser server without PHP or development build tools.",
+      "release_record": "release-records/playwright-browser/1.58-trixie/1.0.2.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.2"
+    },
+    {
+      "documentation": "docs/images/python-dev-3.14-trixie.md",
+      "id": "image/python-dev/3.14-trixie",
+      "identity": "ghcr.io/xormania/python-dev@sha256:f9821a6dba4ee2e50715c37421ff46437dc9104d4652ead1bc74eec561bcafba",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Python development with uv, pip, venv, native compilation and PostgreSQL clients.",
+      "release_record": "release-records/python-dev/3.14-trixie/1.1.2.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.1.2"
+    },
+    {
+      "documentation": "docs/images/rust-dev-1.99-trixie.md",
+      "id": "image/rust-dev/1.99-trixie",
+      "identity": "ghcr.io/xormania/rust-dev@sha256:a83e113d10653abffb8896e5d41ec898b9e9c768e9007816fea545d675935890",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Rust 2024 native compilation, Clippy, formatting and wasm32-unknown-unknown builds.",
+      "release_record": "release-records/rust-dev/1.99-trixie/1.1.2.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.1.2"
+    }
+  ],
+  "schema_version": 1
+}

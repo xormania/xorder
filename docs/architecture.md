@@ -8,7 +8,9 @@ An installed CLI, skill, plugin, or separate discovery service is unnecessary.
 
 ## Current capability and extension boundaries
 
-The compact [catalog](../catalog-v2.json) lists accepted verified releases. The
+The compact [current index](../discovery.json) and
+[capability guide](capabilities.md) list the newest available verified releases.
+The typed [catalog](../catalog-v2.json) retains every accepted release. The
 detailed [image view](../catalog.json), existing image definitions, records,
 commands, GHCR references, and usage remain available. Additional kinds extend
 that structure as verified releases enter the ledger:
@@ -59,8 +61,11 @@ records before selection can offer them.
 
 Normalize image data and new resources into one shared model. Generate the
 existing schema-1 `catalog.json` as the image compatibility view and a compact
-typed [catalog-v2.json](../catalog-v2.json) for broader discovery. Both views share
-the validated release ledger and cannot be edited independently. Existing
+typed [catalog-v2.json](../catalog-v2.json) for broader discovery. The small
+`discovery.json` and `docs/capabilities.md` are generated current-release views.
+Their navigation belongs in `discovery/organization.json`, separate from released
+input definitions; grouping cannot change artifact bytes, identity or availability.
+All views share the validated release ledger and cannot be edited independently. Existing
 `scripts/library.py` image commands retain their selection behavior and schema-1
 outputs. Shared resource validation and resolution live in `scripts/xorder/`.
 The generated [resource index](resources/index.md) contains current non-image
@@ -74,7 +79,15 @@ missing prerequisites, unavailable downloads and untested execution surfaces.
 ## Read-only profile resolution
 
 The optional `scripts/xorder_cli.py` helper requires Python 3 and the dependencies
-in `requirements-ci.txt`. `list` and `show ID` expose accepted resource releases.
+in `requirements-ci.txt`. `list` and `show ID` expose accepted resource releases
+with their existing output shape. `list --latest --summary` is bounded to one newest eligible release
+per ID with exact pins and usage links; `show ID --version REVISION` selects one
+explicit historical release. `doctor --workspace PATH --resource ID` inspects
+command presence, disk space, lockfile presence and Docker availability with fixed
+read-only probes. Each Docker probe has a three-second deadline by default,
+configurable up to ten seconds; no packages or services are installed or started.
+Engine platform and host platform remain distinct. Output does not establish
+network access, scope, harness, or application readiness.
 `resolve PROFILE --target TARGET` reads local JSON files and prints a lock; it
 does not install resources or activate instructions. `generate` and `check` use
 the same generated outputs as the existing image metadata commands.
