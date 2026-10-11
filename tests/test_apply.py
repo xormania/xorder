@@ -26,9 +26,11 @@ class ApplicationTests(unittest.TestCase):
         self.cache.mkdir()
         self.target = {"platform": "linux/amd64", "commands": [], "scope": "project", "harness": "codex"}
 
-    def selection(self, files=None, revision="1.0.0"):
+    def selection(self, files=None, revision="1.0.0", targets=None):
         files = files or {".editorconfig": b"root = true\n"}
         d = definition("editor", "configuration", revision)
+        if targets is not None:
+            d["targets"] = targets
         d["details"]["files"] = [{"source": f"file-{i}", "destination": name} for i, name in enumerate(files)]
         archive = self.base / (revision + ".tar")
         with tarfile.open(archive, "w") as tar:
@@ -60,6 +62,40 @@ class ApplicationTests(unittest.TestCase):
         self.assertEqual(destination.stat().st_mtime_ns, before)
         self.assertEqual(unrelated.read_text(), "user content")
         self.assertEqual(application.verify(self.root, self.state)["status"], "passed")
+
+    def test_platform_independent_selection_plans_and_applies_without_platform(self):
+        self.target.pop("platform")
+        lock, cat = self.selection(targets=["any"])
+        self.assertEqual(application.plan(lock, self.root, self.state, cat)["status"], "ready")
+        self.assertEqual(self.install(lock, cat)["status"], "applied")
+        self.assertEqual((self.root / ".editorconfig").read_bytes(), b"root = true\n")
+        self.assertEqual(application.verify(self.root, self.state)["status"], "passed")
+
+    def test_published_editorconfig_plan_uses_the_same_platform_contract_as_resolution(self):
+        cat = model.catalog()
+        lock = resolve(profile("configuration/editorconfig"), cat, {"scope": "project"})["lock"]
+        result = application.plan(lock, self.root, self.state, cat)
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["actions"][0]["destination"], ".editorconfig")
+
+    def test_recorded_platform_changes_stop_plan_and_apply_before_writes(self):
+        lock, cat = self.selection(targets=["any"])
+        with patch.object(application.platform, "system", return_value="Linux"), \
+                patch.object(application.platform, "machine", return_value="aarch64"):
+            for result in (application.plan(lock, self.root, self.state, cat), self.install(lock, cat)):
+                self.assertEqual(result["status"], "prerequisite_missing")
+                self.assertEqual(result["gaps"], [{"code": "target_changed", "expected": "linux/amd64", "actual": "linux/arm64"}])
+        self.assertFalse(self.root.exists())
+        self.assertFalse(self.state.exists())
+
+    def test_platform_specific_lock_cannot_omit_observed_platform(self):
+        lock, cat = self.selection()
+        lock["target"].pop("platform")
+        for action in (lambda: application.plan(lock, self.root, self.state, cat), lambda: self.install(lock, cat)):
+            with self.assertRaisesRegex(ValueError, "incompatible"):
+                action()
+        self.assertFalse(self.root.exists())
+        self.assertFalse(self.state.exists())
 
     def test_unowned_and_locally_edited_destinations_are_preserved(self):
         lock, cat = self.selection()

@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "id": "profile/php-base",
+  "revision": "1.0.0",
+  "purpose": "General PHP 8.5/Symfony CLI development with project-owned dependencies.",
+  "roles": [
+    {
+      "name": "runtime",
+      "alternatives": [
+        {
+          "id": "image/php-dev/8.5-trixie",
+          "version": "1.2.1"
+        }
+      ]
+    }
+  ]
+}

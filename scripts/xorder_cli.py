@@ -17,7 +17,16 @@ def main():
     listing = sub.add_parser("list")
     listing.add_argument("--kind", choices=("image",) + model.KINDS)
     listing.add_argument("--all", action="store_true", help="include withdrawn/deprecated releases")
-    sub.add_parser("show").add_argument("id")
+    listing.add_argument("--latest", action="store_true", help="one latest eligible release per resource")
+    listing.add_argument("--summary", action="store_true", help="concise identities, prerequisites and usage links")
+    showing = sub.add_parser("show")
+    showing.add_argument("id")
+    showing.add_argument("--version", help="one explicit release revision")
+    doctor = sub.add_parser("doctor", help="bounded read-only environment and prerequisite inspection")
+    doctor.add_argument("--workspace", type=Path, default=Path.cwd())
+    doctor.add_argument("--resource", help="inspect prerequisites for an available resource ID")
+    doctor.add_argument("--version", help="exact revision; otherwise inspect the newest available revision")
+    doctor.add_argument("--timeout", type=float, default=3, help="seconds per fixed probe (maximum 10)")
     resolution = sub.add_parser("resolve")
     resolution.add_argument("profile", help="local profile JSON path")
     resolution.add_argument("--target", required=True, help="JSON with observed target facts")
@@ -62,12 +71,31 @@ def main():
             raise SystemExit(2)
         return
     cat = model.catalog(args.repository_root)
+    if args.command == "doctor":
+        from xorder.inspect import inspect_target
+        resource = None
+        if args.version and not args.resource:
+            raise ValueError("doctor --version requires --resource")
+        if args.resource:
+            matches = [item for item in cat["resources"] if item["id"] == args.resource
+                       and item["lifecycle"] == "available"
+                       and (not args.version or item["version"] == args.version)]
+            if not matches:
+                raise ValueError("No available release matches the requested resource and revision")
+            resource = max(matches, key=lambda item: model.version(item["version"]))
+        result = inspect_target(args.workspace, resource, args.timeout)
+        print(model.encoded(result), end="")
+        if result["gaps"]:
+            raise SystemExit(2)
+        return
     if args.command == "list":
-        result = {"schema_version": 2, "resources": [item for item in cat["resources"]
+        entries = model.latest_resources(cat, include_unavailable=args.all) if args.latest else cat["resources"]
+        result = {"schema_version": 2, "resources": [model.resource_summary(item) if args.summary else item for item in entries
                   if (not args.kind or item["kind"] == args.kind)
                   and (args.all or item["lifecycle"] == "available")]}
     elif args.command == "show":
-        result = {"id": args.id, "resources": [item for item in cat["resources"] if item["id"] == args.id]}
+        result = {"id": args.id, "resources": [item for item in cat["resources"] if item["id"] == args.id
+                                               and (not args.version or item["version"] == args.version)]}
         if not result["resources"]:
             print(model.encoded({"status": "resource_unavailable", "id": args.id}), end="")
             raise SystemExit(2)

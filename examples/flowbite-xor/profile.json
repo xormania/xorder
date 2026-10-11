@@ -1,3 +1,7 @@
 {
-  "sync": ["php", "tools/sync-demo"]
+  "sync": ["php", "tools/sync-demo"],
+  "sync_check": {
+    "command": ["php", "tools/sync-demo", "--dry-run"],
+    "absent": "[dry-run]"
+  }
 }

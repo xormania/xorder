@@ -14,7 +14,8 @@ Use feature branches and PRs against master. The canonical source layout is:
 | `release-records/artifacts/<kind>/<name>/<revision>.json` | Verified downloadable artifact facts; created by publication |
 | `profiles/` | Explicit role choices and exact resource revisions |
 | `schemas/` | Definition/release/catalog structure; cross-field invariants live in the validator |
-| `catalog.json`, `catalog-v2.json`, README tables, `docs/images/`, `docs/resources/index.md`, `docs/releases/` | Generated outputs |
+| `discovery/organization.json` | Authored applicability, layers and direct profile navigation; no artifact facts |
+| `catalog.json`, `catalog-v2.json`, `discovery.json`, README tables, `docs/capabilities.md`, `docs/images/`, `docs/resources/index.md`, `docs/releases/` | Generated outputs |
 | `scripts/` | Small build, inventory, release, generation and refresh helpers |
 | `scripts/xorder/` | Shared typed model, resolution, transport, application, and artifact release helpers |
 | `tests/fixtures/`, `tests/requirements/` | Locked real consumer fixtures and independent mock requirements |

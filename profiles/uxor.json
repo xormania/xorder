@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "id": "profile/uxor",
+  "revision": "1.0.0",
+  "purpose": "uxor PHP 8.5 development using its project-locked official Playwright companion through the uxor runner.",
+  "roles": [
+    {
+      "name": "runtime",
+      "alternatives": [
+        {
+          "id": "image/flowbite-xor-dev/8.5-trixie",
+          "version": "1.2.1"
+        }
+      ]
+    }
+  ]
+}

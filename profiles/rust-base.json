@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "id": "profile/rust-base",
+  "revision": "1.0.0",
+  "purpose": "General Rust 1.99 development with project-owned Cargo locks.",
+  "roles": [
+    {
+      "name": "runtime",
+      "alternatives": [
+        {
+          "id": "image/rust-dev/1.99-trixie",
+          "version": "1.1.2"
+        }
+      ]
+    }
+  ]
+}

@@ -11,7 +11,7 @@ services:
     command: [frankenphp, run, --config, /etc/frankenphp/Caddyfile, --watch]
     environment:
       PUID: ${PUID:-1000}
-      XORDER_INPUT_FINGERPRINT: ${XORDER_INPUT_FINGERPRINT:-}
+      XORDER_SERVICE_FINGERPRINT: ${XORDER_SERVICE_FINGERPRINT:-}
       PGID: ${PGID:-1000}
       PHP_INI_SCAN_DIR: ":/usr/local/etc/php/app.conf.d"
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
@@ -33,6 +33,7 @@ services:
       NODE_EXTRA_CA_CERTS: ${CONTAINER_CA_FILE:-}
       DEMO_URL: https://localhost
       PHP_BINARY: php
+      npm_config_update_notifier: "false"
       # The browser is already started by Compose in this service's network.
       PW_BROWSER_SERVER: /bin/false
     volumes:
@@ -66,6 +67,7 @@ services:
       NO_PROXY: ${XORDER_NO_PROXY:-localhost,127.0.0.1,php}
       no_proxy: ${XORDER_no_proxy:-localhost,127.0.0.1,php}
       NODE_EXTRA_CA_CERTS: ${CONTAINER_CA_FILE:-}
+      npm_config_update_notifier: "false"
     volumes:
       - ${CA_CERTIFICATE:-/dev/null}:/run/library-proxy.pem:ro
     command: [npx, -y, "playwright@${PLAYWRIGHT_VERSION}", run-server, --port, "3000", --host, 0.0.0.0]

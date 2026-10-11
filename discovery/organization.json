@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "layers": [
+    {
+      "id": "toolchain",
+      "title": "General bases and toolchains"
+    },
+    {
+      "id": "framework",
+      "title": "Framework environments"
+    },
+    {
+      "id": "task",
+      "title": "Focused tasks"
+    },
+    {
+      "id": "project",
+      "title": "Project-specific environments"
+    },
+    {
+      "id": "support",
+      "title": "Independent supporting resources"
+    }
+  ],
+  "groups": [
+    {
+      "id": "general-toolchains",
+      "layer": "toolchain",
+      "title": "General bases and toolchains",
+      "applies_to": [
+        "CLI development",
+        "unit and integration tests",
+        "project-owned lockfiles"
+      ],
+      "resources": [
+        "image/php-dev/8.4-trixie",
+        "image/php-dev/8.5-trixie",
+        "image/python-dev/3.14-trixie",
+        "image/rust-dev/1.99-trixie"
+      ],
+      "profiles": [
+        "profile/php-base",
+        "profile/python-base",
+        "profile/rust-base"
+      ],
+      "usage": "docs/usage.md"
+    },
+    {
+      "id": "php-frameworks",
+      "layer": "framework",
+      "title": "PHP/Symfony HTTP and native environments",
+      "applies_to": [
+        "Symfony applications",
+        "FrankenPHP HTTP and workers",
+        "native devenv setup"
+      ],
+      "resources": [
+        "image/php-frankenphp/8.4-trixie",
+        "image/php-frankenphp/8.5-trixie",
+        "environment/php-symfony"
+      ],
+      "profiles": [
+        "profile/php-http",
+        "profile/php-project"
+      ],
+      "usage": "docs/usage.md"
+    },
+    {
+      "id": "browser-tasks",
+      "layer": "task",
+      "title": "Browser test execution",
+      "applies_to": [
+        "Panther with Chromium",
+        "Playwright browser tasks matching the consuming project lock"
+      ],
+      "resources": [
+        "image/php-browser/8.4-trixie",
+        "image/php-browser/8.5-trixie",
+        "image/playwright-browser/1.58-trixie"
+      ],
+      "profiles": [],
+      "usage": "docs/usage.md"
+    },
+    {
+      "id": "php-tests",
+      "layer": "task",
+      "title": "PHP coverage and analysis",
+      "applies_to": [
+        "project-locked PHPUnit",
+        "per-process coverage",
+        "isolated prepared PHPStan"
+      ],
+      "resources": [
+        "image/php-dev/8.4-trixie",
+        "image/php-dev/8.5-trixie"
+      ],
+      "profiles": [
+        "profile/php-tests"
+      ],
+      "usage": "docs/php-tests.md"
+    },
+    {
+      "id": "serena",
+      "layer": "task",
+      "title": "PHP/Symfony code navigation with Serena",
+      "applies_to": [
+        "Serena v2 REPL",
+        "PHP language-server navigation"
+      ],
+      "resources": [
+        "image/php-serena/8.5-trixie"
+      ],
+      "profiles": [],
+      "usage": "docs/serena.md"
+    },
+    {
+      "id": "toolkit",
+      "layer": "task",
+      "title": "Isolated Symfony UX Toolkit validation",
+      "applies_to": [
+        "locked kit validation",
+        "fresh Symfony recipe installation"
+      ],
+      "resources": [
+        "image/php-toolkit/8.4-trixie",
+        "image/php-toolkit/8.5-trixie"
+      ],
+      "profiles": [
+        "profile/php-toolkit"
+      ],
+      "usage": "docs/php-toolkit.md"
+    },
+    {
+      "id": "uxor",
+      "layer": "project",
+      "title": "uxor development and tests",
+      "applies_to": [
+        "xormania/uxor",
+        "parallel worktrees",
+        "FrankenPHP and project-locked Playwright"
+      ],
+      "resources": [
+        "image/flowbite-xor-dev/8.4-trixie",
+        "image/flowbite-xor-dev/8.5-trixie"
+      ],
+      "profiles": [
+        "profile/uxor"
+      ],
+      "usage": "docs/uxor.md"
+    },
+    {
+      "id": "selected-support",
+      "layer": "support",
+      "title": "Independently selected supporting resources",
+      "applies_to": [
+        "standalone package management",
+        "owned formatting configuration",
+        "explicit Codex project guidance"
+      ],
+      "resources": [
+        "binary/composer",
+        "configuration/editorconfig",
+        "context/project-guidance"
+      ],
+      "profiles": [
+        "profile/composer"
+      ],
+      "usage": "docs/resources/index.md"
+    }
+  ],
+  "profiles": {
+    "profile/php-base": {
+      "applies_to": [
+        "General PHP 8.5/Symfony CLI development with project-owned dependencies."
+      ],
+      "usage": "docs/usage.md",
+      "readiness": "docs/compatibility.md",
+      "runner": "scripts/run-image.sh"
+    },
+    "profile/python-base": {
+      "applies_to": [
+        "General Python 3.14 development with project-owned uv locks."
+      ],
+      "usage": "docs/usage.md",
+      "readiness": "docs/compatibility.md",
+      "runner": "scripts/run-image.sh"
+    },
+    "profile/rust-base": {
+      "applies_to": [
+        "General Rust 1.99 development with project-owned Cargo locks."
+      ],
+      "usage": "docs/usage.md",
+      "readiness": "docs/compatibility.md",
+      "runner": "scripts/run-image.sh"
+    },
+    "profile/php-http": {
+      "applies_to": [
+        "Symfony HTTP and worker applications"
+      ],
+      "usage": "docs/usage.md",
+      "readiness": "docs/compatibility.md",
+      "runner": "scripts/run-image.sh"
+    },
+    "profile/php-project": {
+      "applies_to": [
+        "native Linux amd64 PHP/Symfony",
+        "Nix and devenv available",
+        "optional Codex project context"
+      ],
+      "usage": "docs/profiles.md",
+      "readiness": "docs/resources/environment-php-symfony.md"
+    },
+    "profile/composer": {
+      "applies_to": [
+        "target already supplies compatible PHP"
+      ],
+      "usage": "docs/resources/binary-composer.md",
+      "readiness": "docs/resources/binary-composer.md"
+    },
+    "profile/php-tests": {
+      "applies_to": [
+        "project-locked PHPUnit and PHPStan"
+      ],
+      "usage": "docs/php-tests.md",
+      "readiness": "docs/php-tests.md",
+      "runner": "scripts/run-image.sh"
+    },
+    "profile/php-toolkit": {
+      "applies_to": [
+        "isolated Symfony UX Toolkit fixture"
+      ],
+      "usage": "docs/php-toolkit.md",
+      "readiness": "docs/php-toolkit.md",
+      "runner": "examples/php-toolkit/run.sh"
+    },
+    "profile/uxor": {
+      "applies_to": [
+        "xormania/uxor PHP 8.5",
+        "browser version from package-lock.json"
+      ],
+      "usage": "docs/uxor.md",
+      "readiness": "docs/claude-cloud.md",
+      "runner": "examples/uxor/run.sh"
+    }
+  }
+}

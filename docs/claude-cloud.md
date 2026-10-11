@@ -1,15 +1,20 @@
 # Claude cloud sessions for uxor
 
 Start each session from the current [xorder README](../README.md), select an
-accepted image digest from the [catalog](../catalog.json), and read the
-[uxor profile](uxor.md). The image provides the toolchain;
+accepted image digest from the compact [current index](../discovery.json), and
+read the [uxor profile](uxor.md). The image provides the toolchain;
 the checkout owns its application packages, Caddy configuration and tests.
 The runner is mounted from your xorder clone, so runner fixes require updating
 that clone, not rebuilding or replacing an unchanged image.
 
 ## Before starting a stack
 
-1. Run `docker info`. A Docker CLI does not establish that an engine is usable.
+1. From the xorder checkout, run the bounded `doctor` command described in
+   [discovery](architecture.md#read-only-profile-resolution) with your workspace
+   and selected resource, for example `--resource image/flowbite-xor-dev/8.5-trixie`.
+   Its fixed Docker probes have deadlines and inspect actual engine availability.
+   Follow up with the profile's status command. A Docker CLI does not establish
+   that an engine is usable.
 2. Check free space with `df -h` on the checkout and Docker data filesystem.
    Read the selected image's cold-pull estimate; keep room for its browser,
    dependencies, caches and test output. Host-wide percentages can hide a
@@ -60,18 +65,43 @@ must be checked in the actual environment.
 
 ## Reusing worktree dependencies
 
-Compare both Composer manifest/lock and npm manifest/lock, not just directory
-sizes. Include dev dependencies, generated autoload/runtime metadata, npm's
-installed lock and the complete importmap vendor directory with its
-`installed.php`. xorder verifies these inputs against the receiving checkout.
+Seed absent dependency directories from an explicitly trusted prepared checkout:
 
-Prefer private reflink copies when the filesystem supports them. Hardlinks
-share file contents: avoiding `install` alone does not prevent Composer
+```sh
+python3 scripts/xr.py '/absolute/new-worktree' seed --from '/absolute/prepared-worktree'
+```
+
+The command compares Composer and npm manifests/lockfiles, `demo/symfony.lock`
+when present, and the selected importmap file before copying. It preserves whole
+dependency trees, including generated autoload/runtime metadata, npm's installed
+lock and importmap `installed.php`. Existing destinations, checkout-escaping
+symlinks and changed inputs fail without overwriting dependency directories.
+The default uses independent reflinks when supported, otherwise private copies.
+It needs no image or Docker engine and runs no installs or setup hooks. The next
+`up` still runs the existing Composer/npm/importmap readiness checks.
+
+For disks where private copies are too expensive, stop both checkouts' stacks,
+then explicitly request hardlinks:
+
+```sh
+python3 scripts/xr.py '/absolute/new-worktree' seed --from '/absolute/prepared-worktree' --hardlink
+```
+
+This mode verifies that neither checkout is mounted by a running container and
+writes `.xorder-shared-dependencies.json` in both. It also registers authoritative
+sharing guards outside the mounted checkouts in the host's xorder state directory.
+Future runner `up` calls use read-only reuse even if the flag is omitted; other
+Compose actions retain the protected mounts. Deleting or changing a checkout's
+marker cannot opt out: the host guard makes mutating runner commands fail closed.
+`seed` adds the marker to Git's local `info/exclude`, including linked worktrees,
+so commit-check hooks do not request machine-local state. Keep the local marker
+with its checkout and retain the same host state directory across sessions.
+Hardlinks share file contents: avoiding `install` alone does not prevent Composer
 autoload generation, setup hooks, npm metadata writes or test tools from
 changing another worktree. Do not change permissions on hardlinked files as
 an isolation mechanism; permission changes are shared too.
 
-For prepared dependencies, use:
+For manually prepared dependencies without the sharing receipt, use:
 
 ```sh
 bash examples/uxor/run.sh --slot 2 up --reuse-only
@@ -79,10 +109,26 @@ bash examples/uxor/run.sh --slot 2 up --reuse-only
 
 This mounts dependency trees read-only, verifies them before services start,
 reports missing setup and runs no install, setup hooks or dependency repairs.
-Local readiness markers are not invented. Symfony/Tailwind output stays in
-the stack's own `demo/var` volume. A reported dependency gap requires a private
+Local readiness markers are not invented. For seeded hardlinks, the receiver's
+selected project sync command first creates its own demo recipe copies while
+dependency mounts are read-only; donor demo copies are never transplanted.
+Symfony/Tailwind output stays in the stack's own `demo/var` volume. A reported dependency gap requires a private
 writable preparation step; do not rerun ordinary `up` against shared hardlinks.
 Tests that deliberately modify dependency packages also require a private copy.
+Host tools can still write hardlinked files, so use the runner's protected
+containers. To return a receiver to private dependencies, stop its stack, remove
+its seeded dependency directories, then explicitly clear its guard:
+
+```sh
+python3 scripts/xr.py '/absolute/new-worktree' seed --forget-sharing
+python3 scripts/xr.py '/absolute/new-worktree' seed --from '/absolute/prepared-worktree'
+```
+
+The forget command requires every guarded dependency tree to be absent and
+confirms no running container still mounts the checkout. Retain the donor's
+guard while another shared tree exists. A marker from the earlier runner without
+an authoritative host guard is refused; remove that checkout's shared trees and
+use the same forget/reseed procedure to migrate it safely.
 
 ## During work and recovery
 

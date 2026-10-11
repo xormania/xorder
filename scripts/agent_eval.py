@@ -14,7 +14,7 @@ import threading
 import time
 import uuid
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -266,8 +266,14 @@ def postchecks(scenario, workspace, source, resource, context, env):
                            file_bytes(workspace / "checkout" / name) == source["blob"](name)})
         for name, expected in context["seed_files"].items():
             source_file, receiving_file = workspace / "donor" / name, workspace / "receiver" / name
-            checks.append({"name": "reused-" + name, "passed": file_bytes(source_file) == expected.encode() and
-                           file_bytes(receiving_file) == expected.encode()})
+            try:
+                matches = file_bytes(source_file) == expected.encode() and file_bytes(receiving_file) == expected.encode()
+                donor, receiver = source_file.stat(), receiving_file.stat()
+                private = (donor.st_dev, donor.st_ino) != (receiver.st_dev, receiver.st_ino)
+            except (OSError, ValueError):
+                matches = private = False
+            checks.append({"name": "reused-" + name, "passed": matches})
+            checks.append({"name": "private-copy-" + name, "passed": private})
         checks.append({"name": "checkout-state-preserved", "passed":
                        not (workspace / "receiver/demo/var").exists() and
                        file_bytes(workspace / "receiver/keep.txt") == b"receiver-owned\n"})
@@ -341,7 +347,8 @@ def clean_container(context, workspace, env):
 
 
 def validate_observation(value, root=ROOT):
-    Draft202012Validator(read_json(root / "schemas/agent-observation.schema.json")).validate(value)
+    Draft202012Validator(read_json(root / "schemas/agent-observation.schema.json"),
+                         format_checker=FormatChecker(formats=["date-time", "uri"])).validate(value)
     if value["outcome"] == "pass":
         if not value["checks"] or not all(item["passed"] for item in value["checks"]):
             raise ValueError("Pass requires successful independent postchecks")
