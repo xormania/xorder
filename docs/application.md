@@ -29,6 +29,14 @@ Resolution fails if a required resource has no verified accepted release.
 Applying validates the lock against the accepted catalog; editing its payload
 URL, destinations, or identity cannot substitute different content. Retain a
 prior lock with `resolve --pins xorder.lock.json` to preserve compatible pins.
+Pins bind the resource ID, revision, and exact content identity, including when a
+profile renames or adds a role for that resource. A conflicting explicit revision,
+an unavailable pinned release, or changed prerequisites produces a reported gap;
+resolution does not silently replace that pin with a newer release or another
+resource. Remove or replace the affected pin deliberately to change its selection.
+Platform-specific resources require an observed platform during resolution and
+check it again before application. Resources declaring `targets: [any]` may omit
+that fact; any platform explicitly recorded in a lock is still checked for change.
 An explicit local `--overlay` selects private assignments without publishing
 them; the lock records the overlay's content hash.
 
