@@ -1,0 +1,8 @@
+{
+  "id": "url-discovery",
+  "description": "Discover the least specialized available PHP 8.5 CLI resource from a pinned public repository URL.",
+  "check": "discovery",
+  "resource_id": "image/php-dev/8.5-trixie",
+  "timeout_seconds": 600,
+  "task": "I need PHP 8.5 CLI with intl, curl and zip on Linux amd64; no browser or web server. Discover the least specialized available resource from {source_url}. Preserve an exact digest. Download catalog-v2.json, README.md and the selected resource's usage page at that source revision into evidence/catalog-v2.json, evidence/README.md and evidence/usage.md. Write result.json with resource_id, version, identity, documentation, and readiness_command (an argv array that calls scripts/verify-image.sh for that line and digest). Do not run or pull an image for this discovery task."
+}
