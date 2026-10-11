@@ -11,6 +11,7 @@ METADATA_SCRIPTS = {
     "scripts/catalog_checks.py", "scripts/catalog_summary.py",
     "scripts/refresh_browser.py", "scripts/browser_release.py",
     "scripts/image_assurance.py", "scripts/agent_eval.py",
+    "scripts/claude_prompt_clock.py",
 }
 METADATA_WORKFLOWS = {
     ".github/workflows/publish.yml", ".github/workflows/refresh.yml",
