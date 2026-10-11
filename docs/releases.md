@@ -87,9 +87,17 @@ For new image ledger records it verifies the public source Release and source
 commit, downloads its durable `record.json` using GitHub's asset checksum, and
 compares the immutable record fields. It then resolves the exact image tag and
 checks the parent and recorded platform digests anonymously. Existing release
-evidence cannot be edited, deleted, or renamed in place; lifecycle, reason,
+evidence cannot be edited or renamed in place; lifecycle, reason,
 replacement and lifecycle date can change without depending on the withdrawn
 artifact's availability.
+An explicit retirement declaration under `retired-records/` can remove obsolete
+recommendations from the live ledger without rewriting their publication facts.
+It binds exact original record bytes and source commits to an accepted historical
+commit. The gate verifies each deletion against those bytes and the PR base,
+and keeps the retirement declaration immutable. History and original public
+Release assets retain the evidence. Retirement does not create a replacement
+release, reassign an exact tag, or delete a remote artifact; fresh canonical
+definitions stay unavailable until normal verified publication succeeds.
 Manual dispatch checks all accepted image records against public evidence.
 
 Catalog proposal branches are keyed by the complete durable input records,
@@ -135,7 +143,7 @@ Required settings:
   Never commit the token. See GitHub's [token limitations](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
   and [workflow trigger rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
 - After the first candidate push, set each GHCR package (`php-dev`,
-  `php-browser`, `rust-dev`, `python-dev`) to **public** using its package settings.
+  `php-browser`, `uxor-dev`, `rust-dev`, `python-dev`) to **public** using its package settings.
   GHCR creates packages private by default and provides no container-visibility
   mutation in this workflow. Rerun the failed publication job; it will reuse the
   candidate, not rebuild. Browser packages are created after their PHP parent

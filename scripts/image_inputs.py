@@ -8,7 +8,7 @@ from pathlib import Path
 TOOL_KEYS = {
     "php-dev": ("composer", "redis_version", "xdebug_version", "pcov_version", "symfony", "infection", "apt_indexes"),
     "php-frankenphp": ("composer", "redis_version", "xdebug_version", "pcov_version", "symfony", "apcu_version", "infection", "apt_indexes"),
-    "flowbite-xor-dev": ("node", "tailwind"),
+    "uxor-dev": ("node", "tailwind"),
     "python-dev": ("uv", "apt_indexes"),
     "rust-dev": ("apt_indexes",),
     "php-browser": ("apt_indexes",),

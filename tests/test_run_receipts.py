@@ -17,6 +17,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "examples/shared"))
 import test_receipts as receipts
+import container_memory as memory
 
 
 class ReceiptTests(unittest.TestCase):
@@ -42,7 +43,7 @@ class ReceiptTests(unittest.TestCase):
                 with self.subTest(signal=signal_name):
                     env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH'],
                                XORDER_TEST_CONTROL_DIR=str(root / signal_name), PAYLOAD_SIGNAL=signal_name)
-                    result = subprocess.run(["node", str(ROOT / "examples/flowbite-xor/receipt-launcher.cjs")],
+                    result = subprocess.run(["node", str(ROOT / "examples/uxor/receipt-launcher.cjs")],
                                             env=env, text=True, capture_output=True, timeout=10)
                     self.assertEqual(result.returncode, expected, result.stderr)
 
@@ -77,6 +78,8 @@ class ReceiptTests(unittest.TestCase):
                 {"event": "end", "status": "failed"}]
             text = "\n".join(json.dumps(event) for event in events)
             commands = []
+            memory_start = {"services": [{"container": "browser-exact", "events": {"oom_kill": 2}}]}
+            memory_end = {"services": [{"container": "browser-exact", "events": {"oom_kill": 3}, "oom_kill_delta": 1}]}
             real_popen = subprocess.Popen
             def execute(command, **kwargs):
                 commands.append(command)
@@ -90,8 +93,11 @@ class ReceiptTests(unittest.TestCase):
                 return json.dumps({"demo_url": "https://localhost", "cwd": "/app", "extension_reporter": None})
             with patch.object(receipts, "stack_snapshot", return_value={"configuration_sha256": "a", "containers": []}), \
                     patch.object(receipts, "observe", side_effect=observe), \
-                    patch.object(receipts.subprocess, "Popen", side_effect=execute):
-                self.assertEqual(receipts.run_test(["docker", "compose"], env, workspace, "stack", ["requested.spec.ts"], workers=2), 17)
+                    patch.object(receipts.subprocess, "Popen", side_effect=execute), \
+                    patch.object(memory, "memory_observations", return_value=memory_end), \
+                    patch.object(memory, "report_failure"):
+                self.assertEqual(receipts.run_test(["docker", "compose"], env, workspace, "stack", ["requested.spec.ts"], workers=2,
+                                                   memory_start=memory_start), 17)
                 first_path = next((Path(directory) / "cache/xorder/test-attempts").glob("*/receipt.json"))
                 first_bytes = first_path.read_bytes()
                 first = json.loads(first_bytes)
@@ -114,6 +120,8 @@ class ReceiptTests(unittest.TestCase):
             self.assertIn("server same window", first["diagnostic_context"]["server_logs"])
             self.assertIn("host_start", first)
             self.assertIn("host_end", first)
+            self.assertEqual(first["memory_start"], memory_start)
+            self.assertEqual(first["memory_end"]["services"][0]["oom_kill_delta"], 1)
             log_command = next(command for command in commands if "logs" in command)
             self.assertIn(first["started_at"], log_command)
             self.assertIn(first["ended_at"], log_command)
@@ -181,7 +189,7 @@ class ReceiptTests(unittest.TestCase):
             npx.chmod(0o755)
             control = workspace / "control"
             env = dict(os.environ, PATH=str(workspace) + os.pathsep + os.environ["PATH"], XORDER_TEST_CONTROL_DIR=str(control))
-            launcher = ROOT / "examples/flowbite-xor/receipt-launcher.cjs"
+            launcher = ROOT / "examples/uxor/receipt-launcher.cjs"
             process = subprocess.Popen(["node", str(launcher), "one.spec.ts"], env=env)
             try:
                 deadline = time.monotonic() + 5
@@ -217,7 +225,7 @@ class ActualPlaywrightReporterTests(unittest.TestCase):
             test_module = json.dumps(str(package / "test.js"))
             (workspace / "sample.spec.cjs").write_text(f"const {{test,expect}}=require({test_module});test('actually passed',()=>expect(1).toBe(1));test.skip('actually skipped',()=>{{throw Error('skip must not run')}});")
             (workspace / "playwright.config.cjs").write_text("module.exports={testMatch:'*.spec.cjs',reporter:[['./own-reporter.cjs']],projects:[{name:'one',use:{baseURL:'https://resolved.test:444'}},{name:'two',use:{baseURL:'http://other.test:4321'}}]};")
-            env = dict(os.environ, PW_TEST_REPORTER=str(ROOT / "examples/flowbite-xor/receipt-reporter.cjs"),
+            env = dict(os.environ, PW_TEST_REPORTER=str(ROOT / "examples/uxor/receipt-reporter.cjs"),
                        XORDER_TEST_EVENT_FILE=str(events), ORIGINAL_REPORT=str(own_report), DEMO_URL="https://localhost")
             completed = subprocess.run(["node", str(package / "cli.js"), "test", "--workers=1"], cwd=workspace, env=env,
                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=45)
@@ -253,7 +261,7 @@ class ActualPlaywrightReporterTests(unittest.TestCase):
                 test_module = json.dumps(str(package / "test.js"))
                 (workspace / "sample.spec.cjs").write_text(f"const {{test,expect}}=require({test_module});test('actual network',async ({{request}})=>{{const response=await request.get('/attested');expect(response.status()).toBe(200);}});")
                 (workspace / "playwright.config.cjs").write_text("module.exports={testMatch:'*.spec.cjs',reporter:'null',use:{baseURL:" + json.dumps(base_url) + "}};")
-                env = dict(os.environ, PW_TEST_REPORTER=str(ROOT / "examples/flowbite-xor/receipt-reporter.cjs"), XORDER_TEST_EVENT_FILE=str(events))
+                env = dict(os.environ, PW_TEST_REPORTER=str(ROOT / "examples/uxor/receipt-reporter.cjs"), XORDER_TEST_EVENT_FILE=str(events))
                 completed = subprocess.run(["node", str(package / "cli.js"), "test", "--trace=on", "--workers=1"], cwd=workspace, env=env,
                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=45)
                 self.assertEqual(completed.returncode, 0, completed.stdout)

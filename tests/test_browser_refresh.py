@@ -12,6 +12,14 @@ import refresh_browser
 
 
 class BrowserRefreshTests(unittest.TestCase):
+    def accepted_catalog(self, path):
+        catalog = json.loads(path.read_text())
+        catalog["resources"].append({"id": "image/uxor-dev/8.5-trixie", "version": "1.0.0",
+                                     "identity": "ghcr.io/xormania/uxor-dev@sha256:" + "c" * 64,
+                                     "lifecycle": "available", "verification": {"status": "passed"},
+                                     "targets": ["linux/amd64"]})
+        path.write_text(json.dumps(catalog))
+
     def test_consumer_ref_is_resolved_to_commit_and_manifest_lock_must_agree(self):
         commit = {"sha": "a" * 40}
         package = {"devDependencies": {"@playwright/test": "1.58.2"}}
@@ -38,6 +46,7 @@ class BrowserRefreshTests(unittest.TestCase):
             root = Path(directory)
             shutil.copytree(ROOT / "images", root / "images")
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
+            self.accepted_catalog(root / "catalog-v2.json")
             before = {line: fingerprint(d, root) for line, d in definitions(root).items()}
             path = "images/playwright-browser/definition.json"
             old_definition = json.loads((root / path).read_text())
@@ -56,7 +65,7 @@ class BrowserRefreshTests(unittest.TestCase):
                 self.assertRegex(json.loads(prepared)["application_image"], r"@sha256:[a-f0-9]{64}$")
                 catalog = json.loads((root / "catalog-v2.json").read_text())
                 entry = dict(next(item for item in catalog["resources"] if item["identity"] == json.loads(prepared)["application_image"]))
-                entry.update(version="99.0.0", identity="ghcr.io/xormania/flowbite-xor-dev@sha256:" + "a" * 64)
+                entry.update(version="99.0.0", identity="ghcr.io/xormania/uxor-dev@sha256:" + "a" * 64)
                 catalog["resources"].append(entry)
                 (root / "catalog-v2.json").write_text(json.dumps(catalog))
                 self.assertFalse(refresh_browser.prepare(pin, root))
@@ -77,6 +86,7 @@ class BrowserRefreshTests(unittest.TestCase):
             root = Path(directory)
             shutil.copytree(ROOT / "images", root / "images")
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
+            self.accepted_catalog(root / "catalog-v2.json")
             definition = root / "images/playwright-browser/definition.json"
             original = definition.read_bytes()
             pin = {"repository": "https://github.com/xormania/uxor.git",

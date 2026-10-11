@@ -38,7 +38,7 @@ class RunQueue:
             self.path = self.folder / f"{sequence:020d}.json"
             self.ticket = self.path.open("x+")
             fcntl.flock(self.ticket, fcntl.LOCK_EX)
-            json.dump({"workspace": str(workspace), "project": env.get("UXOR_PROJECT") or env.get("FLOWBITE_PROJECT"),
+            json.dump({"workspace": str(workspace), "project": env.get("UXOR_PROJECT"),
                        "pid": os.getpid(), "started_at": time.time()}, self.ticket)
             self.ticket.flush()
 

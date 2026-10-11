@@ -14,7 +14,7 @@ README availability tables, and the [downloadable resource index](resources/inde
 from the accepted ledger. Detailed image inventories remain linked evidence.
 
 The existing image families are `php-dev`, `php-browser`, `php-frankenphp`,
-`flowbite-xor-dev`, `rust-dev`, and `python-dev`. PHP has 8.4 and 8.5 Trixie lines;
+`uxor-dev`, `rust-dev`, and `python-dev`. PHP has 8.4 and 8.5 Trixie lines;
 the Rust and Python lines are 1.99 and 3.14. Exact available revisions, measured
 capabilities, platforms, and digests come from the catalog. The
 [uxor usage profile](uxor.md) documents worker-mode PHP, Node 22,

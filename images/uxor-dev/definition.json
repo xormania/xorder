@@ -1,0 +1,69 @@
+{
+  "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
+  "capabilities": [
+    "node",
+    "npm",
+    "playwright-client",
+    "tailwind-cli"
+  ],
+  "extensions": [],
+  "limitations": [
+    "Playwright and application packages come from project lockfiles; browsers run in the version-matched official Playwright companion.",
+    "Use examples/uxor/run.sh to reuse repository-owned worker, Caddy, PHP and mount configuration without an in-container Docker socket.",
+    "The cached Tailwind binary is seeded only when its version and platform match the consuming project configuration."
+  ],
+  "schema_version": 1,
+  "family": "uxor-dev",
+  "tools": [
+    "node",
+    "npm",
+    "tailwindcss"
+  ],
+  "execution": {
+    "workspace": "/workspace",
+    "home": "/home/dev",
+    "default_uid": 1000,
+    "default_gid": 1000,
+    "uid_env": "PUID",
+    "gid_env": "PGID",
+    "cache_paths": [
+      "/home/dev/.cache"
+    ]
+  },
+  "companions": [
+    "mcr.microsoft.com/playwright:<project-locked-version>-noble"
+  ],
+  "lines": {
+    "8.4-trixie": {
+      "runtime_line": "8.4",
+      "os": "debian-trixie",
+      "revision": "1.0.0",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "base": {
+        "parent": "php-frankenphp/8.4-trixie"
+      },
+      "changes": [
+        "Publish the canonical uxor development image and executable names as a new independently versioned family."
+      ],
+      "migration": "Select the new digest only after verified publication and catalog acceptance. Historical exact artifacts and their original public evidence are unchanged."
+    },
+    "8.5-trixie": {
+      "runtime_line": "8.5",
+      "os": "debian-trixie",
+      "revision": "1.0.0",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "base": {
+        "parent": "php-frankenphp/8.5-trixie"
+      },
+      "changes": [
+        "Publish the canonical uxor development image and executable names as a new independently versioned family."
+      ],
+      "migration": "Select the new digest only after verified publication and catalog acceptance. Historical exact artifacts and their original public evidence are unchanged."
+    }
+  },
+  "input_fingerprint_version": 2
+}

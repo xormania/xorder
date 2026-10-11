@@ -1,0 +1,84 @@
+# Overlay the consuming repository's demo/compose.yaml and compose.override.yaml.
+services:
+  php:
+    image: ${IMAGE:?Choose a verified uxor-dev digest}
+    labels:
+      dev.xorder.workspace: ${WORKSPACE:?Resolved by run.sh}
+      dev.xorder.proxy-owner: ${XORDER_PROXY_OWNER:?Resolved by run.sh}
+    cpus: ${PHP_CPUS:-2}
+    mem_limit: ${PHP_MEMORY:-2g}
+    entrypoint: [bash, /run/xorder/startup.sh, --entrypoint]
+    command: [frankenphp, run, --config, /etc/frankenphp/Caddyfile, --watch]
+    environment:
+      PUID: ${PUID:-1000}
+      XORDER_SERVICE_FINGERPRINT: ${XORDER_SERVICE_FINGERPRINT:-}
+      PGID: ${PGID:-1000}
+      PHP_INI_SCAN_DIR: ":/usr/local/etc/php/app.conf.d"
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      HTTP_PROXY: ${XORDER_HTTP_PROXY:-}
+      HTTPS_PROXY: ${XORDER_HTTPS_PROXY:-}
+      http_proxy: ${XORDER_http_proxy:-}
+      https_proxy: ${XORDER_https_proxy:-}
+      ALL_PROXY: ${XORDER_ALL_PROXY:-}
+      all_proxy: ${XORDER_all_proxy:-}
+      NO_PROXY: ${XORDER_NO_PROXY:-localhost,127.0.0.1,php}
+      no_proxy: ${XORDER_no_proxy:-localhost,127.0.0.1,php}
+      LIBRARY_CA_FILE: ${CONTAINER_CA_FILE:-}
+      COMPOSER_CAFILE: /etc/ssl/certs/ca-certificates.crt
+      COMPOSER_CACHE_DIR: /home/dev/.cache/composer
+      COMPOSER_INSTALL_PREFERENCE: ${COMPOSER_INSTALL_PREFERENCE:-dist}
+      XORDER_REUSE_ONLY: ${XORDER_REUSE_ONLY:-0}
+      IMPORTMAP_FILE: ${IMPORTMAP_FILE:-importmap.php}
+      IMPORTMAP_VENDOR_DIR: ${IMPORTMAP_VENDOR_DIR:-assets/vendor}
+      NODE_EXTRA_CA_CERTS: ${CONTAINER_CA_FILE:-}
+      DEMO_URL: https://localhost
+      PHP_BINARY: php
+      npm_config_update_notifier: "false"
+      # The browser is already started by Compose in this service's network.
+      PW_BROWSER_SERVER: /bin/false
+    volumes:
+      - dev_home:/home/dev
+      - ${UXOR_PROFILE_DIR:?Resolved by run.sh}:/run/xorder:ro
+      - demo_var:/app/demo/var
+      - ./frankenphp/conf.d/10-app.ini:/usr/local/etc/php/app.conf.d/10-app.ini:ro
+      - ${CA_CERTIFICATE:-/dev/null}:/run/library-proxy.pem:ro
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --show-error, --insecure, --noproxy, "*", --max-time, "5", "https://localhost${APP_READY_PATH:-/}"]
+      start_period: 60s
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  browser:
+    image: ${BROWSER_IMAGE:?Selected from the project Playwright version}
+    labels:
+      dev.xorder.workspace: ${WORKSPACE:?Resolved by run.sh}
+    cpus: ${BROWSER_CPUS:-2}
+    mem_limit: ${BROWSER_MEMORY:-4g}
+    network_mode: service:php
+    init: true
+    shm_size: 1gb
+    environment:
+      HTTP_PROXY: ${XORDER_HTTP_PROXY:-}
+      HTTPS_PROXY: ${XORDER_HTTPS_PROXY:-}
+      http_proxy: ${XORDER_http_proxy:-}
+      https_proxy: ${XORDER_https_proxy:-}
+      ALL_PROXY: ${XORDER_ALL_PROXY:-}
+      all_proxy: ${XORDER_all_proxy:-}
+      NO_PROXY: ${XORDER_NO_PROXY:-localhost,127.0.0.1,php}
+      no_proxy: ${XORDER_no_proxy:-localhost,127.0.0.1,php}
+      NODE_EXTRA_CA_CERTS: ${CONTAINER_CA_FILE:-}
+      npm_config_update_notifier: "false"
+    volumes:
+      - ${CA_CERTIFICATE:-/dev/null}:/run/library-proxy.pem:ro
+    command: [npx, -y, "playwright@${PLAYWRIGHT_VERSION}", run-server, --port, "3000", --host, 0.0.0.0]
+    healthcheck:
+      test: [CMD, node, -e, "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 120
+    depends_on:
+      php:
+        condition: service_healthy
+volumes:
+  dev_home:
+  demo_var:

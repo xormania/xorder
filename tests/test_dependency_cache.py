@@ -15,7 +15,7 @@ from unittest.mock import patch
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("cache_maintenance", ROOT / "examples/flowbite-xor/cache.py")
+spec = importlib.util.spec_from_file_location("cache_maintenance", ROOT / "examples/uxor/cache.py")
 cache = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cache)
 

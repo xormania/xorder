@@ -44,7 +44,7 @@
     "8.5-trixie": {
       "runtime_line": "8.5",
       "os": "debian-trixie",
-      "revision": "1.1.0",
+      "revision": "1.1.1",
       "platforms": [
         "linux/amd64"
       ],
@@ -52,9 +52,9 @@
         "parent": "php-dev/8.5-trixie"
       },
       "changes": [
-        "Disable PHPactor configuration prompts on clean read-only checkouts; add locked JavaScript tooling, configurable request timeout, complete-index reuse, structured sessions and shell access."
+        "Publish a fresh verified revision after retiring obsolete project namespace records from current discovery."
       ],
-      "migration": "Compatible additions. Existing MCP invocation remains valid; select a verified 1.1 digest for the new capabilities. Pass --write for trusted editing, --languages php_phpactor,typescript for mixed projects and --cache-dir for persistent indexes."
+      "migration": "Select the new digest only after verified publication and catalog acceptance. Historical exact artifacts and their original public evidence are unchanged."
     }
   },
   "input_fingerprint_version": 2

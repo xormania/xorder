@@ -29,6 +29,8 @@ def validate_schemas(root=ROOT):
         if path.relative_to(root / "release-records").parts[0] == "artifacts":
             continue
         jsonschema.validate(read(path), read(root / "schemas/release-record.schema.json"))
+    for path in (root / "retired-records").glob("*.json"):
+        jsonschema.validate(read(path), read(root / "schemas/image-retirement.schema.json"))
     jsonschema.validate(read(root / "catalog.json"), read(root / "schemas/catalog.schema.json"))
     from xorder.model import check as check_resources
     check_resources(root)
@@ -110,7 +112,7 @@ def validate_inventory(definition, inventory):
     if definition["family"] == "playwright-browser" and definition.get("playwright_version"):
         assert inventory["runtime_version"] == definition["playwright_version"], "Browser version does not match its authored line"
     if "node" in definition["capabilities"]:
-        assert inventory["tools"]["node"].startswith("v22."), "The flowbite-xor Node line must match CI"
+        assert inventory["tools"]["node"].startswith("v22."), "The uxor Node line must match CI"
     if "wasm32-unknown-unknown" in definition["capabilities"]:
         assert "wasm32-unknown-unknown" in inventory["rust_targets"]
 
@@ -366,7 +368,7 @@ def fingerprint(d, root=ROOT):
     tools = read(root / "images" / "tools.json")
     keys = TOOL_KEYS.get(d["family"], ()) if modern else {"php-dev": ("composer", "redis_version", "xdebug_version", "pcov_version", "symfony"),
             "php-frankenphp": ("composer", "redis_version", "xdebug_version", "pcov_version", "symfony", "apcu_version"),
-            "flowbite-xor-dev": ("node", "tailwind"),
+            "uxor-dev": ("node", "tailwind"),
             "python-dev": ("uv",)}.get(d["family"], ())
     h.update(encoded({key: tools[key] for key in keys}).encode())
     for path in sorted(paths):

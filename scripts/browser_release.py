@@ -23,6 +23,13 @@ def fixture_hash(line):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def public_parity_application(line):
+    """Publication always resolves the fixture against accepted public records."""
+    from playwright_fixture import inputs
+    fixture = ROOT / "tests/fixtures/playwright/consumers" / (line.split("/", 1)[1] + ".json")
+    return inputs(read(fixture), read(ROOT / "catalog-v2.json"))
+
+
 def stage(line, source, destination):
     from release import release_asset
     definition = definitions()[line]
@@ -76,6 +83,9 @@ def verify_candidate(candidate, destination):
         raise ValueError("Staged browser inputs differ from the verifying checkout")
     if os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"):
         raise ValueError("Consumer parity must run without GitHub publication credentials")
+    if "XORDER_PARITY_LOCAL_APPLICATION" in os.environ:
+        raise ValueError("Publication parity requires an accepted application resource; local overrides are source-validation only")
+    public_parity_application(value["line"])
     subprocess.run(["docker", "pull", value["artifact"]], check=True)
     inventory = destination.with_suffix(".inventory.json")
     started = time.monotonic()
@@ -93,6 +103,7 @@ def accepted_evidence(line, source, artifact, path):
                 "input_fingerprint": fingerprint(definition), "fixture_sha256": fixture_hash(line), "status": "passed"}
     if any(value.get(key) != item for key, item in expected.items()):
         raise ValueError("Browser parity evidence does not match the exact publication inputs")
+    public_parity_application(line)
     seconds = value["verification_seconds"]
     if not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or seconds < 0:
         raise ValueError("Invalid browser verification duration")

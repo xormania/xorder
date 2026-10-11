@@ -5,16 +5,12 @@ This optional profile targets the actual
 For Claude cloud sessions, read the [session quick start](claude-cloud.md)
 before starting a stack or importing another worktree's dependencies.
 
-The repository is now named **uxor**. Published `flowbite-xor-dev` image families,
-registry packages, exact tags and digests remain usable under their existing
-names. Requirement and acceptance fixture filenames retain those names too.
-Use `examples/uxor/run.sh` for current commands; the legacy
-`examples/flowbite-xor/run.sh` path and `FLOWBITE_PROJECT` variable remain
-accepted. `UXOR_PROJECT` is the preferred explicit project setting and takes
-precedence when both variables are set. For a given workspace, default Compose
-names, relay ownership keys and local
-state/cache identities remain unchanged, so both runner paths manage the
-same stack. Retain an existing explicit project name when continuing it.
+The canonical runner is `examples/uxor/run.sh`, with `UXOR_PROJECT` for an
+explicit stack name. Default Compose names, relay keys and local stack state use
+uxor identities. The authored `uxor-dev` family becomes available only after
+normal image publication and accepted release evidence; source definitions do
+not establish public availability. Historical releases remain in git history
+and their original public Release assets.
 
 The acceptance fixture pins commit
 [`c8878af`](https://github.com/xormania/uxor/tree/c8878af66897d8c10af694050a7a588166942117),
@@ -26,13 +22,13 @@ minimum-version checks and 8.5 for the browser CI runtime.
 | Part | Supplied by |
 | --- | --- |
 | PHP extensions, Composer, Symfony CLI, FrankenPHP/Caddy, APCu | `php-frankenphp/8.4-trixie` or `8.5-trixie` |
-| Node 22, npm and checksum-verified Tailwind v4.3.3 CLI | `flowbite-xor-dev/8.4-trixie` or `8.5-trixie`, derived from the exact FrankenPHP parent |
+| Node 22, npm and checksum-verified Tailwind v4.3.3 CLI | `uxor-dev/8.4-trixie` or `8.5-trixie`, derived from the exact FrankenPHP parent |
 | Caddy/Mercure, worker mode, PHP ini, app entrypoint and source layout | The current uxor checkout's `demo/` configuration |
 | Application and Playwright packages | `composer.lock` and `package-lock.json` using Composer install and npm ci |
 | Browser binaries and fonts matching upstream screenshot baselines | Official `mcr.microsoft.com/playwright:v<locked-version>-noble` companion |
 
 Definitions alone are not pullable releases. Select an available
-`flowbite-xor-dev` digest from the [catalog](../catalog.json) after publication,
+`uxor-dev` digest from the [catalog](../catalog.json) after publication,
 or build the root and derivative locally for validation:
 
 ```sh
@@ -42,14 +38,14 @@ python3 scripts/build.py php-frankenphp/8.5-trixie image-library-check:dev --chi
 Select the cached profile for either runtime from the verified catalog:
 
 ```sh
-python3 scripts/library.py select tests/requirements/flowbite-xor.json
-python3 scripts/library.py select tests/requirements/flowbite-xor-8.4.json
+python3 scripts/library.py select tests/requirements/uxor.json
+python3 scripts/library.py select tests/requirements/uxor-8.4.json
 ```
 
 From a clone of this library, with an existing uxor checkout:
 
 ```sh
-export IMAGE='<verified flowbite-xor-dev digest_reference>'
+export IMAGE='<verified uxor-dev digest_reference>'
 export WORKSPACE='/absolute/path/to/uxor'
 bash examples/uxor/run.sh up
 bash examples/uxor/run.sh status
@@ -90,7 +86,7 @@ engine; Compose reports final binding conflicts, including races and remote
 engine conflicts. An explicit project already attached to another checkout is
 rejected. Existing unlabeled profiles are recognized by their `/app` workspace
 bind mount. To retain the previous runner's fixed defaults, explicitly set
-`UXOR_PROJECT=flowbite-xor-library HTTP_PORT=8084 HTTPS_PORT=8444 HTTP3_PORT=8444`. `up` always asks Compose to reconcile configuration and bring stopped services
+`UXOR_PROJECT=uxor-library HTTP_PORT=8084 HTTPS_PORT=8444 HTTP3_PORT=8444`. `up` always asks Compose to reconcile configuration and bring stopped services
 back. It verifies retained Composer/npm metadata, then reuses expensive setup
 only when source inputs, effective Compose configuration, installed dependency
 state and container identities match a previous successful run. Source hashing
@@ -135,8 +131,9 @@ After Composer is ready, `up` reads the demo's resolved tailwind-bundle config
 and copies the binary to `demo/var/tailwind/v4.3.3/tailwindcss-linux-x64`.
 Fresh worktrees and cache volumes reuse those image bytes. A different pinned
 version, explicit binary path or platform keeps the bundle's normal behavior.
-The project configuration remains authoritative. Use the new 8.4 image or the
-8.5 v1.1.0 image with this runner; the older 8.5 v1.0.0 image has no cache helper.
+The project configuration remains authoritative. Both authored uxor 1.0.0
+runtime lines include this cache helper; select their verified digest after
+publication and catalog acceptance.
 
 For a linked Git worktree, export `WORKTREE_GIT=1` before all runner commands:
 
@@ -321,7 +318,7 @@ plus the shared PHP/native/TLS/user contract. It then starts the pinned real
 consuming repository as a linked Git worktree, checks Git access, builds Tailwind
 from the seeded binary, runs PHPUnit with a nonempty Clover coverage report,
 and runs calendar, dropzone, both data-table and both editor lab specs. It never updates screenshot baselines. A source update
-to `tests/fixtures/flowbite-xor/consumer.json` deliberately updates that consumer
+to `tests/fixtures/uxor/consumer.json` deliberately updates that consumer
 baseline; ordinary users run their current checkout.
 
 References:

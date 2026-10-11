@@ -83,7 +83,7 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(affected(["tests/fixtures/python/uv.lock"], defs), ["python-dev/3.14-trixie"])
         self.assertEqual(affected(["tests/fixtures/rust/Cargo.lock"], defs), ["rust-dev/1.99-trixie"])
         self.assertEqual(len(affected(["images/tools.json"], defs)), 7)
-        self.assertEqual(affected(["examples/flowbite-xor/runner.py"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
+        self.assertEqual(affected(["examples/uxor/runner.py"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/uxor/run.sh"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/shared/network.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/shared/proxy_relay.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
@@ -184,7 +184,7 @@ class DiscoveryTests(unittest.TestCase):
             tools["tailwind"]["sha256"] = "f" * 64
             path.write_text(json.dumps(tools))
             changed = [line for line, d in defs.items() if fingerprint(d, root) != before[line]]
-            self.assertEqual(changed, ["flowbite-xor-dev/8.4-trixie", "flowbite-xor-dev/8.5-trixie"])
+            self.assertEqual(changed, ["uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
 
     def test_release_matrix_preserves_incomplete_peers_and_changed_input_guards(self):
         defs = definitions()
@@ -210,26 +210,26 @@ class DiscoveryTests(unittest.TestCase):
     def test_frankenphp_and_project_profile_selection_and_scope(self):
         defs = definitions()
         req = {"runtime_line": "8.5", "capabilities": ["frankenphp", "worker-server"], "extensions": ["intl", "apcu"]}
-        cat = catalog([record("php-frankenphp/8.5-trixie"), record("flowbite-xor-dev/8.5-trixie", digest="e")])
+        cat = catalog([record("php-frankenphp/8.5-trixie"), record("uxor-dev/8.5-trixie", digest="e")])
         self.assertEqual(select(cat, req)["image"]["line_id"], "php-frankenphp/8.5-trixie")
         req["capabilities"].append("node")
-        self.assertEqual(select(cat, req)["image"]["line_id"], "flowbite-xor-dev/8.5-trixie")
+        self.assertEqual(select(cat, req)["image"]["line_id"], "uxor-dev/8.5-trixie")
         self.assertEqual(select(catalog([]), req)["status"], "no_matching_image")
-        self.assertEqual(affected(["examples/flowbite-xor/run.sh"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
-        self.assertEqual(affected(["images/flowbite-xor-dev/Dockerfile"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
+        self.assertEqual(affected(["examples/uxor/run.sh"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
+        self.assertEqual(affected(["images/uxor-dev/Dockerfile"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         from library import children
-        self.assertEqual(children("php-frankenphp/8.5-trixie", defs), ["flowbite-xor-dev/8.5-trixie"])
+        self.assertEqual(children("php-frankenphp/8.5-trixie", defs), ["uxor-dev/8.5-trixie"])
 
     def test_project_requirements_select_cached_profiles_and_reject_the_old_image(self):
-        older = record("flowbite-xor-dev/8.5-trixie", "1.0.0")
+        older = record("uxor-dev/8.5-trixie", "1.0.0")
         older["definition"]["capabilities"].remove("tailwind-cli")
         older["definition"]["tools"].remove("tailwindcss")
         del older["platforms"][0]["inventory"]["tools"]["tailwindcss"]
-        for runtime, fixture, revision in (("8.5", "flowbite-xor.json", "1.1.0"),
-                                           ("8.4", "flowbite-xor-8.4.json", "1.0.0")):
+        for runtime, fixture, revision in (("8.5", "uxor.json", "1.1.0"),
+                                           ("8.4", "uxor-8.4.json", "1.0.0")):
             with self.subTest(runtime=runtime):
                 req = json.loads((ROOT / "tests/requirements" / fixture).read_text())
-                current = record("flowbite-xor-dev/" + runtime + "-trixie", revision, "e")
+                current = record("uxor-dev/" + runtime + "-trixie", revision, "e")
                 selected = select(catalog([older, current]), req)["image"]
                 self.assertEqual(selected["line_id"], current["line_id"])
                 self.assertEqual(selected["version"], revision)
@@ -250,8 +250,8 @@ class DiscoveryTests(unittest.TestCase):
             tools["node"]["digest"] = "sha256:" + "f" * 64
             path.write_text(json.dumps(tools))
             changed = [line for line, d in defs.items() if fingerprint(d, root) != before[line]]
-            self.assertEqual(changed, ["flowbite-xor-dev/8.4-trixie", "flowbite-xor-dev/8.5-trixie", "php-serena/8.5-trixie"])
-        r = record("flowbite-xor-dev/8.5-trixie")
+            self.assertEqual(changed, ["php-serena/8.5-trixie", "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
+        r = record("uxor-dev/8.5-trixie")
         r["platforms"][0]["inventory"]["tools"]["node"] = "v24.1.0"
         with self.assertRaisesRegex(AssertionError, "Node line must match CI"):
             validate_record(r)
@@ -260,12 +260,12 @@ class DiscoveryTests(unittest.TestCase):
 class PromotionTests(unittest.TestCase):
     def test_project_publication_uses_the_exact_verified_parent(self):
         parent = record("php-frankenphp/8.5-trixie", digest="f")
-        child = record("flowbite-xor-dev/8.5-trixie", digest="e")
+        child = record("uxor-dev/8.5-trixie", digest="e")
         with tempfile.TemporaryDirectory() as tmp, patch.object(release, "ROOT", Path(tmp)), \
                 patch.object(release, "publish", side_effect=[parent, child]) as publish:
             release.publish_tree("php-frankenphp/8.5-trixie", "b" * 40)
             self.assertEqual(publish.call_args_list[1].args[3], "ghcr.io/xormania/php-frankenphp@sha256:" + "f" * 64)
-            self.assertEqual(json.loads((Path(tmp) / "out/flowbite-xor-dev-8.5-trixie/record.json").read_text()), child)
+            self.assertEqual(json.loads((Path(tmp) / "out/uxor-dev-8.5-trixie/record.json").read_text()), child)
 
     def test_exact_tag_is_idempotent_but_never_reassigned(self):
         exact_guard(None, "a"); exact_guard("a", "a")

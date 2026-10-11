@@ -1,5 +1,6 @@
 """Public evidence gates and immutable ledger edits, without image builds."""
 import copy
+import hashlib
 import json
 import os
 import subprocess
@@ -169,6 +170,61 @@ class LedgerChangeTests(unittest.TestCase):
         self.commit()
         with self.assertRaisesRegex(RuntimeError, "cannot be deleted or renamed.*" + original_path):
             list(checks.changed_image_records(self.base, self.root))
+
+    def retire(self, record=None, *, sha256=None, source_commit=None, history=None):
+        record = record or self.original
+        relative = f"release-records/{record['line_id']}/{record['version']}.json"
+        payload = (self.root / relative).read_bytes()
+        (self.root / relative).unlink()
+        declaration = {"schema_version": 1, "history_commit": history or self.base,
+                       "reason": "Remove an obsolete recommendation; retain original public facts.",
+                       "records": [{"sha256": sha256 or hashlib.sha256(payload).hexdigest(),
+                                    "source_commit": source_commit or record["source_commit"]}]}
+        self.write(declaration, "retired-records/namespace.json")
+
+    def test_explicit_retirement_matches_exact_base_bytes_without_rewriting_facts(self):
+        self.retire()
+        self.commit()
+        self.assertEqual(list(checks.changed_image_records(self.base, self.root)), [])
+        self.assertEqual(list(checks.changed_image_records(None, self.root)), [])
+
+    def test_retirement_rejects_wrong_hash_or_original_source(self):
+        for change, message in (({"sha256": "a" * 64}, "exact historical"),
+                                ({"source_commit": "f" * 40}, "source differs")):
+            with self.subTest(change=change):
+                self.git("reset", "--hard", self.base)
+                self.git("clean", "-fd")
+                self.retire(**change)
+                self.commit()
+                with self.assertRaisesRegex(RuntimeError, message):
+                    list(checks.changed_image_records(self.base, self.root))
+
+    def test_retirement_declaration_cannot_be_edited_or_deleted_later(self):
+        self.retire()
+        self.commit()
+        accepted = self.git("rev-parse", "HEAD").strip()
+        path = self.root / "retired-records/namespace.json"
+        previous = path.read_text()
+        path.write_text(previous.replace("obsolete", "different"))
+        self.commit()
+        with self.assertRaisesRegex(RuntimeError, "immutable"):
+            list(checks.changed_image_records(accepted, self.root))
+        self.git("reset", "--hard", accepted)
+        path.unlink()
+        self.commit()
+        with self.assertRaisesRegex(RuntimeError, "cannot be deleted"):
+            list(checks.changed_image_records(accepted, self.root))
+
+    def test_declared_retirement_does_not_allow_unrelated_deletions(self):
+        second = record("php-dev/8.5-trixie")
+        self.write(second)
+        self.commit()
+        base = self.git("rev-parse", "HEAD").strip()
+        self.retire(history=base)
+        (self.root / f"release-records/{second['line_id']}/{second['version']}.json").unlink()
+        self.commit()
+        with self.assertRaisesRegex(RuntimeError, "cannot be deleted or renamed"):
+            list(checks.changed_image_records(base, self.root))
 
     def test_existing_image_record_cannot_be_renamed(self):
         original_path = f"release-records/{self.original['line_id']}/{self.original['version']}.json"

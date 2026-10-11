@@ -140,8 +140,8 @@
         "FrankenPHP and project-locked Playwright"
       ],
       "resources": [
-        "image/flowbite-xor-dev/8.4-trixie",
-        "image/flowbite-xor-dev/8.5-trixie"
+        "image/uxor-dev/8.4-trixie",
+        "image/uxor-dev/8.5-trixie"
       ],
       "profiles": [
         "profile/uxor"

@@ -36,8 +36,6 @@
         "profile/php-project"
       ],
       "resources": [
-        "image/php-frankenphp/8.4-trixie",
-        "image/php-frankenphp/8.5-trixie",
         "environment/php-symfony"
       ],
       "title": "PHP/Symfony HTTP and native environments",
@@ -85,9 +83,7 @@
       "id": "serena",
       "layer": "task",
       "profiles": [],
-      "resources": [
-        "image/php-serena/8.5-trixie"
-      ],
+      "resources": [],
       "title": "PHP/Symfony code navigation with Serena",
       "usage": "docs/serena.md"
     },
@@ -119,10 +115,7 @@
       "profiles": [
         "profile/uxor"
       ],
-      "resources": [
-        "image/flowbite-xor-dev/8.4-trixie",
-        "image/flowbite-xor-dev/8.5-trixie"
-      ],
+      "resources": [],
       "title": "uxor development and tests",
       "usage": "docs/uxor.md"
     },
@@ -221,8 +214,11 @@
       "applies_to": [
         "Symfony HTTP and worker applications"
       ],
-      "catalog_status": "required_releases_available",
+      "catalog_status": "missing_required_releases",
       "id": "profile/php-http",
+      "missing_roles": [
+        "runtime"
+      ],
       "purpose": "PHP 8.5/Symfony HTTP and worker development with project-owned Caddy configuration.",
       "readiness": "docs/compatibility.md",
       "revision": "1.0.0",
@@ -231,7 +227,7 @@
           "alternatives": [
             {
               "id": "image/php-frankenphp/8.5-trixie",
-              "version": "1.1.1"
+              "version": "1.1.2"
             }
           ],
           "name": "runtime"
@@ -390,8 +386,11 @@
         "xormania/uxor PHP 8.5",
         "browser version from package-lock.json"
       ],
-      "catalog_status": "required_releases_available",
+      "catalog_status": "missing_required_releases",
       "id": "profile/uxor",
+      "missing_roles": [
+        "runtime"
+      ],
       "purpose": "uxor PHP 8.5 development using its project-locked official Playwright companion through the uxor runner.",
       "readiness": "docs/claude-cloud.md",
       "revision": "1.0.0",
@@ -399,8 +398,8 @@
         {
           "alternatives": [
             {
-              "id": "image/flowbite-xor-dev/8.5-trixie",
-              "version": "1.2.1"
+              "id": "image/uxor-dev/8.5-trixie",
+              "version": "1.0.0"
             }
           ],
           "name": "runtime"
@@ -497,42 +496,6 @@
       "version": "1.0.0"
     },
     {
-      "documentation": "docs/images/flowbite-xor-dev-8.4-trixie.md",
-      "id": "image/flowbite-xor-dev/8.4-trixie",
-      "identity": "ghcr.io/xormania/flowbite-xor-dev@sha256:19a3edd4ddaefcc024106d593121b3d86d6910cae9ea7ae8c555a8d35f5cfa39",
-      "kind": "image",
-      "lifecycle": "available",
-      "prerequisites": {
-        "commands": [
-          "docker"
-        ]
-      },
-      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for flowbite-xor development and Playwright orchestration.",
-      "release_record": "release-records/flowbite-xor-dev/8.4-trixie/1.1.1.json",
-      "targets": [
-        "linux/amd64"
-      ],
-      "version": "1.1.1"
-    },
-    {
-      "documentation": "docs/images/flowbite-xor-dev-8.5-trixie.md",
-      "id": "image/flowbite-xor-dev/8.5-trixie",
-      "identity": "ghcr.io/xormania/flowbite-xor-dev@sha256:7c795be0d818b4458d7c8730ddebab68878684d0ec52cd3ef5b41f80e29efcd2",
-      "kind": "image",
-      "lifecycle": "available",
-      "prerequisites": {
-        "commands": [
-          "docker"
-        ]
-      },
-      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for flowbite-xor development and Playwright orchestration.",
-      "release_record": "release-records/flowbite-xor-dev/8.5-trixie/1.2.1.json",
-      "targets": [
-        "linux/amd64"
-      ],
-      "version": "1.2.1"
-    },
-    {
       "documentation": "docs/images/php-browser-8.4-trixie.md",
       "id": "image/php-browser/8.4-trixie",
       "identity": "ghcr.io/xormania/php-browser@sha256:730e67ff5d712550b7cce91387e9891e13092af05f70ae719f55f4c12f0a7f05",
@@ -603,60 +566,6 @@
         "linux/amd64"
       ],
       "version": "1.2.1"
-    },
-    {
-      "documentation": "docs/images/php-frankenphp-8.4-trixie.md",
-      "id": "image/php-frankenphp/8.4-trixie",
-      "identity": "ghcr.io/xormania/php-frankenphp@sha256:111d101fb9f59aa1284533505070ebf9534cb7c22c909603074a2fa0046339e5",
-      "kind": "image",
-      "lifecycle": "available",
-      "prerequisites": {
-        "commands": [
-          "docker"
-        ]
-      },
-      "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
-      "release_record": "release-records/php-frankenphp/8.4-trixie/1.1.1.json",
-      "targets": [
-        "linux/amd64"
-      ],
-      "version": "1.1.1"
-    },
-    {
-      "documentation": "docs/images/php-frankenphp-8.5-trixie.md",
-      "id": "image/php-frankenphp/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-frankenphp@sha256:905faba01fd159953b9fd0e3878f0b2e4cb2661584515c087c95bd5474408afc",
-      "kind": "image",
-      "lifecycle": "available",
-      "prerequisites": {
-        "commands": [
-          "docker"
-        ]
-      },
-      "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
-      "release_record": "release-records/php-frankenphp/8.5-trixie/1.1.1.json",
-      "targets": [
-        "linux/amd64"
-      ],
-      "version": "1.1.1"
-    },
-    {
-      "documentation": "docs/images/php-serena-8.5-trixie.md",
-      "id": "image/php-serena/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-serena@sha256:f2d9b40e72a4bc029f56fa152b4e25363b38898be9dc1b19262c2a29705b04a6",
-      "kind": "image",
-      "lifecycle": "available",
-      "prerequisites": {
-        "commands": [
-          "docker"
-        ]
-      },
-      "purpose": "Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.",
-      "release_record": "release-records/php-serena/8.5-trixie/1.1.0.json",
-      "targets": [
-        "linux/amd64"
-      ],
-      "version": "1.1.0"
     },
     {
       "documentation": "docs/images/php-toolkit-8.4-trixie.md",

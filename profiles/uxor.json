@@ -8,8 +8,8 @@
       "name": "runtime",
       "alternatives": [
         {
-          "id": "image/flowbite-xor-dev/8.5-trixie",
-          "version": "1.2.1"
+          "id": "image/uxor-dev/8.5-trixie",
+          "version": "1.0.0"
         }
       ]
     }

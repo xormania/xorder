@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import subprocess
@@ -226,7 +227,7 @@ def heavy_run(workspace, env):
                       f"; FIFO queue position {position}/{waiting}; waited {queue.elapsed():.1f}s", flush=True)
                 queued = True
             time.sleep(min(1, max(0, deadline - time.monotonic())))
-        owner = {"workspace": str(workspace), "project": env.get("UXOR_PROJECT") or env.get("FLOWBITE_PROJECT"),
+        owner = {"workspace": str(workspace), "project": env.get("UXOR_PROJECT"),
                  "pid": os.getpid(), "started_at": time.time(), "mode": "measure" if measure else "test"}
         for lock in locks:
             _lease_metadata(lock, owner)
@@ -414,54 +415,123 @@ def print_reclaimable(env):
     print(json.dumps(reclaimable_stacks(env), indent=2))
 
 
-def referenced_images(containers, images, keep=()):
-    """Protect direct images and local ancestors, including BuildKit's layer-only ancestry."""
-    aliases = {alias: image["Id"] for image in images
-               for alias in [image["Id"], *(image.get("RepoTags") or []), *(image.get("RepoDigests") or [])]}
+def _image_layers(image):
+    root = image.get("RootFS")
+    if not isinstance(root, dict) or root.get("Type") not in (None, "", "layers"):
+        return None
+    # Docker omits its empty Layers field for a typed scratch root filesystem.
+    layers = root.get("Layers", [] if root.get("Type") == "layers" else None)
+    if not isinstance(layers, list) or any(not isinstance(layer, str) or not re.fullmatch(
+            r"sha(?:256:[0-9a-f]{64}|384:[0-9a-f]{96}|512:[0-9a-f]{128})", layer) for layer in layers):
+        return None
+    return tuple(layers)
+
+
+def image_reference_plan(containers, images, keep=()):
+    """Protect every container's image plus provable or uncertain local ancestors."""
+    aliases = {image["Id"]: image["Id"] for image in images}
+    for image in images:
+        for key in ("RepoTags", "RepoDigests"):
+            values = image.get(key)
+            if isinstance(values, list):
+                aliases.update({value: image["Id"] for value in values if isinstance(value, str) and value})
     used = {aliases.get(value, value) for value in keep}
+    unresolved = set()
     for container in containers:
-        for value in (container.get("Image"), container.get("Config", {}).get("Image")):
-            if value:
-                used.add(aliases.get(value, value))
+        actual = container.get("Image")
+        config = container.get("Config")
+        configured = config.get("Image") if isinstance(config, dict) else None
+        if actual is not None and not isinstance(actual, str):
+            unresolved.add("container:" + container.get("Id", "unknown"))
+            actual = None
+        if not isinstance(configured, str):
+            configured = None
+        # The original immutable image ID takes precedence over a tag which may
+        # now point elsewhere. A missing old tag is harmless when that ID exists.
+        if actual and actual not in aliases:
+            unresolved.add(str(actual))
+        if not actual:
+            unresolved.add("container:" + container.get("Id", "unknown"))
+        for value in (actual, configured):
+            if value in aliases:
+                used.add(aliases[value])
     by_id = {image["Id"]: image for image in images}
+    layers_by_id = {image["Id"]: _image_layers(image) for image in images}
+    unresolved.update(used - by_id.keys())
+    unverified = {}
     pending = list(used)
     while pending:
         image = by_id.get(pending.pop())
         if not image:
             continue
-        layers = image.get("RootFS", {}).get("Layers", [])
-        parents = {image.get("Parent")}
+        layers = layers_by_id[image["Id"]]
+        if layers is None:
+            unresolved.add(image["Id"] + ":missing-layer-metadata")
+        parents = {aliases.get(image.get("Parent"), image.get("Parent"))}
         # Docker's Parent is often empty for OCI/BuildKit images. RootFS diff-ID
-        # prefixes also establish ancestors; equal layers conservatively protect
-        # configuration-only derivatives and aliases of the same filesystem.
+        # prefixes prove a shared base filesystem, not configuration ancestry.
+        # Equal-layer images and scratch images are protected conservatively.
         parents.update(other["Id"] for other in images
-                       if (prior := other.get("RootFS", {}).get("Layers", []))
+                       if layers is not None and (prior := layers_by_id[other["Id"]]) is not None
                        and len(prior) <= len(layers) and layers[:len(prior)] == prior)
         for parent in parents - used - {None, ""}:
             used.add(parent)
             pending.append(parent)
-    return used
+    if unresolved:
+        # Unknown referenced roots cannot prove any local image is unrelated.
+        unverified = {image["Id"]: "Referenced image ancestry is unavailable" for image in images}
+        used.update(by_id)
+    elif used:
+        for image_id, layers in layers_by_id.items():
+            if layers is None:
+                unverified[image_id] = "Image layer metadata is unavailable for ancestry comparison"
+                used.add(image_id)
+    return {"protected": used, "unverified": unverified, "unresolved": sorted(unresolved)}
+
+
+def referenced_images(containers, images, keep=()):
+    """Compatibility set view of the shared image-reference analysis."""
+    return image_reference_plan(containers, images, keep)["protected"]
 
 
 def gc(env, apply=False, runner_copies=(), keep=()):
     """Remove only stopped xorder-labelled containers and unused xorder image IDs."""
     def docker(*args):
         return docker_observation(args, env)
-    ids = docker("ps", "-aq") .split()
-    containers = json.loads(docker("inspect", *ids)) if ids else []
-    stopped = [item for item in containers if item.get("Config", {}).get("Labels", {}).get("dev.xorder.workspace")
-               and not item.get("State", {}).get("Running")]
-    image_ids = docker("image", "ls", "-aq", "--no-trunc").split()
-    images = json.loads(docker("image", "inspect", *dict.fromkeys(image_ids))) if image_ids else []
+    def records(payload, expected, kind):
+        items = json.loads(payload)
+        if (not isinstance(items, list) or any(not isinstance(item, dict) or not isinstance(item.get("Id"), str) for item in items)
+                or len(items) != len(expected) or {item["Id"] for item in items} != set(expected)):
+            raise ValueError("Incomplete Docker " + kind + " observation; cleanup stopped")
+        return items
+    def snapshot():
+        ids = list(dict.fromkeys(docker("ps", "-aq", "--no-trunc").split()))
+        containers = records(docker("inspect", *ids), ids, "container") if ids else []
+        image_ids = list(dict.fromkeys(docker("image", "ls", "-aq", "--no-trunc").split()))
+        images = records(docker("image", "inspect", *image_ids), image_ids, "image") if image_ids else []
+        return containers, images
+    def labels(item):
+        config = item.get("Config")
+        value = config.get("Labels") if isinstance(config, dict) else None
+        return value if isinstance(value, dict) else {}
+    containers, images = snapshot()
+    stopped = [item for item in containers if labels(item).get("dev.xorder.workspace")
+               and isinstance(item.get("State"), dict) and item["State"].get("Running") is False]
     # Resolve exact local identities before planning. An unknown keep reference
     # stops cleanup instead of silently ignoring a misspelling or a missing pull.
-    kept = [image["Id"] for image in json.loads(docker("image", "inspect", *keep))] if keep else []
-    used = referenced_images(containers, images, kept)
+    kept_records = json.loads(docker("image", "inspect", *keep)) if keep else []
+    if not isinstance(kept_records, list) or len(kept_records) != len(keep) or any(not isinstance(item, dict) or not isinstance(item.get("Id"), str) for item in kept_records):
+        raise ValueError("Incomplete Docker keep-image observation; cleanup stopped")
+    kept = list(dict.fromkeys(image["Id"] for image in kept_records))
+    references = image_reference_plan(containers, images, kept)
+    used = references["protected"]
     unused = [item for item in images if item["Id"] not in used and
-              item.get("Config", {}).get("Labels", {}).get("org.opencontainers.image.source") in {
+              labels(item).get("org.opencontainers.image.source") in {
                   "https://github.com/xormania/xorder", "https://github.com/xormania/docker-image-library"}]
     result = {"dry_run": not apply, "stopped_containers": [item["Id"] for item in stopped],
               "unused_images": [item["Id"] for item in unused], "kept_images": kept,
+              "protected_images": sorted(used & {image["Id"] for image in images}),
+              "unverified_images": references["unverified"], "unresolved_image_references": references["unresolved"],
               "old_runner_state": [], "old_runner_copies": []}
     for value in runner_copies:
         path = Path(value).resolve(strict=True)
@@ -470,7 +540,7 @@ def gc(env, apply=False, runner_copies=(), keep=()):
         if (not path.is_dir() or (path / ".git").exists() or current.is_relative_to(path)
                 or workspace.is_relative_to(path) or path.is_relative_to(workspace)
                 or not (path / "catalog-v2.json").is_file()
-                or not (path / "examples/flowbite-xor/runner.py").is_file()):
+                or not (path / "examples/uxor/runner.py").is_file()):
             raise ValueError("Runner-copy cleanup needs an explicitly selected unpacked xorder copy outside the checkout and current runner")
         if any(Path(mount.get("Source", "/")).is_relative_to(path)
                for container in containers for mount in container.get("Mounts", []) if mount.get("Type") == "bind"):
@@ -478,7 +548,7 @@ def gc(env, apply=False, runner_copies=(), keep=()):
         result["old_runner_copies"].append(str(path))
     # Receipts and generated git pointers are reconstructable. Never delete repositories.
     root = state_root(env)
-    for folder in (root / "worktrees", root / "flowbite", root / "stacks"):
+    for folder in (root / "worktrees", root / "uxor", root / "stacks"):
         if folder.exists():
             for item in folder.glob("*/workspace.json"):
                 try:
@@ -491,14 +561,12 @@ def gc(env, apply=False, runner_copies=(), keep=()):
     if apply:
         for item in stopped:
             # Reinspect: never remove a container which became running since planning.
-            if json.loads(docker("inspect", item["Id"]))[0]["State"].get("Running"):
+            current = records(docker("inspect", item["Id"]), [item["Id"]], "container")[0]
+            if not isinstance(current.get("State"), dict) or current["State"].get("Running") is not False:
                 continue
             subprocess.run(["docker", "rm", item["Id"]], env=env, check=True)
         for image in unused:
-            current_ids = docker("ps", "-aq").split()
-            current_containers = json.loads(docker("inspect", *current_ids)) if current_ids else []
-            current_image_ids = docker("image", "ls", "-aq", "--no-trunc").split()
-            current_images = json.loads(docker("image", "inspect", *dict.fromkeys(current_image_ids))) if current_image_ids else []
+            current_containers, current_images = snapshot()
             if image["Id"] in referenced_images(current_containers, current_images, kept):
                 print(f"Skipped image now referenced: {image['Id']}")
                 continue
@@ -508,8 +576,7 @@ def gc(env, apply=False, runner_copies=(), keep=()):
             shutil.rmtree(path)
         for path in result["old_runner_copies"]:
             # Recheck mounts immediately before removing the selected copy.
-            current_ids = docker("ps", "-aq").split()
-            current_containers = json.loads(docker("inspect", *current_ids)) if current_ids else []
+            current_containers, _ = snapshot()
             if any(Path(mount.get("Source", "/")).is_relative_to(Path(path))
                    for container in current_containers for mount in container.get("Mounts", []) if mount.get("Type") == "bind"):
                 raise ValueError("Runner copy acquired a stack reference; cleanup stopped")
