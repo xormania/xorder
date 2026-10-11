@@ -3,16 +3,18 @@
 xorder distributes prepared software, development environments, configuration,
 and agent context for computers and containers. **Give an agent
 https://github.com/xormania/xorder together with its project task.** This README,
-the catalog, and the linked usage pages provide discovery without an installed
-CLI, skill, plugin, or discovery service.
+the capability guide, and the linked usage pages provide discovery without an
+installed CLI, skill, plugin, or discovery service.
 
 Start here:
 
 1. Inspect the project's runtime constraints, lockfiles, services, and test needs.
 2. Inspect the execution environment and its prerequisites. Images need a working
    Docker engine and registry access; a Docker client alone is insufficient.
-3. Read the compact [catalog](catalog-v2.json) for available resources matching
-   those requirements; image inventories remain in the [image view](catalog.json).
+3. Read the generated [capability guide](docs/capabilities.md), organized from
+   general toolchains to framework, task and project environments. The compact
+   [current index](discovery.json) links exact releases; [history](catalog-v2.json)
+   and detailed [image inventories](catalog.json) remain available when needed.
 4. Follow the entry's usage link, pin its exact `identity`, and run its readiness
    recipe before installing project dependencies from their own lockfiles.
 5. Report any missing capability or prerequisite precisely. Keep an established
@@ -100,8 +102,9 @@ After cloning, Python 3 and `requirements-ci.txt` provide the same catalog throu
 read-only commands:
 
 ```sh
-python3 scripts/xorder_cli.py list
-python3 scripts/xorder_cli.py show image/php-dev/8.5-trixie
+python3 scripts/xorder_cli.py list --latest --summary
+python3 scripts/xorder_cli.py show image/php-dev/8.5-trixie --version 1.2.1
+python3 scripts/xorder_cli.py doctor --workspace /path/to/project --resource image/php-dev/8.5-trixie
 python3 scripts/xorder_cli.py resolve profile.json --target target.json
 ```
 
@@ -113,6 +116,9 @@ and direct usage pages remains sufficient.
 
 ## Documentation
 
+- [Capability guide: general bases to specific tasks](docs/capabilities.md)
+- [Agent enablement: selection, verification and recovery](docs/enablement.md)
+- [Real-agent evaluations and measured setup/recovery outcomes](docs/agent-evaluations.md)
 - [Architecture, resource boundaries, and discovery](docs/architecture.md)
 - [Verified downloadable resources and prerequisites](docs/resources/index.md)
 - [Applying locks, ownership, recovery, and rollback](docs/application.md)

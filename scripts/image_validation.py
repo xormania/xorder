@@ -25,6 +25,7 @@ METADATA_SCHEMAS = {
     "schemas/artifact-release-record.schema.json", "schemas/catalog-v2.schema.json",
     "schemas/profile.schema.json", "schemas/resolution-lock.schema.json",
     "schemas/installation-receipt.schema.json",
+    "schemas/discovery-organization.schema.json",
 }
 
 

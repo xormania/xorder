@@ -16,6 +16,27 @@ resolver chooses at most one alternative for each role. A profile can exist
 before all its exact components have been published; it is usable only when
 every required role resolves to an available verified release.
 
+## General bases to specific uses
+
+The generated [capability guide](capabilities.md) groups resources by applicability
+and links the current release beside each reusable pinned profile. These groups
+are navigation, not inheritance or automatic selection. The added profiles are:
+
+| Profile | Intended use |
+| --- | --- |
+| [`php-base`](../profiles/php-base.json) | General PHP 8.5 CLI development |
+| [`python-base`](../profiles/python-base.json) | General Python 3.14 development |
+| [`rust-base`](../profiles/rust-base.json) | General Rust 1.99 development |
+| [`php-http`](../profiles/php-http.json) | PHP 8.5/Symfony HTTP and workers |
+| [`uxor`](../profiles/uxor.json) | Existing uxor checkout with the project runner |
+
+These new profiles pin currently verified image revisions explicitly. Existing
+profiles keep their intentional older exact revisions. The uxor profile selects
+its application image only; its runner independently verifies the official browser
+version against the project lock. It does not assert a catalog browser matches
+every Playwright release. A profile lock selects images; the usage runner manages
+them, because the file application helper does not install an OCI engine or image.
+
 ## Resolve before applying
 
 Start with the [README](../README.md), inspect the project's requirements, and

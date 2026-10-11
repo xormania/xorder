@@ -1,15 +1,20 @@
 # Claude cloud sessions for uxor
 
 Start each session from the current [xorder README](../README.md), select an
-accepted image digest from the [catalog](../catalog.json), and read the
-[uxor profile](uxor.md). The image provides the toolchain;
+accepted image digest from the compact [current index](../discovery.json), and
+read the [uxor profile](uxor.md). The image provides the toolchain;
 the checkout owns its application packages, Caddy configuration and tests.
 The runner is mounted from your xorder clone, so runner fixes require updating
 that clone, not rebuilding or replacing an unchanged image.
 
 ## Before starting a stack
 
-1. Run `docker info`. A Docker CLI does not establish that an engine is usable.
+1. From the xorder checkout, run the bounded `doctor` command described in
+   [discovery](architecture.md#read-only-profile-resolution) with your workspace
+   and selected resource, for example `--resource image/flowbite-xor-dev/8.5-trixie`.
+   Its fixed Docker probes have deadlines and inspect actual engine availability.
+   Follow up with the profile's status command. A Docker CLI does not establish
+   that an engine is usable.
 2. Check free space with `df -h` on the checkout and Docker data filesystem.
    Read the selected image's cold-pull estimate; keep room for its browser,
    dependencies, caches and test output. Host-wide percentages can hide a
