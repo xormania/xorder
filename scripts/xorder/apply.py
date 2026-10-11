@@ -145,8 +145,11 @@ def prerequisites(lock):
     machine = {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine().lower(), platform.machine().lower())
     actual = platform.system().lower() + "/" + machine
     failures = []
-    if lock["target"].get("platform") != actual:
-        failures.append({"code": "target_changed", "expected": lock["target"].get("platform"), "actual": actual})
+    expected = lock["target"].get("platform")
+    if expected and expected != actual:
+        failures.append({"code": "target_changed", "expected": expected, "actual": actual})
+    elif not expected and any("any" not in item["targets"] for item in lock["resources"]):
+        failures.append({"code": "target_fact_missing", "fact": "platform"})
     for item in lock["resources"]:
         missing = [command for command in item["prerequisites"]["commands"] if shutil.which(command) is None]
         if missing:
