@@ -121,6 +121,7 @@ class ImageSelectionTests(unittest.TestCase):
 
     def test_metadata_runs_without_images_and_shared_runtime_checks_all(self):
         self.assertEqual(self.selected("README.md", "catalog.json", "scripts/release.py",
+                                       "scripts/claude_prompt_clock.py",
                                        "tests/test_library.py", "schemas/catalog.schema.json",
                                        "schemas/definition.schema.json"), [])
         for path in ("scripts/build.py", "scripts/image_validation.py", "scripts/inventory.py",
