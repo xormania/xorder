@@ -6,10 +6,12 @@ The consuming repository owns its Dockerfile, build context and build options.
 The action supplies cache settings; it does not log in, build or publish an image.
 It needs Bash and Python 3 on the runner.
 
-For `xormania/uxor`, the package is `ghcr.io/xormania/uxor-cache`. Imports include
-the current branch, a PR's base branch where applicable, `dev`, `main`, and the
-repository's actual default branch, without duplicates. A fork PR omits its head
-branch. Ordinary packages use the lowercased repository name; unusual names that
+For `xormania/uxor`, the package is `ghcr.io/xormania/uxor-cache`. Unprotected
+branch builds and local imports reuse the current branch, a PR's base branch
+where applicable, `dev`, `main`, and the actual default branch, without duplicates.
+Protected CI builds import their protected current ref only by default. Additional
+imports require explicit equal-protection assignments described below. A fork PR
+omits its head branch. Ordinary packages use the lowercased repository name; unusual names that
 GHCR cannot represent directly get a normalized name with a hash.
 
 Tags `dev`, `main` and `master` stay readable. Every other branch gets a sanitized
@@ -60,6 +62,36 @@ The `bake-set` output clears inherited cache exports and imports before applying
 the plan; use the whole output so read-only runs do not retain a consumer's
 existing `cache-to` setting.
 
+BuildKit caches are executable build inputs: cached intermediate layers can
+replace steps that would otherwise run. A protected build therefore cannot trust
+cache tags written by branches with weaker review or push protection. The action
+uses GitHub's `GITHUB_REF_PROTECTED` fact to include only the protected current
+ref. It does not assume that `dev`, `main`, or the default branch has equal trust.
+`pull_request_target` always applies the restricted policy, excluding untrusted
+head caches. If the protection fact is absent, imports default to the explicit
+trusted list; an empty list produces a cold build.
+GHCR access applies to the cache package, so tag names alone cannot prevent
+another workflow with package write access from overwriting a protected cache.
+Keep those credentials out of untrusted jobs, or use a separately authorized
+package for protected builds when different writers cannot share trust.
+
+To share cache between equally protected branches, verify their rules and the
+permissions of every workflow able to write those tags, then configure:
+
+```yaml
+with:
+  trusted-branches: |
+    main
+    release/stable
+```
+
+This is an owner-maintained assertion of equal protection, not automatic branch
+protection discovery. Leave the input empty when that equality is not established.
+The action needs no permission to query protection settings. The output's
+`import-policy` is `protected-only` or `branch-reuse`; its actual `cache-from`
+list records which tags will be consumed. Ordinary unprotected builds can still
+write their own branch cache, but protected consumers do not import it implicitly.
+
 Only a matching repository's nondeleted branch **push** enables a cache export.
 PRs, fork PRs, `pull_request_target`, tags, schedules, manual workflows and local
 commands import only. `write: false` also disables export, for reader shards.
@@ -101,6 +133,10 @@ Use `--branch BRANCH` for detached checkouts and `--default-branch master` for
 repositories whose default branch is `master`. `--format buildx` prints
 `--cache-from` arguments, `--format bake` prints overrides that clear all inherited
 exports, and the default JSON format exposes the complete read-only plan.
+For a local build requiring the same restricted policy, add `--protected` and
+repeat `--trusted-branch BRANCH` for the cache branches whose protection was
+verified. An empty explicit list disables registry imports; local commands
+remain read-only under both policies.
 
 To warm a locally built xorder image from a matching CI cache:
 

@@ -1,5 +1,5 @@
 name: Registry build cache
-description: Shared branch, dev, main and default-branch GHCR cache inputs with CI-only exports
+description: Trust-aware GHCR cache imports with CI-only branch exports
 inputs:
   scope:
     description: Optional independent build target scope, matching local imports
@@ -7,6 +7,9 @@ inputs:
   write:
     description: Allow cache export on branch pushes; false for reader shards
     default: 'true'
+  trusted-branches:
+    description: Newline-separated branches verified to have protection equal to the consuming protected ref
+    default: ''
 outputs:
   image:
     description: GHCR cache package derived from the workflow repository
@@ -14,6 +17,9 @@ outputs:
   branch-tag:
     description: Safe current branch cache tag
     value: ${{ steps.cache.outputs.branch-tag }}
+  import-policy:
+    description: protected-only or branch-reuse, describing the cache trust policy
+    value: ${{ steps.cache.outputs.import-policy }}
   cache-from:
     description: Newline-separated BuildKit registry cache imports
     value: ${{ steps.cache.outputs.cache-from }}
@@ -35,4 +41,5 @@ runs:
         XORDER_ACTION_PATH: ${{ github.action_path }}
         XORDER_CACHE_SCOPE: ${{ inputs.scope }}
         XORDER_CACHE_WRITE: ${{ inputs.write }}
+        XORDER_CACHE_TRUSTED_BRANCHES: ${{ inputs.trusted-branches }}
       run: python3 "$XORDER_ACTION_PATH/../../../scripts/build_cache.py" --github-output "$GITHUB_OUTPUT"

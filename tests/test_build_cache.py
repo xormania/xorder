@@ -24,7 +24,7 @@ class BuildCacheTests(unittest.TestCase):
             payload.update(event or {})
             path.write_text(json.dumps(payload))
             env = {"GITHUB_EVENT_PATH": str(path), "GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": repository,
-                   "GITHUB_EVENT_NAME": trigger, "GITHUB_REF": ref, **overrides}
+                   "GITHUB_EVENT_NAME": trigger, "GITHUB_REF": ref, "GITHUB_REF_PROTECTED": "false", **overrides}
             return build_cache.github_plan(env)
 
     def test_imports_branch_dev_main_and_actual_default_once(self):
@@ -81,9 +81,47 @@ class BuildCacheTests(unittest.TestCase):
                         "base": {"ref": "release/next"}}})
                     tags = [item.rsplit(":", 1)[1] for item in result["cache-from"]]
                     self.assertEqual(bool(result["branch-tag"]), head_repository == "xormania/uxor")
-                    self.assertIn(build_cache.branch_tag("release/next"), tags)
+                    if trigger == "pull_request":
+                        self.assertIn(build_cache.branch_tag("release/next"), tags)
+                    else:
+                        self.assertEqual(tags, [])
                     self.assertFalse(result["write-enabled"])
                     self.assertNotIn("*.cache-to+=", "\n".join(result["bake-set"]))
+
+    def test_protected_pushes_only_import_their_protected_ref_by_default(self):
+        for branch in ("main", "master", "release/next"):
+            with self.subTest(branch=branch):
+                result = self.github(ref="refs/heads/" + branch, GITHUB_REF_PROTECTED="true")
+                self.assertEqual(result["import-policy"], "protected-only")
+                self.assertEqual(result["cache-from"], ["type=registry,ref=ghcr.io/xormania/uxor-cache:" + build_cache.branch_tag(branch)])
+                self.assertTrue(result["write-enabled"])
+                self.assertEqual(result["cache-to"].split(",mode=", 1)[0], result["cache-from"][0])
+
+    def test_equal_protection_is_explicit_and_cannot_implicitly_include_dev_or_default(self):
+        result = self.github(ref="refs/heads/master", GITHUB_REF_PROTECTED="true",
+                             XORDER_CACHE_TRUSTED_BRANCHES="main\nrelease/next\nmain\n")
+        tags = [item.rsplit(":", 1)[1] for item in result["cache-from"]]
+        self.assertEqual(tags, ["master", "main", build_cache.branch_tag("release/next")])
+        self.assertNotIn("dev", tags)
+        result = self.github(ref="refs/heads/release/next", GITHUB_REF_PROTECTED="true")
+        self.assertNotIn("main", [item.rsplit(":", 1)[1] for item in result["cache-from"]])
+
+    def test_pull_request_target_uses_protected_base_cache_and_omits_untrusted_head(self):
+        for head_repository in ("xormania/uxor", "fork/uxor"):
+            with self.subTest(head_repository=head_repository):
+                result = self.github("pull_request_target", "refs/heads/main", GITHUB_REF_PROTECTED="true",
+                                     event={"pull_request": {"head": {"ref": "dev", "repo": {"full_name": head_repository}},
+                                                              "base": {"ref": "main"}}})
+                self.assertEqual(result["cache-from"], ["type=registry,ref=ghcr.io/xormania/uxor-cache:main"])
+                self.assertFalse(result["write-enabled"])
+
+    def test_missing_protection_fact_imports_only_explicitly_trusted_caches(self):
+        result = self.github(GITHUB_REF_PROTECTED="")
+        self.assertEqual(result["cache-from"], [])
+        self.assertEqual(result["bake-set"][:2], ["*.cache-from=", "*.cache-to="])
+        self.assertIn("cache_from: !override []", build_cache.compose_overlay(result, "php"))
+        result = self.github(GITHUB_REF_PROTECTED="", XORDER_CACHE_TRUSTED_BRANCHES="main")
+        self.assertEqual(result["cache-from"], ["type=registry,ref=ghcr.io/xormania/uxor-cache:main"])
 
     def test_bake_clears_existing_exports_and_imports_before_setting_the_plan(self):
         result = self.github(XORDER_CACHE_SCOPE="demo")

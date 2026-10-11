@@ -38,11 +38,16 @@ def branch_tag(branch, scope=""):
     return (scope + "-" if scope else "") + tag
 
 
-def plan(repository, branch=None, default_branch="main", base_branch=None, scope="", write=False):
+def plan(repository, branch=None, default_branch="main", base_branch=None, scope="", write=False,
+         protected=False, trusted_branches=()):
     image = cache_image(repository)
     # Validate scope even when there is no current branch (forks/detached HEAD).
     branch_tag(default_branch or "main", scope)
-    branches = list(dict.fromkeys(item for item in (branch, base_branch, "dev", "main", default_branch) if item))
+    trusted_branches = list(dict.fromkeys(trusted_branches))
+    branches = list(dict.fromkeys(item for item in (branch, base_branch, "dev", "main", default_branch,
+                                                   *trusted_branches) if item))
+    if protected:
+        branches = [item for item in branches if item in trusted_branches]
     imports = [f"type=registry,ref={image}:{branch_tag(item, scope)}" for item in branches]
     tag = branch_tag(branch, scope) if branch else ""
     exporter = (f"type=registry,ref={image}:{tag},mode=max,image-manifest=true,oci-mediatypes=true"
@@ -53,7 +58,7 @@ def plan(repository, branch=None, default_branch="main", base_branch=None, scope
     bake += ["*.cache-from+=" + item for item in imports]
     if exporter:
         bake.append("*.cache-to+=" + exporter)
-    return {"image": image, "branch-tag": tag, "cache-from": imports,
+    return {"image": image, "branch-tag": tag, "import-policy": "protected-only" if protected else "branch-reuse", "cache-from": imports,
             "cache-to": exporter, "write-enabled": bool(exporter), "bake-set": bake}
 
 
@@ -64,7 +69,8 @@ def github_plan(env):
     event_repository = event.get("repository", {})
     default = event_repository.get("default_branch") or "main"
     trigger, ref = env.get("GITHUB_EVENT_NAME", ""), env.get("GITHUB_REF", "")
-    branch = ref.removeprefix("refs/heads/") if ref.startswith("refs/heads/") else None
+    ref_branch = ref.removeprefix("refs/heads/") if ref.startswith("refs/heads/") else None
+    branch = ref_branch
     base = None
     if trigger in ("pull_request", "pull_request_target"):
         pr = event.get("pull_request", {})
@@ -77,8 +83,19 @@ def github_plan(env):
     trusted = (env.get("GITHUB_ACTIONS") == "true" and trigger == "push"
                and ref.startswith("refs/heads/") and not event.get("deleted", False)
                and event_repository.get("full_name", "").lower() == repository.lower())
+    # A cache is executable build input. Branch pushes may write their own cache,
+    # but a protected job must not consume a mutable lower-trust branch cache.
+    # GitHub supplies protection for the current ref; other branches require an
+    # explicit owner-maintained list with equal protection. Missing facts fail
+    # closed, and pull_request_target never imports the PR head's cache.
+    protection = env.get("GITHUB_REF_PROTECTED", "")
+    protected = protection != "false" or trigger == "pull_request_target"
+    trusted_branches = [name.strip() for name in env.get("XORDER_CACHE_TRUSTED_BRANCHES", "").splitlines() if name.strip()]
+    if protection == "true" and ref_branch:
+        trusted_branches.append(ref_branch)
     return plan(repository, branch, default, base, env.get("XORDER_CACHE_SCOPE", ""),
-                write=requested == "true" and trusted)
+                write=requested == "true" and trusted, protected=protected,
+                trusted_branches=trusted_branches)
 
 
 def current_branch(directory):
@@ -104,7 +121,7 @@ def compose_overlay(result, service):
     # Plain [] would append nothing and retain inherited exports. Compose's
     # explicit reset/override tags enforce the local read-only cache policy.
     lines = ["services:", f"  {json.dumps(service)}:", "    build:",
-             "      cache_to: !reset []", "      cache_from: !override"]
+             "      cache_to: !reset []", "      cache_from: !override" + ("" if result["cache-from"] else " []")]
     lines += ["        - " + json.dumps(item) for item in result["cache-from"]]
     return "\n".join(lines) + "\n"
 
@@ -115,6 +132,8 @@ def main(argv=None):
     parser.add_argument("--branch", help="Current branch; defaults to this checkout's branch")
     parser.add_argument("--default-branch", default="main")
     parser.add_argument("--scope", default="", help="Optional separate build/target scope, matching CI")
+    parser.add_argument("--protected", action="store_true", help="Import only explicitly trusted branch caches")
+    parser.add_argument("--trusted-branch", action="append", default=[], help="Equally protected cache branch; repeat for multiple branches")
     parser.add_argument("--format", choices=("json", "buildx", "bake", "compose"), default="json")
     parser.add_argument("--service", default="php", help="Compose service for the generated import overlay")
     parser.add_argument("--github-output", help=argparse.SUPPRESS)
@@ -127,7 +146,7 @@ def main(argv=None):
             if not args.repository:
                 raise ValueError("local imports require --repository owner/name")
             result = plan(args.repository, args.branch or current_branch(Path.cwd()), args.default_branch,
-                          scope=args.scope)
+                          scope=args.scope, protected=args.protected, trusted_branches=args.trusted_branch)
             if args.format == "json":
                 print(json.dumps(result, indent=2))
             elif args.format == "buildx":
