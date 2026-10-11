@@ -14,7 +14,6 @@ METADATA_SCRIPTS = {
     "scripts/claude_prompt_clock.py",
     "examples/shared/failure_hooks.py", "examples/jev/failure_triage.py",
     "examples/jev/failure-questions.json",
-    "scripts/image_assurance.py", "scripts/agent_eval.py",
 }
 METADATA_WORKFLOWS = {
     ".github/workflows/publish.yml", ".github/workflows/refresh.yml",

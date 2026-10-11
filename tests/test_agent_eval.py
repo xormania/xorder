@@ -10,6 +10,8 @@ import time
 import unittest
 from unittest.mock import patch
 
+from jsonschema.exceptions import ValidationError
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import agent_eval
 
@@ -138,7 +140,21 @@ class AgentEvaluationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "independent"):
             agent_eval.validate_observation(observation)
 
-    def test_warm_reuse_postcheck_does_not_accept_copied_runtime_state(self):
+    def test_schema_formats_reject_invalid_timestamps_and_source_uri(self):
+        self.write_adapter(self.evidence_script())
+        valid = self.run_eval()
+        for field, invalid in (("started_at", "yesterday"), ("finished_at", "2026-10-99T12:00:00Z")):
+            with self.subTest(field=field):
+                value = copy.deepcopy(valid)
+                value[field] = invalid
+                with self.assertRaises(ValidationError):
+                    agent_eval.validate_observation(value)
+        value = copy.deepcopy(valid)
+        value["source"]["url"] = "not a URI/tree/" + value["source"]["commit"]
+        with self.assertRaises(ValidationError):
+            agent_eval.validate_observation(value)
+
+    def test_warm_reuse_requires_private_copies_and_excludes_runtime_state(self):
         import shutil
         workspace = self.folder / "seed-task"
         workspace.mkdir()
@@ -152,8 +168,19 @@ class AgentEvaluationTests(unittest.TestCase):
             path = workspace / "checkout" / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(source["blob"](name))
-        with patch.object(agent_eval, "discovered", return_value=([{ "name": "selection", "passed": True}], {})):
+        with patch.object(agent_eval, "discovered", side_effect=lambda *_: ([{"name": "selection", "passed": True}], {})):
             self.assertTrue(all(item["passed"] for item in agent_eval.postchecks(scenario, workspace, source, self.resource, context, dict(os.environ))))
+            donor = workspace / "donor/demo/vendor/prepared.txt"
+            receiver = workspace / "receiver/demo/vendor/prepared.txt"
+            receiver.unlink()
+            os.link(donor, receiver)
+            checks = agent_eval.postchecks(scenario, workspace, source, self.resource, context, dict(os.environ))
+            self.assertTrue(next(item["passed"] for item in checks if item["name"] == "reused-demo/vendor/prepared.txt"))
+            self.assertFalse(next(item["passed"] for item in checks if item["name"] == "private-copy-demo/vendor/prepared.txt"))
+            receiver.unlink()
+            checks = agent_eval.postchecks(scenario, workspace, source, self.resource, context, dict(os.environ))
+            self.assertFalse(next(item["passed"] for item in checks if item["name"] == "private-copy-demo/vendor/prepared.txt"))
+            shutil.copy2(donor, receiver)
             shutil.copytree(workspace / "donor/demo/var", workspace / "receiver/demo/var")
             self.assertFalse(all(item["passed"] for item in agent_eval.postchecks(scenario, workspace, source, self.resource, context, dict(os.environ))))
 
