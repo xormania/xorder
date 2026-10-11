@@ -71,6 +71,42 @@ def release_measurements(line, revision, artifact, accepted, evidence, measured_
     return measurements
 
 
+def stage_assurance(source_tag, source, artifact, evidence, destination):
+    """Persist evidence before its commit record; content-named assets survive retries."""
+    from image_assurance import create, receipt_link, validate_receipt, verify_local
+    releases = json.loads(gh("api", "--paginate", "--slurp", f"repos/{os.environ['GITHUB_REPOSITORY']}/releases"))
+    matching = [release for page in releases for release in page if release["tag_name"] == source_tag]
+    if not matching:
+        run("gh", "release", "create", source_tag, "--target", source, "--draft", "--title", source_tag,
+            "--notes", "Exact image candidate is undergoing scan, signing, and public verification.")
+        assets = {}
+    else:
+        release = matching[0]
+        if release["target_commitish"] != source:
+            raise RuntimeError("Assurance Release already names another source commit")
+        assets = {asset["name"]: asset for asset in release["assets"]}
+    destination.mkdir(parents=True, exist_ok=True)
+    if "assurance.json" in assets:
+        run("gh", "release", "download", source_tag, "--pattern", "assurance.json", "--dir", str(destination))
+        receipt = validate_receipt(read(destination / "assurance.json"), artifact, source)
+        for facts in receipt["files"].values():
+            run("gh", "release", "download", source_tag, "--pattern", facts["filename"], "--dir", str(destination))
+        verify_local(receipt, destination)
+    else:
+        receipt = create(artifact, source, evidence, destination)
+        # A scan rerun may have newer database/time inputs. Content-addressed
+        # filenames avoid overwriting partial earlier uploads; receipt uploads last.
+        for facts in receipt["files"].values():
+            asset = assets.get(facts["filename"])
+            if asset:
+                if asset.get("digest") != "sha256:" + facts["sha256"]:
+                    raise RuntimeError("Existing assurance asset checksum differs")
+            else:
+                run("gh", "release", "upload", source_tag, str(destination / facts["filename"]))
+        run("gh", "release", "upload", source_tag, str(destination / "assurance.json"))
+    return receipt_link(receipt, source_tag, destination)
+
+
 def publish(line, source, destination, parent=None, browser_evidence=None):
     d = definitions()[line]
     accepted = records()
@@ -94,6 +130,9 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
             raise RuntimeError("Recorded artifact is no longer publicly pullable")
         promote_exact(record)
         finalize_release(record)
+        if record.get("assurance"):
+            from image_assurance import verify_record
+            verify_record(record, destination / "assurance")
         return record
     repository = "ghcr.io/xormania/" + d["family"]
     candidate = f"{repository}:{d['line']}-candidate-v{d['revision']}-{source}"
@@ -155,10 +194,11 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
             build_seconds, build_cache = browser_proof.get("build_seconds"), browser_proof.get("cache_source")
         measurements = release_measurements(line, d["revision"], artifact, accepted, evidence, now(),
                                             verification_seconds, env, build_seconds, build_cache)
+    assurance = stage_assurance(source_tag, source, artifact, evidence, destination / "assurance")
     date = now()
     record = {"schema_version": 1, "line_id": line, "version": d["revision"], "source_commit": source, "source_tag": source_tag,
               "created_at": date, "definition": d, "tools": read(ROOT / "images/tools.json"), "resolved_base": resolved_base,
-              "input_fingerprint": fp, "lifecycle": "available",
+              "input_fingerprint": fp, "lifecycle": "available", "assurance": assurance,
               "platforms": [{"platform": "linux/amd64", "digest": published["platforms"].get("linux/amd64", digest),
                              "inventory": read(inventory_path), "metrics": measurements}],
               "publication": {"repository": repository, "digest": digest, "exact_tag": f"{d['line']}-v{d['revision']}", "public_pull_verified_at": date, "evidence": evidence},
@@ -177,6 +217,8 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
     run("gh", "release", "upload", source_tag, str(destination / "record.json"), str(inventory_path))
     promote_exact(record)
     finalize_release(record)
+    from image_assurance import verify_record
+    verify_record(record, destination / "public-assurance")
     return record
 
 

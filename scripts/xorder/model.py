@@ -159,7 +159,7 @@ def records(root=ROOT):
 
 def image_entry(record):
     d, pub = record["definition"], record["publication"]
-    return {
+    item = {
         "id": "image/" + record["line_id"], "kind": "image", "version": record["version"],
         "purpose": d["purpose"], "capabilities": d["capabilities"],
         "targets": [item["platform"] for item in record["platforms"]],
@@ -173,6 +173,10 @@ def image_entry(record):
                     "extensions": d["extensions"], "tools": d["tools"],
                     "exact_reference": pub["repository"] + ":" + pub["exact_tag"]},
     }
+
+    if record.get("assurance"):
+        item["assurance"] = copy.deepcopy(record["assurance"])
+    return item
 
 
 def artifact_entry(record):
@@ -216,9 +220,12 @@ def latest_artifacts(cat):
 
 def resource_summary(item):
     """Small entry with exact identity and links back to all release facts."""
-    return {key: copy.deepcopy(item[key]) for key in
+    summary = {key: copy.deepcopy(item[key]) for key in
             ("id", "kind", "version", "purpose", "identity", "targets", "prerequisites",
              "documentation", "release_record", "lifecycle")}
+    if "assurance" in item:
+        summary["assurance"] = copy.deepcopy(item["assurance"])
+    return summary
 
 
 def discovery_organization(root=ROOT):

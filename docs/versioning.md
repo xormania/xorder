@@ -50,3 +50,10 @@ A php-dev artifact change must allocate a new revision for its derived browser
 line. Unrelated Rust/Python lines need not change. Shared installed-tool changes
 affect their actual consumers; weekly refreshes allocate fresh patches only when
 resolved tool/base inputs or tracked Debian package-index contents change.
+
+New image assurance is recorded separately from artifact content. Adding scanning,
+SBOM generation, or signing to the release workflow does not allocate image
+revisions or rewrite historical source, timestamps, verification, or inventories.
+New publications include their exact digest's [assurance](image-assurance.md).
+Existing unsigned releases retain their original contract and identity; a manual
+assurance-only run can publish a fresh observation as separate evidence.

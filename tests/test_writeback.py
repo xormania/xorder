@@ -187,6 +187,17 @@ class RefreshRecoveryTests(unittest.TestCase):
         self.assertEqual(payload["head"], self.branch)
         self.assertIn("Approve workflows to run", payload["body"])
 
+    def test_writeback_stages_new_generated_root_view(self):
+        def outputs(root):
+            return {**generated(root), root / "discovery.json": '{"schema_version": 1}\n'}
+
+        with patch.object(writeback, "generated", side_effect=outputs):
+            with self.assertRaisesRegex(RuntimeError, "PR creation interrupted"):
+                self.run_writeback()
+        self.assertEqual(self.git(self.worker, "show", "HEAD:discovery.json"),
+                         '{"schema_version": 1}')
+        self.assertEqual(self.git(self.worker, "status", "--porcelain", "--", "discovery.json"), "")
+
     def add_catalog_record(self, line, digest):
         item = record(line, "9.0.0", digest)
         if line.startswith("rust-dev/"):
@@ -257,6 +268,82 @@ class RefreshRecoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Authored README prose"):
             self.recover_catalog_branch()
         self.assertIn("README.md", self.git(self.worker, "diff", "--name-only", "--diff-filter=U"))
+
+
+class CatalogDeduplicationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.origin = self.root / "origin.git"
+        self.worker = self.root / "worker"
+        self.git(self.root, "init", "--bare", "--initial-branch=master", str(self.origin))
+        self.git(self.root, "clone", str(self.origin), str(self.worker))
+        self.git(self.worker, "config", "user.name", "Fixture")
+        self.git(self.worker, "config", "user.email", "fixture@example.test")
+        (self.worker / "README.md").write_text("Fixture\n")
+        self.git(self.worker, "add", ".")
+        self.git(self.worker, "commit", "-m", "Master")
+        self.git(self.worker, "push", "origin", "master")
+        self.record = record("php-dev/8.4-trixie")
+
+    git = staticmethod(RefreshRecoveryTests.git)
+
+    def publish_branch(self, branch, records):
+        self.git(self.worker, "checkout", "-b", branch, "master")
+        for item in records:
+            path = self.worker / writeback.record_path(item)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(encoded(item))
+        self.git(self.worker, "add", ".")
+        self.git(self.worker, "commit", "-m", "Pending evidence")
+        self.git(self.worker, "push", "origin", branch)
+        self.git(self.worker, "checkout", "master")
+
+    def select_branch(self, records, pulls=None):
+        def output(*args):
+            if args[0] == "gh":
+                return json.dumps([pulls or []])
+            return subprocess.check_output(args, cwd=self.worker, text=True)
+        with patch.object(writeback, "ROOT", self.worker), \
+                patch.object(writeback, "output", side_effect=output), \
+                patch.object(writeback, "run", side_effect=lambda *args: subprocess.run(args, cwd=self.worker, check=True, capture_output=True)), \
+                patch.dict(os.environ, {"GITHUB_REPOSITORY": "xormania/xorder"}):
+            return writeback.catalog_branch(records)
+
+    def test_identical_records_deduplicate_across_run_and_documentation_commits(self):
+        branch = self.select_branch([self.record])
+        self.publish_branch(branch, [self.record])
+        (self.worker / "README.md").write_text("Documentation changed\n")
+        self.git(self.worker, "add", ".")
+        self.git(self.worker, "commit", "-m", "Unrelated documentation")
+        self.git(self.worker, "push", "origin", "master")
+        with patch.dict(os.environ, {"GITHUB_RUN_ID": "entirely-new-run"}):
+            self.assertEqual(self.select_branch([self.record]), branch)
+
+    def test_complete_source_and_verification_facts_change_proposal_identity(self):
+        other = record("python-dev/3.14-trixie")
+        self.assertEqual(writeback.catalog_identity([self.record, other]), writeback.catalog_identity([other, self.record, other]))
+        original = writeback.catalog_identity([self.record])
+        for field, value in (("source_commit", "c" * 40), ("verification", {**self.record["verification"], "evidence": "https://example.test/new-verification"})):
+            with self.subTest(field=field):
+                changed = {**self.record, field: value}
+                self.assertNotEqual(writeback.catalog_identity([changed]), original)
+        with self.assertRaisesRegex(RuntimeError, "Conflicting"):
+            writeback.catalog_identity([self.record, {**self.record, "source_commit": "c" * 40}])
+
+    def test_existing_run_id_pending_pr_is_reused_when_it_contains_the_exact_records(self):
+        legacy = "automation/catalog-42"
+        self.publish_branch(legacy, [self.record, record("python-dev/3.14-trixie")])
+        pull = {"head": {"ref": legacy, "repo": {"full_name": "xormania/xorder"}}}
+        self.assertEqual(self.select_branch([self.record], [pull]), legacy)
+        changed = {**self.record, "source_commit": "c" * 40}
+        self.assertNotEqual(self.select_branch([changed], [pull]), legacy)
+
+    def test_fork_or_non_catalog_branches_do_not_control_automation(self):
+        pulls = [{"head": {"ref": "automation/catalog-42", "repo": {"full_name": "attacker/xorder"}}},
+                 {"head": {"ref": "master", "repo": {"full_name": "xormania/xorder"}}}]
+        self.assertEqual(self.select_branch([self.record], pulls), "automation/catalog-" + writeback.catalog_identity([self.record])[:24])
 
 
 if __name__ == "__main__":

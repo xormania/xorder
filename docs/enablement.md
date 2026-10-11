@@ -54,6 +54,13 @@ refer to a remote engine; host filesystem space does not measure that engine's
 image storage. HTTP, proxy and certificate behavior must be checked on the
 actual route in the current execution environment.
 
+Current summaries retain optional assurance locators from the accepted image
+record when present. Follow [image assurance and consumer verification](image-assurance.md)
+to check the signed digest and evidence before requiring that assurance. Historical
+records without the field retain their original behavior evidence; discovery
+does not add a signature or scan claim to them. [Repository release gates](repository-gates.md)
+describe how workflow evidence relates to the separately administered merge rules.
+
 ## Extend the catalog with a proven use case
 
 Put reusable tools in the lowest suitable resource layer. Put project orchestration

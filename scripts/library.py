@@ -164,6 +164,14 @@ def validate_record(record):
                 assert baseline["digest_reference"].startswith(pub["repository"] + "@")
                 assert DIGEST.fullmatch(baseline["digest_reference"].split("@")[-1])
                 assert baseline["size_method"] == metrics["size_method"] and baseline["image_store"] == metrics["image_store"]
+    if "assurance" in record:
+        from image_assurance import PREDICATE
+        import urllib.parse
+        summary = record["assurance"]
+        expected_url = f"https://github.com/xormania/xorder/releases/download/{urllib.parse.quote(record['source_tag'], safe='')}/assurance.json"
+        assert summary["receipt_url"] == expected_url
+        assert re.fullmatch(r"[a-f0-9]{64}", summary["receipt_sha256"])
+        assert summary["predicate_type"] == PREDICATE
     return record
 
 

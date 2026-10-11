@@ -13,9 +13,30 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from xorder import model
 from xorder.inspect import _probe, inspect_target
+import library
 
 
 class DiscoveryContracts(unittest.TestCase):
+    def test_current_projection_preserves_recorded_assurance_without_inventing_history(self):
+        record = copy.deepcopy(next(item for item in library.records() if item['lifecycle'] == 'available'))
+        record.pop('assurance', None)  # Exercise the historical shape explicitly.
+        self.assertNotIn('assurance', model.resource_summary(model.image_entry(record)))
+        assurance = {'receipt_url': 'https://github.com/xormania/xorder/releases/download/test-assurance/assurance.json',
+                     'receipt_sha256': 'd' * 64,
+                     'predicate_type': 'https://github.com/xormania/xorder/assurance/v1'}
+        record['assurance'] = copy.deepcopy(assurance)
+        cat = model.catalog(image_records=[record])
+        model.validate_schema(cat, 'catalog-v2.schema.json')
+        index = model.discovery(cat)
+        selected = next(item for item in index['resources'] if item['id'] == 'image/' + record['line_id'])
+        self.assertEqual(selected['assurance'], assurance)
+        self.assertEqual(selected['identity'], record['publication']['repository'] + '@' + record['publication']['digest'])
+        self.assertEqual(selected['release_record'], f"release-records/{record['line_id']}/{record['version']}.json")
+        selected['assurance']['receipt_url'] = 'https://example.test/local-change'
+        self.assertEqual(record['assurance'], assurance)
+        entry = next(item for item in cat['resources'] if item['id'] == selected['id'])
+        self.assertEqual(entry['assurance'], assurance)
+
     def test_latest_skips_unavailable_and_retains_exact_release_identity(self):
         cat = model.catalog()
         newest = model.latest_resources(cat)

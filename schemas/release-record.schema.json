@@ -154,6 +154,28 @@
     "lifecycle_date": {
       "type": "string",
       "format": "date-time"
+    },
+    "assurance": {
+      "type": "object",
+      "required": [
+        "receipt_url",
+        "receipt_sha256",
+        "predicate_type"
+      ],
+      "properties": {
+        "receipt_url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/xormania/xorder/releases/download/.+/assurance\\.json$"
+        },
+        "receipt_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "predicate_type": {
+          "const": "https://github.com/xormania/xorder/assurance/v1"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
