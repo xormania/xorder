@@ -263,7 +263,8 @@ class AssuranceTests(unittest.TestCase):
         proposed = read(folder / "master-ruleset-proposed.json")
         self.assertEqual(proposed["rules"][0]["parameters"]["required_status_checks"],
                          [{"context": "checks", "integration_id": 123},
-                          {"context": "existing-ci", "integration_id": 456}, {"context": "catalog-evidence"}])
+                          {"context": "existing-ci", "integration_id": 456},
+                          {"context": "catalog-evidence", "integration_id": 15368}])
         self.assertTrue(proposed["rules"][0]["parameters"]["strict_required_status_checks_policy"])
         self.assertEqual(read(path), observed)
         observed["rules"].append(copy.deepcopy(observed["rules"][0]))

@@ -9,6 +9,10 @@ def _source_hash(value):
     return hashlib.sha256(encoded(value).encode()).hexdigest()
 
 
+def _pin_identity(pin):
+    return {key: pin[key] for key in ("id", "version", "identity")}
+
+
 def _overlay(profile, target, overlay):
     result, facts = copy.deepcopy(profile), copy.deepcopy(target)
     if overlay is None:
@@ -143,22 +147,44 @@ def resolve(profile, cat, target, pins=None, overlay=None, profile_sha256=None, 
     for pin in pin_items:
         for role in pin.get("roles", [pin.get("role")]):
             if role:
-                if role in pins_by_role and pins_by_role[role] != pin:
+                if role in pins_by_role and _pin_identity(pins_by_role[role]) != _pin_identity(pin):
                     raise ValueError(f"Conflicting pins for role {role}")
                 pins_by_role[role] = pin
-        if pin["id"] in pins_by_id and pins_by_id[pin["id"]]["identity"] != pin["identity"]:
+        if pin["id"] in pins_by_id and _pin_identity(pins_by_id[pin["id"]]) != _pin_identity(pin):
             raise ValueError(f"Conflicting pins for {pin['id']}")
         pins_by_id[pin["id"]] = pin
     selected, gaps, skipped = {}, [], []
 
     def choose(alternatives, role, pin=None):
         candidates, mismatches = [], []
+        # Role names describe assignments, not artifact identity. A renamed or
+        # additional role still retains an existing pin for the same resource.
+        retained = {pin["id"]: pin} if pin else {
+            alternative["id"]: pins_by_id[alternative["id"]]
+            for alternative in alternatives if alternative["id"] in pins_by_id
+        }
+        if pin and pin["id"] not in {alternative["id"] for alternative in alternatives}:
+            mismatches.append({**_pin_identity(pin), "reasons": [{
+                "code": "pin_resource_mismatch",
+                "requested": [alternative["id"] for alternative in alternatives],
+            }]})
         for alternative in alternatives:
+            retained_pin = retained.get(alternative["id"])
+            if retained and retained_pin is None:
+                continue
+            if retained_pin and alternative.get("version") and alternative["version"] != retained_pin["version"]:
+                mismatches.append({**_pin_identity(retained_pin), "reasons": [{
+                    "code": "pin_version_mismatch", "requested": alternative["version"],
+                    "pinned": retained_pin["version"],
+                }]})
+                continue
             releases = [item for item in entries if item["id"] == alternative["id"]
                         and (not alternative.get("version") or item["version"] == alternative["version"])]
-            if pin:
-                releases = [item for item in releases if item["id"] == pin["id"]
-                            and item["version"] == pin["version"] and item["identity"] == pin["identity"]]
+            if retained_pin:
+                releases = [item for item in releases if item["version"] == retained_pin["version"]
+                            and item["identity"] == retained_pin["identity"]]
+                if not releases:
+                    mismatches.append({**_pin_identity(retained_pin), "reasons": [{"code": "pin_not_accepted"}]})
             compatible = []
             for item in releases:
                 reasons = compatibility(item, target)
@@ -178,8 +204,11 @@ def resolve(profile, cat, target, pins=None, overlay=None, profile_sha256=None, 
         if len(unique) > 1:
             return None, {"role": role, "code": "ambiguous_resources",
                           "candidates": [{"id": item["id"], "version": item["version"]} for item in unique.values()]}
-        return None, {"role": role, "code": "pin_unverified_or_incompatible" if pin else "no_matching_resource",
-                      "alternatives": copy.deepcopy(alternatives), "mismatches": mismatches}
+        error = {"role": role, "code": "pin_unverified_or_incompatible" if retained else "no_matching_resource",
+                 "alternatives": copy.deepcopy(alternatives), "mismatches": mismatches}
+        if retained:
+            error["pins"] = [_pin_identity(item) for item in retained.values()]
+        return None, error
 
     def add(item, role, visiting=()):
         if item["id"] in visiting:

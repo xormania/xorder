@@ -236,6 +236,94 @@ class ResourceContracts(unittest.TestCase):
         result = self.resolve(p, pins=prior)
         self.assertEqual(result["gaps"][0]["code"], "pin_unverified_or_incompatible")
 
+    def test_renamed_and_added_roles_retain_the_existing_resource_revision(self):
+        self.add(definition())
+        prior = self.resolve(profile("binary/composer"))["lock"]
+        self.add(definition(revision="1.1.0"))
+        changed = profile("binary/composer", "binary/composer")
+        changed["roles"][0]["name"] = "package-manager"
+        changed["roles"][1]["name"] = "dependency-installer"
+        result = self.resolve(changed, pins=prior)
+        self.assertEqual(result["status"], "resolved")
+        self.assertEqual(len(result["lock"]["resources"]), 1)
+        chosen = result["lock"]["resources"][0]
+        self.assertEqual(chosen["version"], "1.0.0")
+        self.assertEqual(chosen["identity"], prior["resources"][0]["identity"])
+        self.assertEqual(chosen["roles"], ["package-manager", "dependency-installer"])
+
+    def test_renamed_incompatible_pin_reports_the_gap_without_falling_back(self):
+        self.add(definition())
+        prior = self.resolve(profile("binary/composer"))["lock"]
+        self.add(definition(revision="1.1.0"))
+        self.add(definition("alternative"))
+        changed = profile("binary/composer")
+        changed["roles"][0].update(name="package-manager", optional=True)
+        changed["roles"][0]["alternatives"].append({"id": "binary/alternative"})
+        pin = prior["resources"][0]
+        for case in ("requested-version", "unverified-identity", "missing-release", "changed-target"):
+            with self.subTest(case=case):
+                p, pins, cat, target = copy.deepcopy(changed), copy.deepcopy(prior), self.cat(), self.target
+                if case == "requested-version":
+                    p["roles"][0]["alternatives"][0]["version"] = "1.1.0"
+                    expected = "pin_version_mismatch"
+                elif case == "unverified-identity":
+                    pins["resources"][0]["identity"] = "sha256:" + "f" * 64
+                    expected = "pin_not_accepted"
+                elif case == "missing-release":
+                    cat["resources"] = [item for item in cat["resources"] if item["id"] != pin["id"] or item["version"] != "1.0.0"]
+                    expected = "pin_not_accepted"
+                else:
+                    target = {**self.target, "commands": []}
+                    expected = "missing_prerequisite"
+                result = resolve(p, cat, target, pins=pins, root=self.root)
+                self.assertEqual(result["status"], "resolution_failed")
+                self.assertNotIn("lock", result)
+                self.assertEqual(result["skipped"], [])
+                gap = result["gaps"][0]
+                self.assertEqual(gap["code"], "pin_unverified_or_incompatible")
+                self.assertEqual(gap["pins"][0]["version"], "1.0.0")
+                self.assertEqual(gap["mismatches"][0]["reasons"][0]["code"], expected)
+
+    def test_existing_role_pin_reports_a_requested_resource_substitution(self):
+        self.add(definition())
+        self.add(definition("alternative"))
+        prior = self.resolve(profile("binary/composer"))["lock"]
+        result = self.resolve(profile("binary/alternative"), pins=prior)
+        self.assertEqual(result["status"], "resolution_failed")
+        self.assertEqual(result["gaps"][0]["mismatches"][0]["reasons"][0]["code"], "pin_resource_mismatch")
+
+    def test_merging_roles_with_distinct_existing_pins_requires_an_explicit_choice(self):
+        self.add(definition())
+        other = definition("alternative")
+        other["details"]["executable"] = "bin/alternative"
+        self.add(other)
+        prior = self.resolve(profile("binary/composer", "binary/alternative"))["lock"]
+        changed = profile("binary/composer")
+        changed["roles"][0]["name"] = "package-manager"
+        changed["roles"][0]["alternatives"].append({"id": "binary/alternative"})
+        result = self.resolve(changed, pins=prior)
+        self.assertEqual(result["status"], "resolution_failed")
+        self.assertEqual(result["gaps"][0]["code"], "ambiguous_resources")
+
+    def test_same_content_hash_cannot_hide_conflicting_pinned_revisions(self):
+        self.add(definition())
+        prior = self.resolve(profile("binary/composer"))["lock"]
+        other = copy.deepcopy(prior["resources"][0])
+        other.update(version="1.1.0", role="renamed", roles=["renamed"])
+        with self.assertRaisesRegex(ValueError, "Conflicting pins for binary/composer"):
+            self.resolve(profile("binary/composer"), pins=prior["resources"] + [other])
+
+    def test_published_editorconfig_requires_scope_but_no_platform(self):
+        cat = model.catalog()
+        p = profile("configuration/editorconfig")
+        result = resolve(p, cat, {"scope": "project"})
+        self.assertEqual(result["status"], "resolved")
+        self.assertNotIn("platform", result["lock"]["target"])
+        validate_lock(result["lock"], cat)
+        result = resolve(p, cat, {})
+        self.assertEqual(result["gaps"][0]["mismatches"][0]["reasons"][0],
+                         {"code": "target_fact_missing", "fact": "scope"})
+
     def test_multiple_compatible_variants_need_an_explicit_choice(self):
         self.add(definition("composer"))
         self.add(definition("alternative"))

@@ -1,9 +1,10 @@
 # Discovery from the repository URL
 
 Give a fresh chat [the repository URL](https://github.com/xormania/xorder) and its
-project task. The [README](../README.md) is the entry point. It leads to the compact
-[typed catalog](../catalog-v2.json), a resource's usage page, and exact release
-evidence. GitHub-rendered pages and their raw files carry the same information.
+project task. The [README](../README.md) is the entry point. It leads to the [capability guide](capabilities.md) and compact
+[current index](../discovery.json), then a resource's usage page and exact release
+evidence. [catalog-v2.json](../catalog-v2.json) retains full release history;
+image package inventories are loaded only when relevant. GitHub-rendered pages and their raw files carry the same information.
 No installed xorder command, skill, plugin or discovery service is required.
 
 The agent should inspect the project's runtime constraints, extensions,
@@ -73,4 +74,6 @@ selection and that the delivery commands exercise the documented behavior.
 They do not establish that a particular cloud chat fetched the URL, that every
 vendor execution surface permits downloads or containers, or that a model
 followed a delivered instruction file. A later real cloud-agent run can add that
-evidence. A live chat is not an acceptance prerequisite for this foundation.
+evidence. The separate [agent evaluations](agent-evaluations.md) record actual
+setup, reuse and recovery outcomes with explicit harness/model and execution
+surface facts. A live chat is not an acceptance prerequisite for this foundation.

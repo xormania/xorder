@@ -12,6 +12,9 @@ records, and signatures for new assured records). Both workflows run on every
 PR, and their job names do not depend on image matrix size. Keep these contexts
 stable when changing individual job structure. Select GitHub Actions as the
 expected source in the settings UI after both have produced a real run.
+The live check-run audit observed GitHub Actions app ID `15368`; the REST
+proposal binds newly added contexts to that source rather than accepting any
+status publisher. Existing contexts and their source IDs remain unchanged.
 
 An administrator can use the ruleset UI to require both contexts and decide
 whether branches must be up to date. To prepare a reviewable REST update while
@@ -21,6 +24,9 @@ preserving other current settings:
 mkdir -p out/admin
 # Fetch again at the time of review; the audit snapshot can become stale.
 gh api repos/xormania/xorder/rulesets/24688880 > out/admin/master-ruleset-observed.json
+# Replace PR_HEAD_SHA with the reviewed PR's exact head; recheck both sources.
+gh api repos/xormania/xorder/commits/PR_HEAD_SHA/check-runs \
+  --jq '.check_runs[] | select(.name == "checks" or .name == "catalog-evidence") | {name, app_id: .app.id, app_slug: .app.slug, status, conclusion}'
 python3 - <<'PY'
 import json
 from pathlib import Path
@@ -35,13 +41,14 @@ checks = status_rules[0]['parameters']['required_status_checks']
 existing = {check['context'] for check in checks}
 for context in ('checks', 'catalog-evidence'):
     if context not in existing:
-        checks.append({'context': context})
+        checks.append({'context': context, 'integration_id': 15368})
 (folder / 'master-ruleset-proposed.json').write_text(json.dumps(proposal, indent=2) + '\n')
 PY
 diff -u out/admin/master-ruleset-observed.json out/admin/master-ruleset-proposed.json || true
 ```
 
-After reviewing the generated proposal and the contexts' real workflow results,
+After reviewing the generated proposal, the contexts' real workflow results,
+and that both report app ID `15368` and slug `github-actions`,
 an administrator can apply it with:
 
 ```sh

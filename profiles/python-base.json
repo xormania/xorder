@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "id": "profile/python-base",
+  "revision": "1.0.0",
+  "purpose": "General Python 3.14 development with project-owned uv locks.",
+  "roles": [
+    {
+      "name": "runtime",
+      "alternatives": [
+        {
+          "id": "image/python-dev/3.14-trixie",
+          "version": "1.1.2"
+        }
+      ]
+    }
+  ]
+}

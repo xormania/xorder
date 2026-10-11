@@ -1,0 +1,8 @@
+{
+  "id": "warm-reuse",
+  "description": "Use the documented seed helper to populate a second checkout from prepared dependency bytes with matching locks.",
+  "check": "warm-reuse",
+  "resource_id": "image/php-dev/8.5-trixie",
+  "timeout_seconds": 900,
+  "task": "Discover the generic PHP 8.5 CLI resource from {source_url}. Save its exact selection in result.json with resource_id, version, identity, documentation and readiness_command (argv for scripts/verify-image.sh). Download catalog-v2.json, README.md and its usage page into evidence/catalog-v2.json, evidence/README.md and evidence/usage.md. Donor and receiver directories contain matching dependency locks. The donor has tiny prepared dependency fixture trees; these are deliberately synthetic, not installed Composer/npm packages. Retrieve xorder at the exact URL source revision into checkout, then use python3 checkout/scripts/xr.py receiver seed --from donor with its default private-copy mode. Do not install dependencies. Preserve the donor and the receiver's unrelated files; do not copy donor/demo/var. This scenario checks prepared-tree seeding only; do not start an application stack."
+}

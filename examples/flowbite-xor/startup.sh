@@ -8,6 +8,10 @@ if [[ "${1:-}" = --entrypoint ]]; then
     entry_mode=--check-reuse
     shift
   fi
+  if [[ "${1:-}" = --seed-sync ]]; then
+    entry_mode=--seed-sync
+    shift
+  fi
   uid=${PUID:-1000}; gid=${PGID:-1000}
   [[ "$uid" =~ ^[0-9]+$ && "$gid" =~ ^[0-9]+$ ]] || exit 64
   if [[ $(id -u) = 0 ]]; then
@@ -29,7 +33,12 @@ if [[ "${1:-}" = --entrypoint ]]; then
   exec bash /usr/local/bin/library-entrypoint bash "$profile/startup.sh" "$entry_mode" "$@"
 fi
 mode=${1:?Supply --prepare or --application}; shift
-[[ "$mode" = --prepare || "$mode" = --application || "$mode" = --check-reuse ]] || exit 64
+[[ "$mode" = --prepare || "$mode" = --application || "$mode" = --check-reuse || "$mode" = --seed-sync ]] || exit 64
+if [[ "$mode" = --seed-sync ]]; then
+  [[ "$#" -gt 0 ]] || exit 64
+  cd /app/
+  exec "$@"
+fi
 cd /app/demo
 reuse=${XORDER_REUSE_ONLY:-0}
 [[ "$reuse" = 0 || "$reuse" = 1 ]] || { echo 'XORDER_REUSE_ONLY must be 0 or 1' >&2; exit 64; }
