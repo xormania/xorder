@@ -17,7 +17,7 @@ parity_runner() {
     WORKSPACE="$WORKSPACE" IMAGE="$IMAGE" BROWSER_IMAGE="$BROWSER_IMAGE" \
     FLOWBITE_PROJECT="$FLOWBITE_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
     XORDER_PARITY_FIXTURE=1 XORDER_SHARED_CACHE=0 \
-    bash "$root/examples/flowbite-xor/run.sh" "$@"
+    bash "$root/examples/uxor/run.sh" "$@"
 }
 cleanup() {
   result=$?

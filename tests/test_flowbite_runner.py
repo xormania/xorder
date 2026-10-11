@@ -155,7 +155,7 @@ elif "exec" in args:
 statefile.write_text(json.dumps(state))
 ''')
         self.docker.chmod(0o755)
-        self.env = {key: value for key, value in os.environ.items() if key not in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy", "PROXY_PASSTHROUGH", "COMPOSER_CACHE_DIR", "WORKTREE_GIT", "FLOWBITE_PROJECT", "HTTP_PORT", "HTTPS_PORT", "HTTP3_PORT", "DOCKER_HOST", "DOCKER_CONTEXT", "PUID", "PGID", "PHPUNIT_PROJECT", "PHPUNIT_CONFIGURATION", "PHPSTAN_PROJECT", "PHPSTAN_WORKSPACE", "PHPSTAN_CONFIGURATION", "PHPSTAN_AUTOLOAD_FILE", "PHPSTAN_PATHS", "COVERAGE_DRIVER", "COVERAGE_SOURCE", "COVERAGE_CLOVER")}
+        self.env = {key: value for key, value in os.environ.items() if key not in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy", "PROXY_PASSTHROUGH", "COMPOSER_CACHE_DIR", "WORKTREE_GIT", "UXOR_PROJECT", "FLOWBITE_PROJECT", "HTTP_PORT", "HTTPS_PORT", "HTTP3_PORT", "DOCKER_HOST", "DOCKER_CONTEXT", "PUID", "PGID", "PHPUNIT_PROJECT", "PHPUNIT_CONFIGURATION", "PHPSTAN_PROJECT", "PHPSTAN_WORKSPACE", "PHPSTAN_CONFIGURATION", "PHPSTAN_AUTOLOAD_FILE", "PHPSTAN_PATHS", "COVERAGE_DRIVER", "COVERAGE_SOURCE", "COVERAGE_CLOVER")}
         self.env.update(PATH=str(self.directory) + os.pathsep + os.environ["PATH"], WORKSPACE=str(self.workspace), IMAGE="fixture:test", COMMANDS=str(self.commands), MOCK_STATE=str(self.directory / "state.json"), XDG_CACHE_HOME=str(self.directory / "cache"))
         self.env.pop("XORDER_REUSE_ONLY", None)
         self.env.pop("COMPOSER_INSTALL_PREFERENCE", None)
@@ -194,11 +194,11 @@ statefile.write_text(json.dumps(state))
         self.env.update(HTTP_PORT=str(http.getsockname()[1]), HTTPS_PORT=str(https.getsockname()[1]),
                         HTTP3_PORT=str(http3.getsockname()[1]))
 
-    def run_profile(self, *arguments, **environment):
+    def run_profile(self, *arguments, entrypoint="uxor", **environment):
         selected = dict(self.env, **environment)
         selected = {key: value for key, value in selected.items() if value is not None}
         selected.setdefault("MOCK_RESERVED_PORTS", "1" if "up" in arguments else "0")
-        result = subprocess.run(["bash", str(ROOT / "examples/flowbite-xor/run.sh"), *arguments],
+        result = subprocess.run(["bash", str(ROOT / "examples" / entrypoint / "run.sh"), *arguments],
                                 env=selected, capture_output=True, text=True)
         self.calls = [json.loads(line) for line in self.commands.read_text().splitlines()] if self.commands.exists() else []
         self.last_result = result
@@ -432,12 +432,17 @@ statefile.write_text(json.dumps(state))
         self.assertEqual(self.calls[-1]["env"]["HTTP3_PORT"], "28002")
         self.assertEqual(self.run_profile("exec", "true", FLOWBITE_PROJECT="explicit-project").returncode, 0)
         self.assertEqual(self.calls[-1]["env"]["FLOWBITE_PROJECT"], "explicit-project")
+        self.assertEqual(self.run_profile("exec", "true", UXOR_PROJECT="uxor-project", FLOWBITE_PROJECT="legacy-project").returncode, 0)
+        self.assertEqual(self.calls[-1]["env"]["FLOWBITE_PROJECT"], "uxor-project")
+        self.assertEqual(self.run_profile("exec", "true", UXOR_PROJECT="", FLOWBITE_PROJECT="legacy-project").returncode, 0)
+        self.assertEqual(self.calls[-1]["env"]["FLOWBITE_PROJECT"], "legacy-project")
+        self.assertEqual(self.run_profile("exec", "true", UXOR_PROJECT="InvalidProject").returncode, 64)
 
     def test_default_workspace_project_and_ports_are_stable(self):
         defaults = dict(HTTP_PORT=None, HTTPS_PORT=None, HTTP3_PORT=None)
         self.assertEqual(self.run_profile("exec", "true", **defaults).returncode, 0)
         first = self.calls[-1]["env"]
-        self.assertEqual(self.run_profile("exec", "true", **defaults).returncode, 0)
+        self.assertEqual(self.run_profile("exec", "true", entrypoint="flowbite-xor", **defaults).returncode, 0)
         second = self.calls[-1]["env"]
         for key in ("FLOWBITE_PROJECT", "HTTP_PORT", "HTTPS_PORT", "HTTP3_PORT"):
             self.assertEqual(first[key], second[key])

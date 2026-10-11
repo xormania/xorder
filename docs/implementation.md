@@ -17,7 +17,7 @@ The existing image families are `php-dev`, `php-browser`, `php-frankenphp`,
 `flowbite-xor-dev`, `rust-dev`, and `python-dev`. PHP has 8.4 and 8.5 Trixie lines;
 the Rust and Python lines are 1.99 and 3.14. Exact available revisions, measured
 capabilities, platforms, and digests come from the catalog. The
-[flowbite-xor usage profile](flowbite-xor.md) documents worker-mode PHP, Node 22,
+[uxor usage profile](uxor.md) documents worker-mode PHP, Node 22,
 cached Tailwind, and its project-locked official Playwright companion.
 
 The authored non-image examples are an upstream Composer PHAR, a locked devenv

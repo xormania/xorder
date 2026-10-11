@@ -16,8 +16,14 @@ class BrowserRefreshTests(unittest.TestCase):
         commit = {"sha": "a" * 40}
         package = {"devDependencies": {"@playwright/test": "1.58.2"}}
         lock = {"packages": {"node_modules/@playwright/test": {"version": "1.58.2"}}}
-        with patch.object(refresh_browser, "fetch_json", side_effect=[commit, package, lock]):
+        with patch.object(refresh_browser, "fetch_json", side_effect=[commit, package, lock]) as fetch:
             pin = refresh_browser.consumer_pin("feature/browser-bump")
+        self.assertEqual(pin["repository"], "https://github.com/xormania/uxor.git")
+        self.assertEqual([call.args[0] for call in fetch.call_args_list], [
+            "https://api.github.com/repos/xormania/uxor/commits/feature%2Fbrowser-bump",
+            "https://raw.githubusercontent.com/xormania/uxor/" + "a" * 40 + "/package.json",
+            "https://raw.githubusercontent.com/xormania/uxor/" + "a" * 40 + "/package-lock.json",
+        ])
         self.assertEqual(pin["commit"], "a" * 40)
         self.assertEqual(pin["playwright_version"], "1.58.2")
         for manifest_pin in ("^1.58.2", "1.58.3", None):
@@ -36,7 +42,7 @@ class BrowserRefreshTests(unittest.TestCase):
             path = "images/playwright-browser/definition.json"
             old_definition = json.loads((root / path).read_text())
             old_lock = (root / "images/playwright-browser/lines/1.58-trixie/package-lock.json").read_bytes()
-            pin = {"repository": "https://github.com/xormania/flowbite-xor.git",
+            pin = {"repository": "https://github.com/xormania/uxor.git",
                    "commit": "b" * 40, "playwright_version": "1.64.0"}
             def resolve(_argv, cwd, **_kwargs):
                 lock = {"packages": {"node_modules/" + name: {"version": "1.64.0", "integrity": "sha512-fixture"}
@@ -73,7 +79,7 @@ class BrowserRefreshTests(unittest.TestCase):
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
             definition = root / "images/playwright-browser/definition.json"
             original = definition.read_bytes()
-            pin = {"repository": "https://github.com/xormania/flowbite-xor.git",
+            pin = {"repository": "https://github.com/xormania/uxor.git",
                    "commit": "b" * 40, "playwright_version": "1.64.0"}
             def wrong_lock(_argv, cwd, **_kwargs):
                 (cwd / "package-lock.json").write_text(json.dumps({"packages": {

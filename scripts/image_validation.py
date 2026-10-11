@@ -106,7 +106,7 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
                 families = {"php-frankenphp", "flowbite-xor-dev"}
             elif path.startswith(("examples/shared/", "tests/fixtures/network/")):
                 families = {"flowbite-xor-dev", "php-toolkit"}
-            elif path.startswith(("examples/flowbite-xor/", "tests/fixtures/flowbite-xor/")):
+            elif path.startswith(("examples/uxor/", "examples/flowbite-xor/", "tests/fixtures/flowbite-xor/")):
                 families = {"flowbite-xor-dev"}
             elif path.startswith("examples/php/"):
                 families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "flowbite-xor-dev", "python-dev"}

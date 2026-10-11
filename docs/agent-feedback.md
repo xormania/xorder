@@ -1,6 +1,6 @@
 # Agent environment feedback — implementation
 
-Claude's 2026-10-10 flowbite-xor report identified failures in clean Serena
+Claude's 2026-10-10 flowbite-xor report (now uxor) identified failures in clean Serena
 sessions, repeated indexing/downloads, disk use, and concurrent browser tests.
 The following changes implement the requested operations. Browser image size
 and real language-server behavior are measured by image acceptance, rather
@@ -23,8 +23,9 @@ only after publication and accepted release evidence.
 
 ## Runner operations
 
-The existing `WORKSPACE=... examples/flowbite-xor/run.sh ACTION` form remains
-valid. The optional adapter is `python3 scripts/xr.py WORKSPACE ACTION`:
+Use `WORKSPACE=... examples/uxor/run.sh ACTION`. The legacy
+`examples/flowbite-xor/run.sh` entry point remains valid. The optional adapter
+is `python3 scripts/xr.py WORKSPACE ACTION`:
 
 ```sh
 export IMAGE=ghcr.io/xormania/flowbite-xor-dev@sha256:YOUR_ACCEPTED_DIGEST
@@ -99,7 +100,7 @@ not a manifest or checksum file supplied by an untrusted bundle producer.
 Projects without the selected `importmap.php` export/import vendor only.
 The helper is
 stdlib Python and requires the project's PHP runtime for its compatibility key.
-This xorder PR does not modify flowbite-xor's separate CI workflow.
+This xorder PR does not modify uxor's separate CI workflow.
 
 Prepared snapshots avoid repeated downloads; restored vendor trees remain local
 and writable. This implementation does not mount one mutable vendor tree into

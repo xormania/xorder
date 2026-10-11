@@ -1,5 +1,5 @@
 {
-  "repository": "https://github.com/xormania/flowbite-xor",
+  "repository": "https://github.com/xormania/uxor",
   "commit": "c8878af66897d8c10af694050a7a588166942117",
   "source": "demo/composer.lock",
   "phpunit": "13.4.1",

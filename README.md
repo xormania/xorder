@@ -90,7 +90,7 @@ Reading the catalog and following its usage instructions does not require it.
 The images supply toolchains. Your project's dependencies and database remain
 explicit. `php-browser` adds Chromium and Panther prerequisites; it does not
 assume Node is needed for Symfony UX or Tailwind. The
-[flowbite-xor profile](docs/flowbite-xor.md) offers PHP 8.4/8.5, adds Node 22 and cached Tailwind to FrankenPHP, and uses
+[uxor profile](docs/uxor.md) offers PHP 8.4/8.5, adds Node 22 and cached Tailwind to FrankenPHP, and uses
 the project-locked official Playwright companion. New lines remain unavailable
 until their verified public releases enter the catalog.
 
@@ -120,7 +120,7 @@ and direct usage pages remains sufficient.
 - [Profiles and private assignment overlays](docs/profiles.md)
 - [Selection and requirement gaps](docs/selection.md)
 - [Workspace, caches, database, and browser recipes](docs/usage.md)
-- [FrankenPHP and flowbite-xor development/testing](docs/flowbite-xor.md)
+- [FrankenPHP and uxor development/testing](docs/uxor.md)
 - [Claude cloud session quick start and dependency reuse](docs/claude-cloud.md)
 - [Reusable PHP test tasks and per-process coverage](docs/php-tests.md)
 - [Prepared Serena v2 REPL, shell access and editing](docs/serena.md)

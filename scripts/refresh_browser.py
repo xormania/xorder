@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Propose a browser image matching an immutable flowbite-xor Playwright pin."""
+"""Propose a browser image matching an immutable uxor Playwright pin."""
 import argparse
 import copy
 import json
@@ -12,7 +12,7 @@ from pathlib import Path
 from library import ROOT, encoded, version
 from playwright_fixture import application_image
 
-REPOSITORY = "xormania/flowbite-xor"
+REPOSITORY = "xormania/uxor"
 
 
 def fetch_json(url):

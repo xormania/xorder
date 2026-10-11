@@ -23,7 +23,7 @@ git -C "$work/consumer" checkout -q --detach FETCH_HEAD
 test "$(git -C "$work/consumer" rev-parse HEAD)" = "${consumer[1]}"
 test ! -e "$work/consumer/demo/vendor"
 bash "$root/examples/php-toolkit/run.sh" check "$work/consumer"
-echo 'ok: committed flowbite-xor kit validates without demo/vendor'
+echo 'ok: committed uxor kit validates without demo/vendor'
 
 # Exercise the real linter against malformed input, rather than mocking its exit code.
 mkdir "$work/broken"

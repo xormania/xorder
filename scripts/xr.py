@@ -7,5 +7,5 @@ import sys
 if len(sys.argv) < 3:
     raise SystemExit("Usage: xr.py WORKSPACE up|status|sync|test|cache|gc|exec|down [arguments]")
 os.environ["WORKSPACE"] = str(Path(sys.argv[1]).resolve(strict=True))
-runner = Path(__file__).resolve().parents[1] / "examples/flowbite-xor/runner.py"
-os.execv(sys.executable, [sys.executable, str(runner), *sys.argv[2:]])
+runner = Path(__file__).resolve().parents[1] / "examples/uxor/run.sh"
+os.execvp("bash", ["bash", str(runner), *sys.argv[2:]])

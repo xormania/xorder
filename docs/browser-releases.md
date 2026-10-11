@@ -1,10 +1,10 @@
 # Browser releases matched to the consuming lock
 
-The flowbite-xor runner selects an accepted browser image whose measured
+The uxor runner selects an accepted browser image whose measured
 Playwright version equals the application's exact lock. An authored proposal
 does not change availability or existing digest pins.
 
-`Match consumer Playwright` checks flowbite-xor main hourly and opens a PR
+`Match consumer Playwright` checks uxor main hourly and opens a PR
 when its exact Playwright pin changes. For a coordinated bump before merging
 the consumer, manually run that workflow with the consumer branch or commit,
 or send its `playwright-bump` repository dispatch with `consumer_ref` in the

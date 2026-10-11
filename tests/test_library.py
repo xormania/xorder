@@ -84,6 +84,7 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(affected(["tests/fixtures/rust/Cargo.lock"], defs), ["rust-dev/1.99-trixie"])
         self.assertEqual(len(affected(["images/tools.json"], defs)), 7)
         self.assertEqual(affected(["examples/flowbite-xor/runner.py"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
+        self.assertEqual(affected(["examples/uxor/run.sh"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/shared/network.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/shared/proxy_relay.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["tests/fixtures/network/check.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])

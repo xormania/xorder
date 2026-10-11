@@ -15,7 +15,7 @@ class PlaywrightFixtureTests(unittest.TestCase):
     def setUp(self):
         self.catalog = json.loads((ROOT / "catalog-v2.json").read_text())
         self.image = application_image(self.catalog)
-        self.fixture = {"repository": "https://github.com/xormania/flowbite-xor.git",
+        self.fixture = {"repository": "https://github.com/xormania/uxor.git",
                         "commit": "a" * 40, "playwright_version": "1.58.2",
                         "application_image": self.image}
 

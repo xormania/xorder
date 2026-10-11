@@ -6,18 +6,18 @@ and editing. The [catalog](../catalog-v2.json) is the availability authority:
 the authored image is not available until publication and verification produce
 an accepted release record. No image is pulled automatically during MCP startup.
 
-## Use with flowbite-xor
+## Use with uxor
 
 Select an available `image/php-serena/8.5-trixie` entry from the catalog, pull its
 exact digest, and retain it in the MCP client's configuration. Configure the
 client to launch this command, supplying absolute paths and the selected digest:
 
 ```sh
-python3 /path/to/xorder/examples/serena/run.py /path/to/flowbite-xor \
+python3 /path/to/xorder/examples/serena/run.py /path/to/uxor \
   --project . --image "$SERENA_IMAGE"
 ```
 
-Use one project selection per worktree. For flowbite-xor, use `--project .` to
+Use one project selection per worktree. For uxor, use `--project .` to
 activate the checkout root and include original recipes, controllers and demo
 source. Paths below are relative to that root. `--project demo` remains useful
 for demo-only PHP inspection, with paths relative to `demo`, but switching
@@ -25,7 +25,7 @@ between `.` and `demo` creates separate index caches and pays for two cold index
 The runner mounts the whole checkout at `/workspace` in either case.
 Install dependencies from the consuming application's own Composer lock with its
 normal development runner before using Serena. This image does not supply a
-substitute application `vendor/`. Existing flowbite-xor app/browser images and
+substitute application `vendor/`. Existing uxor app/browser images and
 their launch configuration remain useful independently.
 
 The image defaults to the persistent `serena_repl` interface. Call
@@ -51,7 +51,7 @@ These additions require the new 1.1 image after publication and acceptance; an o
 
 ```sh
 python3 examples/serena/client.py query find_symbol LabController \
-  --workspace /path/to/flowbite-xor --project . --image "$SERENA_IMAGE" \
+  --workspace /path/to/uxor --project . --image "$SERENA_IMAGE" \
   --path demo/src/Controller/LabController.php --cache-dir /path/to/serena-cache
 ```
 
@@ -60,7 +60,7 @@ For repeated work, launch one daemon per worktree. Its socket directory must be 
 ```sh
 mkdir -p /path/to/private-serena
 chmod 700 /path/to/private-serena
-python3 examples/serena/client.py serve --workspace /path/to/flowbite-xor \
+python3 examples/serena/client.py serve --workspace /path/to/uxor \
   --project . --image "$SERENA_IMAGE" --write \
   --languages php_phpactor,typescript --request-timeout 180 \
   --cache-dir /path/to/serena-cache --socket /path/to/private-serena/session.sock
@@ -134,7 +134,7 @@ actionable error, as is an incompatible backend selection. This profile keeps ne
 ## What the Symfony profile establishes
 
 The image provides PHP semantic tools, a PHP runtime and Composer. Acceptance
-uses actual flowbite-xor Symfony source: class/method lookup, cross-file references,
+uses actual uxor Symfony source: class/method lookup, cross-file references,
 an edit and semantic reread, persistent REPL variables, a partial edit followed by
 an error, and a fresh read-only session. PHP attributes and constructor types are
 present in this consumer. JavaScript/TypeScript uses the prepared TypeScript language server (`--languages php_phpactor,typescript`). This does not establish semantic Twig navigation,
@@ -157,7 +157,7 @@ python3 scripts/build.py php-serena/8.5-trixie image-library-serena:candidate \
 ```
 
 The shared verifier checks inherited PHP capabilities and runs
-`tests/fixtures/serena/check.py` against its pinned flowbite-xor revision. The
+`tests/fixtures/serena/check.py` against its pinned uxor revision. The
 fixture clones a disposable checkout, installs its Composer lock without scripts
 or plugins, and drives the public runner through real stdio MCP. No model account
 is required. Evidence is written to `out/serena/acceptance.json`; CI retains it
