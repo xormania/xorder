@@ -17,8 +17,9 @@ bash examples/uxor/run.sh test --attest-server tests/e2e/example.spec.ts
 a nonnegative number to choose the limit. `--measure` requests the quiet-host
 measurement lease. These options are removed before Playwright sees its
 arguments. `XORDER_TEST_WAIT_SECONDS` and `XORDER_TEST_MEASURE=1` provide the
-same settings for session wrappers. An explicit Playwright worker setting is
-retained. The quiet-host threshold is advisory about observed load; unrelated
+same settings for session wrappers. Explicit Playwright worker requests are capped
+at the acquired host budget; receipts retain both requested and effective arguments.
+The quiet-host threshold is advisory about observed load; unrelated
 processes can still affect timing while a test runs.
 
 The receipt separates requested filters from observed execution. A companion
@@ -72,6 +73,10 @@ fingerprint is evidence for later analysis, not a test-result reuse decision.
 Full combined test stdout/stderr and the app/browser logs between the attempt's
 start and end are stored beside the receipt. `diagnostic_context` includes the
 last 64 KiB of each for a failure adapter. A missing log observation is explicit.
+`artifacts.test_output` is the absolute path of the full combined run output,
+including assertion expected/received diffs; the runner prints it beside the
+receipt so diagnosis does not require rerunning the failing test. npm's update
+notifier is disabled for these test commands and profile browser startup.
 An optional `XORDER_TEST_FAILURE_HOOK` runs after a failed receipt is finalized;
 its advisory outcome is stored separately and cannot turn a failed test green.
 The receipt files are local execution artifacts and may contain application

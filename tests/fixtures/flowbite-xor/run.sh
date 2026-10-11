@@ -12,6 +12,13 @@ export HTTP_PORT=18084 HTTPS_PORT=18444 HTTP3_PORT=18444
 export WORKTREE_GIT=1
 seed_workspace="$work/seed-consumer"
 seed_project="$FLOWBITE_PROJECT-seed"
+cache_workspace="$work/cache-consumer"
+cache_project="$FLOWBITE_PROJECT-cache"
+cache_run() {
+  WORKSPACE="$cache_workspace" FLOWBITE_PROJECT="$cache_project" \
+    HTTP_PORT=18086 HTTPS_PORT=18446 HTTP3_PORT=18446 \
+    bash "$root/examples/uxor/run.sh" "$@"
+}
 seed_run() {
   WORKSPACE="$seed_workspace" FLOWBITE_PROJECT="$seed_project" \
     HTTP_PORT=18085 HTTPS_PORT=18445 HTTP3_PORT=18445 \
@@ -21,6 +28,9 @@ cleanup() {
   status=$?
   if [ "$status" != 0 ]; then
     bash "$root/examples/uxor/run.sh" logs --tail 100 >/dev/stderr 2>&1 || true
+  fi
+  if [ -d "$cache_workspace" ]; then
+    cache_run down --volumes --remove-orphans >/dev/null 2>&1 || true
   fi
   if [ -d "$seed_workspace" ]; then
     seed_run down --volumes --remove-orphans >/dev/null 2>&1 || true
@@ -89,23 +99,23 @@ docker run --rm --network none \
   "$image" php /xorder/tests/fixtures/flowbite-xor/verify-importmap-reuse.php /app/demo/vendor/autoload.php
 
 test "$(bash "$root/examples/uxor/run.sh" exec git rev-parse HEAD)" = "${consumer[1]}"
-# The same prepared dependency artifacts must work in another clean worktree
-# with networking disabled, including Symfony's importmap installation metadata.
+# The public cache command must import into a true cold checkout without a
+# running PHP service, and ordinary up must use those authenticated snapshots.
 bash "$root/examples/uxor/run.sh" cache export --output /app/dependencies.zip
 bundle_sha256=$(sha256sum "$WORKSPACE/dependencies.zip" | cut -d ' ' -f 1)
-git -C "$work/main" worktree add --detach "$work/cache-consumer" FETCH_HEAD
-mkdir -p "$work/imported-cache"
-cp "$WORKSPACE/dependencies.zip" "$work/cache-consumer/dependencies.zip"
-docker run --rm --network=none \
-  -e PUID="$(id -u)" -e PGID="$(id -g)" -e XORDER_CACHE_IMAGE="$image" -e BUNDLE_SHA256="$bundle_sha256" \
-  -v "$work/cache-consumer:/app" -v "$work/imported-cache:/run/xorder-cache" \
-  -v "$root/examples/flowbite-xor:/profile:ro" -w /app/demo "$image" bash -euc '
-    php /app/tools/sync-demo
-    python3 /profile/cache.py import --input /app/dependencies.zip --sha256 "$BUNDLE_SHA256"
-    php /profile/verify-composer.php verify
-    php /profile/importmap-state.php verify
-  '
-rm -f "$WORKSPACE/dependencies.zip"
+bash "$root/examples/uxor/run.sh" down
+git -C "$work/main" worktree add --detach "$cache_workspace" FETCH_HEAD
+cp "$WORKSPACE/dependencies.zip" "$cache_workspace/dependencies.zip"
+test ! -d "$cache_workspace/demo/vendor"
+test ! -d "$cache_workspace/demo/assets/vendor"
+cache_run cache import --input /app/dependencies.zip --sha256 "$bundle_sha256"
+cache_run up > "$work/cold-import-up.log" 2>&1 || { cat "$work/cold-import-up.log"; exit 1; }
+# Composer hooks/readiness remain real; a vendor reinstall would defeat reuse.
+! grep -q 'Installing dependencies from lock file' "$work/cold-import-up.log"
+cache_run exec bash -euc 'cd demo; php /run/xorder/verify-composer.php verify; php /run/xorder/importmap-state.php verify'
+cache_run exec test -s demo/var/tailwind/app.built.css
+cache_run down --volumes
+rm -f "$WORKSPACE/dependencies.zip" "$cache_workspace/dependencies.zip"
 # A clean receiver shares only dependency files. Its own synced recipe copies,
 # Symfony runtime output and Compose volumes must remain private.
 bash "$root/examples/uxor/run.sh" down

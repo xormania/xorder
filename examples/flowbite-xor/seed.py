@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Explicit trusted-worktree dependency seeding, without installs or overwrites."""
+import fcntl
+import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -28,20 +31,92 @@ def inside(workspace, relative):
     return result
 
 
-def shared_paths(workspace):
-    """A sharing guard applies to donor and receiver on every runner invocation."""
-    receipt = inside(workspace, SHARING_RECEIPT)
-    if not receipt.exists():
-        return []
-    value = json.loads(receipt.read_text())
+def sharing_guard(workspace, env=None):
+    env = os.environ if env is None else env
+    root = Path(env.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))).resolve() / "xorder/dependency-shares"
+    if root.resolve() != root or root.is_relative_to(workspace):
+        raise ValueError("Authoritative dependency sharing state must stay outside the checkout and cannot be redirected")
+    return root / (hashlib.sha256(str(workspace).encode()).hexdigest() + ".json")
+
+
+def receipt_paths(value, location):
     if not isinstance(value, dict):
-        raise ValueError("Invalid dependency sharing receipt: " + str(receipt))
+        raise ValueError("Invalid dependency sharing receipt: " + str(location))
     paths = value.get("paths")
     if value.get("schema") != 1 or not isinstance(paths, list) or not paths or any(not isinstance(path, str) for path in paths):
-        raise ValueError("Invalid dependency sharing receipt: " + str(receipt))
+        raise ValueError("Invalid dependency sharing receipt: " + str(location))
     for path in paths:
         relative_path(path)
     return sorted(set(paths))
+
+
+def shared_paths(workspace, env=None):
+    """The host-owned guard remains authoritative if project code removes its marker."""
+    guard = sharing_guard(workspace, env)
+    marker = inside(workspace, SHARING_RECEIPT)
+    if guard.is_symlink():
+        raise ValueError("Authoritative dependency sharing state cannot be a symlink")
+    if not guard.exists():
+        if marker.exists():
+            raise ValueError("Legacy dependency sharing marker has no authoritative host guard; stop and remove shared dependency trees before reseeding")
+        return []
+    value = json.loads(guard.read_text())
+    paths = receipt_paths(value, guard)
+    if value.get("workspace") != str(workspace):
+        raise ValueError("Authoritative dependency sharing guard names another checkout")
+    if not marker.is_file() or receipt_paths(json.loads(marker.read_text()), marker) != paths:
+        raise ValueError("Dependency sharing marker is missing or differs from its authoritative host guard; shared files remain protected. Restore the local marker or remove the shared trees and use seed --forget-sharing")
+    return paths
+
+
+def exclude_local_receipt(workspace, env):
+    """Keep machine-local sharing state out of commits, including linked worktrees."""
+    if not (workspace / ".git").exists():
+        return
+    top = subprocess.run(["git", "-C", str(workspace), "rev-parse", "--show-toplevel"], env=env, text=True, capture_output=True, check=True).stdout.strip()
+    if Path(top).resolve() != workspace:
+        raise ValueError("Seed checkout must be the Git repository root")
+    filename = subprocess.run(["git", "-C", str(workspace), "rev-parse", "--path-format=absolute", "--git-path", "info/exclude"], env=env, text=True, capture_output=True, check=True).stdout.strip()
+    path = Path(filename)
+    if path.is_symlink():
+        raise ValueError("Git local exclude file cannot be redirected by a symlink")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+") as output:
+        fcntl.flock(output, fcntl.LOCK_EX)
+        output.seek(0)
+        existing = output.read()
+        pattern = "/" + SHARING_RECEIPT
+        if pattern not in existing.splitlines():
+            output.seek(0, os.SEEK_END)
+            output.write(("\n" if existing and not existing.endswith("\n") else "") + pattern + "\n")
+
+
+def forget_sharing(workspace, env=None):
+    """Clear the host guard only after the guarded trees have been explicitly removed."""
+    env = dict(os.environ if env is None else env)
+    workspace = Path(workspace).resolve(strict=True)
+    guard = sharing_guard(workspace, env)
+    if guard.is_symlink():
+        raise ValueError("Authoritative dependency sharing state cannot be a symlink")
+    marker = inside(workspace, SHARING_RECEIPT)
+    if guard.exists():
+        value = json.loads(guard.read_text())
+        if value.get("workspace") != str(workspace):
+            raise ValueError("Authoritative dependency sharing guard names another checkout")
+        paths = receipt_paths(value, guard)
+    elif marker.exists():
+        paths = receipt_paths(json.loads(marker.read_text()), marker)
+    else:
+        print("No dependency sharing state to forget")
+        return 0
+    present = [path for path in paths if (workspace / path).exists() or (workspace / path).is_symlink()]
+    if present:
+        raise ValueError("Remove the guarded dependency trees before forgetting sharing: " + ", ".join(present))
+    require_stopped((workspace,), env)
+    guard.unlink(missing_ok=True)
+    marker.unlink(missing_ok=True)
+    print("Forgot sharing guard after confirming absent dependency trees and stopped containers")
+    return 0
 
 
 def matched_inputs(source, destination, env):
@@ -101,10 +176,15 @@ def snapshot(workspace, relative, destination):
 
 def require_stopped(workspaces, env):
     """Include legacy unlabeled stacks by inspecting their actual bind mounts."""
+    timeout = float(env.get("XORDER_OBSERVE_TIMEOUT_SECONDS") or "30")
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError("XORDER_OBSERVE_TIMEOUT_SECONDS must be positive and finite")
     try:
-        result = subprocess.run(["docker", "ps", "-q"], env=env, text=True, capture_output=True, check=True)
+        result = subprocess.run(["docker", "ps", "-q"], env=env, text=True, capture_output=True, check=True, timeout=timeout)
         ids = result.stdout.split()
-        containers = json.loads(subprocess.run(["docker", "inspect", *ids], env=env, text=True, capture_output=True, check=True).stdout) if ids else []
+        containers = json.loads(subprocess.run(["docker", "inspect", *ids], env=env, text=True, capture_output=True, check=True, timeout=timeout).stdout) if ids else []
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("Docker ownership observation exceeded " + str(timeout) + " seconds; no shared dependencies were changed. Recover the daemon and retry") from error
     except (OSError, subprocess.CalledProcessError) as error:
         raise ValueError("Hardlink seeding requires a reachable Docker engine to verify both worktrees are stopped; use the default private copy instead") from error
     for container in containers:
@@ -143,9 +223,9 @@ def seed(destination, source, env=None, hardlink=False):
         raise ValueError("Seed donor and receiver must be separate, non-nested checkout directories")
     inputs = matched_inputs(source, destination, env)
     paths = dependency_paths(env, inputs)
-    if shared_paths(destination):
+    if shared_paths(destination, env):
         raise ValueError("Receiver already has a dependency sharing receipt; remove its shared trees and receipt before reseeding")
-    donor_guard = shared_paths(source)
+    donor_guard = shared_paths(source, env)
     if hardlink and donor_guard and donor_guard != paths:
         raise ValueError("Donor sharing receipt covers different dependency directories")
     targets = [inside(destination, path) for path in paths]
@@ -186,14 +266,28 @@ def seed(destination, source, env=None, hardlink=False):
             if hardlink:
                 value = json.dumps({"schema": 1, "paths": paths}, sort_keys=True) + "\n"
                 for checkout in (source, destination):
+                    guard = sharing_guard(checkout, env)
+                    if guard.is_relative_to(source) or guard.is_relative_to(destination):
+                        raise ValueError("Authoritative dependency sharing state must stay outside both checkouts")
+                    guard.parent.mkdir(parents=True, exist_ok=True)
+                    if not guard.exists():
+                        with guard.open("x") as output:
+                            json.dump({"schema": 1, "workspace": str(checkout), "paths": paths}, output, sort_keys=True)
+                            output.write("\n")
+                        receipts.append(guard)
+                    else:
+                        trusted = json.loads(guard.read_text())
+                        if trusted.get("workspace") != str(checkout) or receipt_paths(trusted, guard) != paths:
+                            raise ValueError("Authoritative dependency sharing guard changed while staging")
                     receipt = inside(checkout, SHARING_RECEIPT)
                     if receipt.exists():
-                        if shared_paths(checkout) != paths:
+                        if shared_paths(checkout, env) != paths:
                             raise ValueError("Dependency sharing receipt changed while staging")
                         continue
                     with receipt.open("x") as output:
                         output.write(value)
                     receipts.append(receipt)
+                    exclude_local_receipt(checkout, env)
             for index, target in enumerate(targets):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 if target.resolve() != target:

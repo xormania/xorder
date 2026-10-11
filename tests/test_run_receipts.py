@@ -20,6 +20,32 @@ import test_receipts as receipts
 
 
 class ReceiptTests(unittest.TestCase):
+    def test_every_explicit_worker_form_is_capped_and_filters_are_preserved(self):
+        for workers in (["--workers=6"], ["--workers", "6"], ["-j", "6"], ["-j6"], ["-j=6"], ["--workers=100%"]):
+            with self.subTest(workers=workers):
+                self.assertEqual(receipts.capped_workers(["spec.ts", *workers, "--grep", "small", "--", "-j8"], 2, 8),
+                                 ["--workers=2", "spec.ts", "--grep", "small", "--", "-j8"])
+        self.assertEqual(receipts.capped_workers(["--workers=1"], 2, 8), ["--workers=1"])
+        self.assertEqual(receipts.capped_workers(["-j8", "--workers=1"], 2, 8), ["--workers=1"])
+        for value in ("0", "-1", "nan%", "inf%", "bad"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "Worker setting"):
+                receipts.capped_workers(["--workers=" + value], 2, 8)
+
+    @unittest.skipUnless(__import__('shutil').which('node'), "Node is required to verify actual process signal status")
+    def test_launcher_preserves_signal_specific_exit_codes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / "npx"
+            executable.write_text("#!/usr/bin/env python3\nimport os,signal\nos.kill(os.getpid(),getattr(signal,os.environ['PAYLOAD_SIGNAL']))\n")
+            executable.chmod(0o755)
+            for signal_name, expected in (("SIGINT", 130), ("SIGTERM", 143), ("SIGKILL", 137)):
+                with self.subTest(signal=signal_name):
+                    env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH'],
+                               XORDER_TEST_CONTROL_DIR=str(root / signal_name), PAYLOAD_SIGNAL=signal_name)
+                    result = subprocess.run(["node", str(ROOT / "examples/flowbite-xor/receipt-launcher.cjs")],
+                                            env=env, text=True, capture_output=True, timeout=10)
+                    self.assertEqual(result.returncode, expected, result.stderr)
+
     def test_runner_options_leave_consumer_filters_and_explicit_workers_intact(self):
         env = {}
         self.assertEqual(receipts.parse_test_options(["--wait", "--measure", "one.spec.ts", "--grep", "hello", "-j", "3"], env),
@@ -83,6 +109,8 @@ class ReceiptTests(unittest.TestCase):
             self.assertEqual(first["resolved_projects"][0]["base_url"], "https://resolved.test:444")
             self.assertEqual(first["actual_navigation_urls"]["status"], "unknown")
             self.assertIn("original test output", first["diagnostic_context"]["test_output"])
+            self.assertIn("original test output", Path(first["artifacts"]["test_output"]).read_text())
+            self.assertTrue(any("npm_config_update_notifier=false" in command for command in commands))
             self.assertIn("server same window", first["diagnostic_context"]["server_logs"])
             self.assertIn("host_start", first)
             self.assertIn("host_end", first)

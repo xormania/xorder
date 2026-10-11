@@ -102,7 +102,7 @@ import hashlib, json, os, pathlib, sys
 args = sys.argv[1:]
 statefile = pathlib.Path(os.environ["MOCK_STATE"])
 state = json.loads(statefile.read_text()) if statefile.exists() else {"containers": [], "node": False, "generation": 0}
-keys = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "XORDER_HTTP_PROXY", "XORDER_HTTPS_PROXY", "XORDER_http_proxy", "XORDER_https_proxy", "XORDER_PROXY_OWNER", "PROXY_PASSTHROUGH", "PLAYWRIGHT_VERSION", "PUID", "PGID", "HTTP_PORT", "HTTPS_PORT", "HTTP3_PORT", "XORDER_INPUT_FINGERPRINT", "FLOWBITE_PROJECT", "WORKSPACE", "IMAGE", "XORDER_REUSE_ONLY"]
+keys = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "XORDER_HTTP_PROXY", "XORDER_HTTPS_PROXY", "XORDER_http_proxy", "XORDER_https_proxy", "XORDER_PROXY_OWNER", "PROXY_PASSTHROUGH", "PLAYWRIGHT_VERSION", "PUID", "PGID", "HTTP_PORT", "HTTPS_PORT", "HTTP3_PORT", "XORDER_SERVICE_FINGERPRINT", "FLOWBITE_PROJECT", "WORKSPACE", "IMAGE", "XORDER_REUSE_ONLY"]
 record = {"args": args, "env": {key: os.environ.get(key) for key in keys}}
 positions = [i for i, arg in enumerate(args) if arg == "-f"]
 if len(positions) == 4:
@@ -110,6 +110,8 @@ if len(positions) == 4:
 with open(os.environ["COMMANDS"], "a") as output:
     output.write(json.dumps(record) + "\\n")
 if args[0] == "info":
+    if os.environ.get("MOCK_INFO_SLEEP"):
+        __import__('time').sleep(float(os.environ["MOCK_INFO_SLEEP"]))
     sys.exit(1 if os.environ.get("MOCK_DAEMON_FAIL") == "1" else 0)
 if args[:2] == ["context", "inspect"]:
     print(json.dumps(os.environ.get("MOCK_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")))
@@ -131,13 +133,15 @@ elif "config" in args:
     print(json.dumps(record["env"], sort_keys=True))
 elif "up" in args:
     if os.environ.get("MOCK_UP_FAIL") == "1": sys.exit(1)
-    if state.get("inputs") != os.environ.get("XORDER_INPUT_FINGERPRINT") or not state["containers"]:
+    if state.get("inputs") != os.environ.get("XORDER_SERVICE_FINGERPRINT") or not state["containers"]:
         state["generation"] += 1
-    state["inputs"] = os.environ.get("XORDER_INPUT_FINGERPRINT")
+    state["inputs"] = os.environ.get("XORDER_SERVICE_FINGERPRINT")
     state["containers"] = [{"Id": service + str(state["generation"]), "Config": {"Labels": {"com.docker.compose.project": os.environ["FLOWBITE_PROJECT"], "com.docker.compose.service": service, "dev.xorder.workspace": os.environ["WORKSPACE"]}}, "State": {"Running": True, "Status": "running", "Health": {"Status": "healthy"}}, "NetworkSettings": {"Ports": {"80/tcp": [{"HostPort": os.environ["HTTP_PORT"]}], "443/tcp": [{"HostPort": os.environ["HTTPS_PORT"]}], "443/udp": [{"HostPort": os.environ["HTTP3_PORT"]}]}}} for service in ("php", "browser")]
 elif "run" in args and "--check-reuse" in args:
     sys.exit(1 if os.environ.get("MOCK_REUSE_FAIL") == "1" else 0)
 elif "exec" in args:
+    if os.environ.get("MOCK_CAPTURE_SLEEP"):
+        __import__('time').sleep(float(os.environ["MOCK_CAPTURE_SLEEP"]))
     if args[-1] == "inspect":
         print("node-ready")
     elif args[-1] == "fingerprint":
@@ -330,6 +334,7 @@ statefile.write_text(json.dumps(state))
         downloads.symlink_to(self.workspace, target_is_directory=True)
         self.assertEqual(self.run_profile("cache", "export", "--output", "/app/dependencies.zip").returncode, 64)
         downloads.unlink()
+        (snapshots / "workspace.json").unlink()
         snapshots.rmdir()
         snapshots.symlink_to(self.workspace, target_is_directory=True)
         self.assertEqual(self.run_profile("cache", "export", "--output", "/app/dependencies.zip").returncode, 64)
@@ -431,6 +436,11 @@ statefile.write_text(json.dumps(state))
             (self.workspace / path).mkdir(parents=True)
         (self.workspace / "demo/importmap.php").write_text("<?php return [];\n")
         (self.workspace / ".xorder-shared-dependencies.json").write_text(json.dumps({"schema": 1, "paths": paths}))
+        from hashlib import sha256
+        guards = self.directory / "cache/xorder/dependency-shares"
+        guards.mkdir(parents=True, exist_ok=True)
+        (guards / (sha256(str(self.workspace).encode()).hexdigest() + ".json")).write_text(
+            json.dumps({"schema": 1, "workspace": str(self.workspace), "paths": paths}))
         (self.workspace / ".xorder").mkdir()
         (self.workspace / ".xorder/testing.json").write_text(json.dumps({"schema_version": 1, "sync": {"command": ["php", "receiver-sync", "--private"]}}))
         self.assertEqual(self.run_profile("up", XORDER_REUSE_ONLY="0", COMPOSER_INSTALL_PREFERENCE="source").returncode, 0)
@@ -467,6 +477,11 @@ statefile.write_text(json.dumps(state))
 
     def test_seed_sharing_guard_keeps_cleanup_available_after_dependency_symlink(self):
         (self.workspace / ".xorder-shared-dependencies.json").write_text(json.dumps({"schema": 1, "paths": ["demo/vendor", "node_modules"]}))
+        from hashlib import sha256
+        guards = self.directory / "cache/xorder/dependency-shares"
+        guards.mkdir(parents=True, exist_ok=True)
+        (guards / (sha256(str(self.workspace).encode()).hexdigest() + ".json")).write_text(
+            json.dumps({"schema": 1, "workspace": str(self.workspace), "paths": ["demo/vendor", "node_modules"]}))
         (self.workspace / "node_modules").symlink_to(self.directory, target_is_directory=True)
         # Recovery works despite a removed vendor and redirected npm directory.
         self.assertEqual(self.run_profile("down").returncode, 0)
@@ -482,6 +497,65 @@ statefile.write_text(json.dumps(state))
         self.assertEqual(result.returncode, 64)
         self.assertIn("redirected by symlinks", result.stderr)
         self.assertEqual(self.calls, [])
+
+    def test_deleting_in_checkout_sharing_marker_cannot_disable_host_guard(self):
+        from hashlib import sha256
+        guards = self.directory / "cache/xorder/dependency-shares"
+        guards.mkdir(parents=True)
+        (guards / (sha256(str(self.workspace).encode()).hexdigest() + ".json")).write_text(
+            json.dumps({"schema": 1, "workspace": str(self.workspace), "paths": ["demo/vendor", "node_modules"]}))
+        for action in (("up",), ("exec", "true")):
+            result = self.run_profile(*action)
+            self.assertEqual(result.returncode, 64)
+            self.assertIn("sharing marker", result.stderr)
+            self.assertEqual(self.calls, [])
+        self.assertEqual(self.run_profile("down").returncode, 0)
+
+    def test_status_timeout_is_bounded_and_explains_selected_engine_recovery(self):
+        result = self.run_profile("status", MOCK_INFO_SLEEP="1", XORDER_OBSERVE_TIMEOUT_SECONDS="0.05")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("observation timed out", result.stdout)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_captured_project_sync_work_keeps_its_existing_workload_deadline(self):
+        result = self.run_profile("sync", MOCK_CAPTURE_SLEEP="0.1", XORDER_OBSERVE_TIMEOUT_SECONDS="0.01")
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue(any("exec" in call["args"] for call in self.calls))
+
+    def test_orphan_cache_inspection_requires_no_image_or_browser_or_setup(self):
+        (self.workspace / "package-lock.json").unlink()
+        result = self.run_profile("cache", "usage", "--orphaned", IMAGE=None)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout)["workspaces"], [])
+        self.assertEqual(self.calls, [])
+
+    def test_cold_cache_import_syncs_then_uses_one_off_tool_without_install_or_server(self):
+        result = self.run_profile("cache", "import", "--input", "/app/prepared.zip", "--sha256", "a" * 64)
+        self.assertEqual(result.returncode, 0)
+        calls = [call["args"] for call in self.calls]
+        sync = next(index for index, call in enumerate(calls) if "--seed-sync" in call)
+        tool = next(index for index, call in enumerate(calls) if "/run/xorder/cache.py" in call)
+        self.assertLess(sync, tool)
+        self.assertIn("--no-deps", calls[tool])
+        self.assertIn("/usr/local/bin/library-entrypoint", calls[tool])
+        self.assertFalse(any("up" in call or "exec" in call or "npm" in call or "--prepare" in call for call in calls))
+
+    def test_source_change_refreshes_setup_without_recreating_services(self):
+        self.assertEqual(self.run_profile("up").returncode, 0)
+        state = self.directory / "state.json"
+        initial = json.loads(state.read_text())["generation"]
+        for name in ("sample.php", "sample.css", "sample.spec.ts"):
+            (self.workspace / name).write_text("source changed\n")
+            self.commands.unlink()
+            self.assertEqual(self.run_profile("up").returncode, 0)
+            self.assertEqual(json.loads(state.read_text())["generation"], initial)
+            self.assertTrue(any("cache:warmup" in call["args"] for call in self.calls))
+            self.assertTrue(any("tailwind:build" in call["args"] for call in self.calls))
+        (self.workspace / "demo/frankenphp").mkdir()
+        (self.workspace / "demo/frankenphp/Caddyfile").write_text("# server changed\n")
+        self.commands.unlink()
+        self.assertEqual(self.run_profile("up").returncode, 0)
+        self.assertEqual(json.loads(state.read_text())["generation"], initial + 1)
 
     def test_source_or_configuration_change_invalidates_setup_receipt(self):
         self.assertEqual(self.run_profile("up").returncode, 0)

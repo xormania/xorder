@@ -83,9 +83,14 @@ python3 scripts/xr.py '/absolute/new-worktree' seed --from '/absolute/prepared-w
 ```
 
 This mode verifies that neither checkout is mounted by a running container and
-writes `.xorder-shared-dependencies.json` in both. The receipt forces future
-runner `up` calls into read-only reuse even if the flag is omitted; other Compose
-actions retain the protected mounts. Keep this local receipt with its checkout.
+writes `.xorder-shared-dependencies.json` in both. It also registers authoritative
+sharing guards outside the mounted checkouts in the host's xorder state directory.
+Future runner `up` calls use read-only reuse even if the flag is omitted; other
+Compose actions retain the protected mounts. Deleting or changing a checkout's
+marker cannot opt out: the host guard makes mutating runner commands fail closed.
+`seed` adds the marker to Git's local `info/exclude`, including linked worktrees,
+so commit-check hooks do not request machine-local state. Keep the local marker
+with its checkout and retain the same host state directory across sessions.
 Hardlinks share file contents: avoiding `install` alone does not prevent Composer
 autoload generation, setup hooks, npm metadata writes or test tools from
 changing another worktree. Do not change permissions on hardlinked files as
@@ -107,8 +112,18 @@ writable preparation step; do not rerun ordinary `up` against shared hardlinks.
 Tests that deliberately modify dependency packages also require a private copy.
 Host tools can still write hardlinked files, so use the runner's protected
 containers. To return a receiver to private dependencies, stop its stack, remove
-its seeded dependency directories and sharing receipt, then seed with the default
-copy mode. Retain the donor's guard while another shared tree exists.
+its seeded dependency directories, then explicitly clear its guard:
+
+```sh
+python3 scripts/xr.py '/absolute/new-worktree' seed --forget-sharing
+python3 scripts/xr.py '/absolute/new-worktree' seed --from '/absolute/prepared-worktree'
+```
+
+The forget command requires every guarded dependency tree to be absent and
+confirms no running container still mounts the checkout. Retain the donor's
+guard while another shared tree exists. A marker from the earlier runner without
+an authoritative host guard is refused; remove that checkout's shared trees and
+use the same forget/reseed procedure to migrate it safely.
 
 ## During work and recovery
 

@@ -12,6 +12,8 @@ import subprocess
 import tempfile
 import time
 
+from runtime_queue import RunQueue
+
 
 def state_root(env):
     root = Path(env.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "xorder"
@@ -55,10 +57,33 @@ def print_resources(workspace, env=None):
     print(f"load: {facts['load']:.2f}, CPU budget {facts['cpus']}{memory}")
 
 
+def observation_timeout(env):
+    value = nonnegative_setting(env, "XORDER_OBSERVE_TIMEOUT_SECONDS", "30")
+    if value <= 0:
+        raise ValueError("XORDER_OBSERVE_TIMEOUT_SECONDS must be positive")
+    return value
+
+
+def docker_observation(arguments, env):
+    """Bound passive daemon calls; never emit arguments which may contain secrets."""
+    try:
+        return subprocess.check_output(["docker", *arguments], env=env, text=True,
+                                       timeout=observation_timeout(env)).strip()
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("Docker observation timed out; inspect the selected Docker engine and its disk, "
+                         "then retry status (XORDER_OBSERVE_TIMEOUT_SECONDS controls the deadline)") from error
+    except subprocess.CalledProcessError as error:
+        raise ValueError("Docker observation failed; check the selected Docker context and engine, "
+                         "then retry status") from error
+
+
 def ensure_daemon(env):
     def reachable():
-        return subprocess.run(["docker", "info"], env=env, stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL, timeout=15).returncode == 0
+        try:
+            return subprocess.run(["docker", "info"], env=env, stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.DEVNULL, timeout=observation_timeout(env)).returncode == 0
+        except subprocess.TimeoutExpired:
+            return False
     if reachable():
         return
     from network import local_engine
@@ -72,8 +97,11 @@ def ensure_daemon(env):
         if not command or not shutil.which(command[0]):
             continue
         print("Docker unavailable; attempting configured service recovery", flush=True)
-        subprocess.run(command, env=env, check=False, timeout=30,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            subprocess.run(command, env=env, check=False, timeout=30,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.TimeoutExpired:
+            continue
         if reachable():
             return
     raise ValueError("Docker daemon unavailable. Start Docker or set XORDER_DOCKER_START_COMMAND, then run up")
@@ -143,34 +171,45 @@ def heavy_run(workspace, env):
     measure = measure == "1"
     maximum_load = nonnegative_setting(env, "XORDER_MEASURE_MAX_LOAD_PER_CPU", "0.5")
     deadline = time.monotonic() + wait
+    try:
+        queue = RunQueue(folder / "queue", workspace, env)
+    except ValueError as error:
+        if "FIFO queue is full" in str(error):
+            raise ValueError(str(error) + "; current holders: " + _held_runs(folder)) from error
+        raise
     gate = (folder / "gate.lock").open("a+")
     locks = []
     queued = False
     try:
         while True:
             try:
-                # Exclusive measurement excludes normal runs regardless of their
-                # configured slot count. Existing slot locks also protect older runners.
-                fcntl.flock(gate, (fcntl.LOCK_EX if measure else fcntl.LOCK_SH) | fcntl.LOCK_NB)
-                # Older runner copies know only the numbered slots, not the
-                # gate. Lock every supported slot before measurement so an old
-                # runner cannot create a new higher slot after admission.
-                names = {folder / f"{slot}.lock" for slot in range(64 if measure else count)}
-                if measure:
-                    names.update(path for path in folder.glob("*.lock") if path != folder / "gate.lock")
-                for filename in sorted(names):
-                    candidate = filename.open("a+")
-                    try:
-                        fcntl.flock(candidate, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                        locks.append(candidate)
-                        if not measure:
-                            break
-                    except BlockingIOError:
-                        candidate.close()
-                        if measure:
-                            break
-                if locks and (not measure or len(locks) == len(names)):
-                    break
+                with queue.turn() as turn:
+                    position, waiting = turn
+                    if position != 1:
+                        raise BlockingIOError()
+                    # Exclusive measurement excludes normal runs regardless of their
+                    # configured slot count. Existing slot locks also protect older runners.
+                    fcntl.flock(gate, (fcntl.LOCK_EX if measure else fcntl.LOCK_SH) | fcntl.LOCK_NB)
+                    # Older runner copies know only the numbered slots, not the
+                    # gate. Lock every supported slot before measurement so an old
+                    # runner cannot create a new higher slot after admission.
+                    names = {folder / f"{slot}.lock" for slot in range(64 if measure else count)}
+                    if measure:
+                        names.update(path for path in folder.glob("*.lock") if path != folder / "gate.lock")
+                    for filename in sorted(names):
+                        candidate = filename.open("a+")
+                        try:
+                            fcntl.flock(candidate, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                            locks.append(candidate)
+                            if not measure:
+                                break
+                        except BlockingIOError:
+                            candidate.close()
+                            if measure:
+                                break
+                    if locks and (not measure or len(locks) == len(names)):
+                        queue.admitted()
+                        break
             except BlockingIOError:
                 pass
             for lock in locks:
@@ -180,9 +219,11 @@ def heavy_run(workspace, env):
             description = _held_runs(folder)
             if time.monotonic() >= deadline:
                 raise ValueError("Another heavy test run holds the host budget: " + description +
-                                 ". Use test --wait [SECONDS] to queue, or deliberately increase XORDER_TEST_MAX_RUNS")
+                                 f". FIFO queue position {position}/{waiting}; waited {queue.elapsed():.1f}s. "
+                                 "Use test --wait [SECONDS] to queue, or deliberately increase XORDER_TEST_MAX_RUNS")
             if not queued:
-                print("Waiting for host test budget: " + description, flush=True)
+                print("Waiting for host test budget: " + description +
+                      f"; FIFO queue position {position}/{waiting}; waited {queue.elapsed():.1f}s", flush=True)
                 queued = True
             time.sleep(min(1, max(0, deadline - time.monotonic())))
         owner = {"workspace": str(workspace), "project": env.get("UXOR_PROJECT") or env.get("FLOWBITE_PROJECT"),
@@ -209,6 +250,7 @@ def heavy_run(workspace, env):
                 time.sleep(min(1, max(0, deadline - time.monotonic())))
         yield worker_budget(workspace, env)
     finally:
+        queue.close()
         for lock in locks:
             _lease_metadata(lock, None)
             lock.close()
@@ -296,6 +338,82 @@ def print_activity(workspace, project, env):
               "application traffic and commands outside xorder are not observed")
 
 
+def branch_observation(workspace, env):
+    """Local Git evidence only: never fetch or infer merge from a branch's name."""
+    def git(*arguments):
+        return subprocess.run(["git", "-C", str(workspace), *arguments], env=env,
+                              text=True, capture_output=True, check=False,
+                              timeout=observation_timeout(env))
+    try:
+        branch = git("symbolic-ref", "--quiet", "--short", "HEAD")
+        if branch.returncode:
+            return {"state": "unknown", "reason": "No attached Git branch"}
+        name = branch.stdout.strip()
+        base = env.get("XORDER_CLEANUP_BASE")
+        if not base:
+            remote = git("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+            base = remote.stdout.strip() if remote.returncode == 0 else None
+        if not base:
+            for candidate in ("refs/remotes/origin/master", "refs/remotes/origin/main"):
+                if git("rev-parse", "--verify", candidate).returncode == 0:
+                    base = candidate
+                    break
+        if not base:
+            return {"state": "unknown", "branch": name, "reason": "No observed remote default branch; set XORDER_CLEANUP_BASE explicitly"}
+        dirty = git("status", "--porcelain", "--untracked-files=normal")
+        merged = git("merge-base", "--is-ancestor", "HEAD", base)
+        if dirty.returncode or merged.returncode not in (0, 1):
+            return {"state": "unknown", "branch": name, "base": base, "reason": "Git observation failed"}
+        protected = name in {"master", "main", "dev", base.rsplit("/", 1)[-1]}
+        return {"state": "observed", "branch": name, "base": base,
+                "merged": merged.returncode == 0, "dirty": bool(dirty.stdout),
+                "protected_branch": protected, "remote_freshness": "Local refs only; no fetch performed"}
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return {"state": "unknown", "reason": "Local Git observation unavailable"}
+
+
+def reclaimable_stacks(env):
+    """Suggest labelled stacks for owner inspection; never delete source or volumes."""
+    ids = docker_observation(["ps", "-aq"], env).split()
+    containers = json.loads(docker_observation(["inspect", *ids], env)) if ids else []
+    groups = {}
+    for item in containers:
+        labels = item.get("Config", {}).get("Labels", {})
+        workspace, project = labels.get("dev.xorder.workspace"), labels.get("com.docker.compose.project")
+        if workspace and project:
+            groups.setdefault((workspace, project), []).append(item)
+    observations = []
+    for (workspace, project), found in sorted(groups.items()):
+        path = Path(workspace)
+        activity = activity_status(path, project, env)
+        branch = branch_observation(path, env) if path.is_dir() else {"state": "unknown"}
+        reasons = []
+        if not path.exists():
+            reasons.append("workspace_missing")
+        if not any(item.get("State", {}).get("Running") for item in found):
+            reasons.append("all_containers_stopped")
+        if activity["state"] == "idle":
+            reasons.append("no_recent_runner_activity")
+        if branch.get("merged") and not branch.get("protected_branch"):
+            reasons.append("branch_merged_into_local_base")
+        candidate = bool(reasons) and activity["state"] != "active"
+        observations.append({"workspace": workspace, "project": project,
+                             "cleanup_candidate": candidate, "reasons": reasons,
+                             "containers": [{"id": item["Id"], "running": bool(item.get("State", {}).get("Running"))}
+                                            for item in found],
+                             "activity": activity, "branch": branch,
+                             "suggested_stop_arguments": ["env", "UXOR_PROJECT=" + project, "python3",
+                                                          str(Path(__file__).resolve().parents[2] / "scripts/xr.py"),
+                                                          workspace, "down"] if candidate and path.is_dir() else None})
+    return {"dry_run": True, "stacks": observations,
+            "notice": "Candidates need owner inspection. Application traffic, ignored files and external commands are unobserved. No containers, volumes or worktrees were removed."}
+
+
+def print_reclaimable(env):
+    print("Stack cleanup observations (dry-run):")
+    print(json.dumps(reclaimable_stacks(env), indent=2))
+
+
 def referenced_images(containers, images, keep=()):
     """Protect direct images and local ancestors, including BuildKit's layer-only ancestry."""
     aliases = {alias: image["Id"] for image in images
@@ -328,7 +446,7 @@ def referenced_images(containers, images, keep=()):
 def gc(env, apply=False, runner_copies=(), keep=()):
     """Remove only stopped xorder-labelled containers and unused xorder image IDs."""
     def docker(*args):
-        return subprocess.check_output(["docker", *args], env=env, text=True).strip()
+        return docker_observation(args, env)
     ids = docker("ps", "-aq") .split()
     containers = json.loads(docker("inspect", *ids)) if ids else []
     stopped = [item for item in containers if item.get("Config", {}).get("Labels", {}).get("dev.xorder.workspace")
@@ -340,7 +458,8 @@ def gc(env, apply=False, runner_copies=(), keep=()):
     kept = [image["Id"] for image in json.loads(docker("image", "inspect", *keep))] if keep else []
     used = referenced_images(containers, images, kept)
     unused = [item for item in images if item["Id"] not in used and
-              item.get("Config", {}).get("Labels", {}).get("org.opencontainers.image.source") == "https://github.com/xormania/xorder"]
+              item.get("Config", {}).get("Labels", {}).get("org.opencontainers.image.source") in {
+                  "https://github.com/xormania/xorder", "https://github.com/xormania/docker-image-library"}]
     result = {"dry_run": not apply, "stopped_containers": [item["Id"] for item in stopped],
               "unused_images": [item["Id"] for item in unused], "kept_images": kept,
               "old_runner_state": [], "old_runner_copies": []}

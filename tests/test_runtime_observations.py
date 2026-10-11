@@ -140,6 +140,50 @@ class LeaseAndActivityTests(unittest.TestCase):
         self.assertEqual(queued.returncode, 0, stderr)
         self.assertIn("acquired", stdout)
 
+    def queued(self, name):
+        code = ("import os,sys; from pathlib import Path; import runtime;\n"
+                "with runtime.heavy_run(Path(os.environ['XDG_CACHE_HOME']), os.environ):\n"
+                " print('acquired '+sys.argv[1], flush=True); sys.stdin.readline()")
+        process = subprocess.Popen([sys.executable, "-c", code, name], text=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env=dict(self.env, XORDER_TEST_WAIT_SECONDS="10", PYTHONPATH=str(ROOT / "examples/shared")))
+        self.addCleanup(lambda: process.kill() if process.poll() is None else None)
+        return process
+
+    def test_fifo_crossprocess_admission_cannot_be_overtaken_by_a_later_waiter(self):
+        with runtime.heavy_run(self.workspace, self.env):
+            first = self.queued("first")
+            self.assertIn("FIFO queue position 1/1", first.stdout.readline())
+            # Recover malformed state left by an interrupted older counter
+            # writer without placing a new request ahead of surviving tickets.
+            (runtime.state_root(self.env) / "test-runs/queue/sequence").write_text("")
+            second = self.queued("second")
+            self.assertIn("FIFO queue position 2/2", second.stdout.readline())
+            third = self.queued("third")
+            self.assertIn("FIFO queue position 3/3", third.stdout.readline())
+        for name, process in (("first", first), ("second", second), ("third", third)):
+            self.assertEqual(process.stdout.readline().strip(), "acquired " + name)
+            for later in (second, third) if process is first else (third,) if process is second else ():
+                self.assertIsNone(later.poll())
+            _, stderr = process.communicate("release\n", timeout=5)
+            self.assertEqual(process.returncode, 0, stderr)
+        self.assertEqual(list((runtime.state_root(self.env) / "test-runs/queue").glob("*.json")), [])
+
+    def test_crashed_waiter_ticket_is_reclaimed_and_queue_is_bounded(self):
+        with runtime.heavy_run(self.workspace, self.env):
+            abandoned = self.queued("abandoned")
+            self.assertIn("Waiting for host test budget", abandoned.stdout.readline())
+            rejected = self.child(XORDER_TEST_MAX_WAITERS="1", XORDER_TEST_WAIT_SECONDS="1")
+            _, stderr = rejected.communicate(timeout=5)
+            self.assertIn("FIFO queue is full", stderr)
+            abandoned.kill()
+            abandoned.communicate(timeout=5)
+            successor = self.queued("successor")
+            self.assertIn("FIFO queue position 1/1", successor.stdout.readline())
+        self.assertEqual(successor.stdout.readline().strip(), "acquired successor")
+        _, stderr = successor.communicate("release\n", timeout=5)
+        self.assertEqual(successor.returncode, 0, stderr)
+
     def test_measurement_excludes_other_slots_and_refuses_heavy_host(self):
         quiet = {"cpus": 4, "load": 1, "memory_available": 4 * 1024**3}
         measured = dict(self.env, XORDER_TEST_MEASURE="1", XORDER_TEST_MAX_RUNS="2")
@@ -187,6 +231,41 @@ class LeaseAndActivityTests(unittest.TestCase):
         with runtime.stack_activity(self.workspace, "app", self.env, "status"):
             self.assertEqual(runtime.activity_status(self.workspace, "app", self.env)["state"], "idle")
         self.assertEqual((folder / "last.json").read_bytes(), before)
+
+    def test_cleanup_candidates_use_local_merge_evidence_and_never_remove_a_stack(self):
+        def git(*arguments):
+            return subprocess.run(["git", "-C", str(self.workspace), *arguments], check=True,
+                                  capture_output=True, text=True).stdout.strip()
+        git("init", "-b", "master")
+        git("-c", "user.name=xormania", "-c", "user.email=xormania@users.noreply.github.com", "commit", "--allow-empty", "-m", "base")
+        git("update-ref", "refs/remotes/origin/master", "HEAD")
+        git("checkout", "-b", "merged-task")
+        containers = [{"Id": "php-one", "Config": {"Labels": {
+            "dev.xorder.workspace": str(self.workspace), "com.docker.compose.project": "app"}},
+            "State": {"Running": True}},
+            {"Id": "unowned", "Config": {"Labels": {}}, "State": {"Running": False}}]
+        with patch.object(runtime, "docker_observation", side_effect=["php-one unowned", json.dumps(containers)]):
+            result = runtime.reclaimable_stacks(self.env)
+        self.assertTrue(result["dry_run"])
+        self.assertEqual(len(result["stacks"]), 1)
+        item = result["stacks"][0]
+        self.assertTrue(item["cleanup_candidate"])
+        self.assertEqual(item["reasons"], ["branch_merged_into_local_base"])
+        self.assertEqual(item["suggested_stop_arguments"], ["env", "UXOR_PROJECT=app", "python3", str(ROOT / "scripts/xr.py"), str(self.workspace), "down"])
+        self.assertEqual(git("symbolic-ref", "--short", "HEAD"), "merged-task")
+        with runtime.stack_activity(self.workspace, "app", self.env, "test"), \
+                patch.object(runtime, "docker_observation", side_effect=["php-one unowned", json.dumps(containers)]):
+            self.assertFalse(runtime.reclaimable_stacks(self.env)["stacks"][0]["cleanup_candidate"])
+        git("checkout", "master")
+        self.assertTrue(runtime.branch_observation(self.workspace, self.env)["protected_branch"])
+
+    def test_daemon_timeouts_produce_actionable_recovery_instead_of_tracebacks(self):
+        with patch.object(runtime.subprocess, "check_output", side_effect=subprocess.TimeoutExpired("docker", 30)):
+            with self.assertRaisesRegex(ValueError, "selected Docker engine"):
+                runtime.docker_observation(["info"], self.env)
+        with patch.object(runtime.subprocess, "run", side_effect=subprocess.TimeoutExpired("docker", 30)):
+            with self.assertRaisesRegex(ValueError, "Remote Docker daemon unavailable"):
+                runtime.ensure_daemon(dict(self.env, DOCKER_HOST="ssh://example.test"))
 
 
 if __name__ == "__main__":

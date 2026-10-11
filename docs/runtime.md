@@ -54,8 +54,14 @@ python3 scripts/xr.py /path/to/worktree test --wait 300 tests/e2e/example.spec.t
 python3 scripts/xr.py /path/to/worktree test --measure --wait 600 --workers=1 tests/performance.spec.ts
 ```
 
-`--wait` without a number allows 600 seconds. Waiting is bounded and does not
-promise FIFO scheduling. `XORDER_TEST_WAIT_SECONDS` supplies the same default
+`--wait` without a number allows 600 seconds. Waiting uses a FIFO queue shared
+by cooperating runner copies. Admission order follows registration under a host
+lock; later requests cannot take a slot ahead of an earlier waiter. Kernel-held
+tickets let the next request reclaim killed or cancelled waiters automatically.
+`XORDER_TEST_MAX_WAITERS` bounds queued requests (default 64, maximum 1024).
+Refusals report queue position, elapsed wait and the active holders. Older runner
+copies do not participate in FIFO ordering, although their slots remain protected.
+`XORDER_TEST_WAIT_SECONDS` supplies the same default
 for wrappers; zero retains immediate refusal. `--measure` (or
 `XORDER_TEST_MEASURE=1`) holds an exclusive gate against all cooperative heavy
 runs regardless of their configured slot count. Before executing tests, it
@@ -69,7 +75,29 @@ Unrelated processes and commands outside the leased test path can still create
 load after admission. The gate is coordination rather than CPU isolation; a
 quiet admission observation alone does not certify fair performance results.
 Shared resource snapshots include one-, five- and fifteen-minute load averages
-for test receipts. Explicit Playwright worker arguments remain project choices.
+for test receipts. Explicit Playwright `--workers=N`, `--workers N`, `-jN` and
+`-j N` requests are capped at the acquired worker budget. Percentages are resolved
+against the runner's observed effective CPU budget and then capped. Receipts keep
+the original and effective arguments; lower explicit counts remain lower.
+All queued test and plant commands use the same executor. Direct `exec npx
+playwright test` remains an escape hatch outside cooperative leases and receipts;
+use `test --wait` for normal concurrent work.
+
+### Browser throttling
+
+The UXor Compose profile defaults to `BROWSER_CPUS=2` and `BROWSER_MEMORY=2g`;
+these apply to the separate browser-server container. To reproduce timing bugs
+under a deliberately restricted browser CPU share:
+
+```sh
+BROWSER_CPUS=0.25 python3 scripts/xr.py /path/to/worktree up
+python3 scripts/xr.py /path/to/worktree test --wait --workers=1 tests/e2e/example.spec.ts
+```
+
+Compose reconciles the changed resource limit on `up`. `PHP_CPUS` and
+`PHP_MEMORY` control the application container independently. Running busy loops
+on the host does not necessarily reproduce a restriction inside either container.
+These knobs restrict CPU/memory; they do not simulate network latency.
 
 ## Idle activity
 
@@ -81,3 +109,33 @@ processes are ignored. Status, logs and garbage collection do not refresh the
 clock. Application traffic and direct commands outside xorder are unobserved;
 the idle signal does not establish that the application is unused. No stack is
 stopped or deleted by this signal.
+
+`status --reclaimable` adds read-only observations for all xorder-labelled stacks
+on the selected engine. It marks missing workspaces, stopped containers, idle
+runner activity and branches whose HEAD is an ancestor of the locally observed
+remote default branch. `XORDER_CLEANUP_BASE` explicitly selects a comparison ref;
+no network fetch occurs, so remote freshness is unknown. Default/integration
+branches do not receive the merged-branch hint. Active runner commands suppress
+cleanup candidacy. Each suggestion includes the actual project name and workspace
+in a scoped `down` command. Inspect the reasons and Git state first: ignored synced
+copies, application traffic and external commands are not proven idle. The report
+deletes nothing, and it never proposes deleting worktrees or volumes. Existing
+`gc` remains dry-run by default and protects all referenced image ancestry; its
+source filter recognizes both exact current and historical xorder repository URLs.
+
+## Bounded observations and setup reconciliation
+
+Docker status, inspect, context, registry and other captured observations have
+deadlines. `XORDER_OBSERVE_TIMEOUT_SECONDS` controls runner observation deadlines
+(30 seconds by default). A timeout reports the selected engine/disk recovery route
+without dumping command arguments or proxy credentials. Startup recovery probes
+are bounded too; use `up` to restore the configured local engine after a restart.
+Interactive workload commands and test execution keep their own existing limits.
+
+Service recreation uses mounted startup/server inputs and effective Compose
+configuration. Project PHP, CSS and test source bytes remain in the setup and run
+receipt fingerprints. Changed source refreshes recipe setup, compiled Tailwind
+CSS and test cache on `up` without forcing Compose to recreate healthy services.
+FrankenPHP remains under its normal `--watch` mode; Caddy/INI/startup changes still
+invalidate the service fingerprint. These hashes select setup work, never reuse a
+previous test result.

@@ -94,7 +94,15 @@ python3 scripts/xr.py /path/to/other-worktree cache import \
   --input /app/dependencies.zip --sha256 "$DEPENDENCIES_SHA256"
 ```
 
-Both paths are container paths; `/app` is the checkout bind. A CI preparation job
+Both paths are container paths; `/app` is the checkout bind. Cache export/import
+use a one-shot container with the selected image, checkout mounts and UID; they
+bypass application startup and do not require a running PHP/browser service.
+Import first runs the selected recipe sync command, then authenticates and
+validates every selected snapshot before promoting a cache key. A mismatched
+runtime/image/lock bundle fails instead of reporting an empty successful import.
+The public cold-import acceptance starts an empty checkout, imports through this
+command and checks that `up` reaches readiness without reinstalling Composer.
+A CI preparation job
 can run `python3 examples/flowbite-xor/cache.py export --project demo --cache CACHE
 --output dependencies.zip --image EXACT_IMAGE` and upload that file. Consumers
 with matching runtime/image/lock inputs import the same bytes using
@@ -108,6 +116,37 @@ This xorder PR does not modify uxor's separate CI workflow.
 Prepared snapshots avoid repeated downloads; restored vendor trees remain local
 and writable. This implementation does not mount one mutable vendor tree into
 all worktrees or claim that compressed snapshots remove all duplicated disk use.
+
+Snapshot storage checks every archived member, including its checksum, before
+reusing an existing ZIP. An intact manifest cannot conceal a corrupted payload.
+A damaged archive is quarantined beside its key and replaced atomically from a
+verified local tree. Snapshot usage records the most recent action/time; these
+observations are cache history rather than proof that setup hooks ran.
+
+Inspect and prune explicitly:
+
+```sh
+python3 scripts/xr.py /path/to/worktree cache usage
+python3 scripts/xr.py /path/to/worktree cache prune --dry-run
+python3 scripts/xr.py /path/to/worktree cache prune --apply
+# Host-wide discovery of caches whose registered checkout no longer exists:
+python3 scripts/xr.py /path/to/worktree cache usage --orphaned
+python3 scripts/xr.py /path/to/worktree cache prune --orphaned --dry-run
+python3 scripts/xr.py /path/to/worktree cache prune --orphaned --apply
+```
+
+The checkout prune removes only owned regular snapshot/quarantine files whose
+keys differ from the current runtime/image/locks. It preserves current keys,
+Composer download directories, unknown files and symlinks, and serializes against
+snapshot restore/store/import. Orphan pruning includes only caches registered by
+this runner whose checkout is absent. It checks every Docker container's binds
+and labels, including stopped/unlabelled containers, then rechecks references
+and the snapshot lease before removal. An unavailable Docker engine, active
+transaction, changed registration or unknown cache entry blocks deletion.
+Registered Composer downloads can be reclaimed with an orphaned cache; legacy
+unregistered caches and source checkouts remain untouched. Reports include
+logical cache/snapshot bytes and reclaimable bytes; filesystem quota and physical
+allocation can differ. Each command is dry-run unless `--apply` is explicit.
 
 ## Browser selection and cleanup
 

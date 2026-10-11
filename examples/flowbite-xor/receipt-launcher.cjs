@@ -2,6 +2,7 @@
 // does not guarantee that its exec payload has stopped.
 const fs = require('node:fs');
 const path = require('node:path');
+const { constants: { signals } } = require('node:os');
 const { spawn } = require('node:child_process');
 const args = process.argv.slice(2);
 const stopping = args[0] === '--stop';
@@ -68,7 +69,7 @@ if (stopping) {
   child.on('error', error => { process.stderr.write(`xorder test launcher: ${error.message}\n`); process.exitCode = 64; });
   child.on('close', (code, signal) => {
     if (timer) clearTimeout(timer);
-    process.exitCode = code === null ? (signal === 'SIGINT' ? 130 : 143) : code;
+    process.exitCode = code === null ? 128 + (signals[signal] || 0) : code;
   });
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);

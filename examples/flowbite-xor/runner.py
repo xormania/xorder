@@ -15,11 +15,12 @@ PROFILE = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROFILE.parent / "shared"))
 from network import container_environment, local_engine, owner_label, stop, loopback_proxy, PROXIES  # noqa: E402
 from proxy_relay import directory as relay_directory, running as relay_running  # noqa: E402
-from runtime import ensure_daemon, print_resources, print_activity, stack_activity, heavy_run, gc, state_root  # noqa: E402
+from runtime import ensure_daemon, print_resources, print_activity, stack_activity, heavy_run, gc, state_root, observation_timeout, print_reclaimable  # noqa: E402
 from pull_budget import preflight  # noqa: E402
-from seed import seed, shared_paths, inside as seed_path  # noqa: E402
+from seed import seed, shared_paths, forget_sharing, inside as seed_path  # noqa: E402
 from testing_contract import load_contract, run_plant, sync_contract  # noqa: E402
 from test_receipts import parse_test_options, run_test as receipt_test  # noqa: E402
+from cache import register_workspace_cache, orphan_cache_usage  # noqa: E402
 
 PHP_TEST_ENVIRONMENT = (
     "PHPUNIT_PROJECT", "PHPUNIT_CONFIGURATION",
@@ -29,10 +30,15 @@ PHP_TEST_ENVIRONMENT = (
 )
 
 
-def call(arguments, env, capture=False, check=True):
-    return subprocess.run(arguments, env=env, check=check, text=True,
-                          stdout=subprocess.PIPE if capture else None,
-                          stderr=subprocess.PIPE if capture else None)
+def call(arguments, env, capture=False, check=True, observational=None):
+    try:
+        return subprocess.run(arguments, env=env, check=check, text=True,
+                              stdout=subprocess.PIPE if capture else None,
+                              stderr=subprocess.PIPE if capture else None,
+                              timeout=observation_timeout(env) if (capture if observational is None else observational) else None)
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("Docker or workspace observation timed out; inspect the selected engine and its disk, "
+                         "then retry status (XORDER_OBSERVE_TIMEOUT_SECONDS controls the deadline)") from error
 
 
 
@@ -46,11 +52,11 @@ def playwright(workspace):
     return version
 
 
-def php_exec(compose, env, *arguments, cwd="/app", capture=False, check=True, forwarded=()):
+def php_exec(compose, env, *arguments, cwd="/app", capture=False, check=True, forwarded=(), observational=False):
     overrides = [argument for key in forwarded if key in env
                  for argument in ("-e", key + "=" + env[key])]
     return call([*compose, "exec", "-T", "--user", f'{env["PUID"]}:{env["PGID"]}', "-w", cwd,
-                 *overrides, "php", *arguments], env, capture=capture, check=check)
+                 *overrides, "php", *arguments], env, capture=capture, check=check, observational=observational)
 
 
 def compose_command(workspace, project, env):
@@ -99,15 +105,21 @@ def readiness(container, env):
     return result.returncode == 0
 
 
-def status(project, env):
-    daemon = call(["docker", "info", "--format", "{{json .ServerVersion}}"], env, capture=True, check=False)
+def status(project, env, reclaimable=False):
     print("project: " + project)
     print_resources(Path(env["WORKSPACE"]), env)
     print_activity(Path(env["WORKSPACE"]), project, env)
+    try:
+        daemon = call(["docker", "info", "--format", "{{json .ServerVersion}}"], env, capture=True, check=False)
+    except ValueError as error:
+        print("daemon: unavailable (" + str(error) + ")")
+        return 1
     if daemon.returncode:
         print("daemon: unavailable (start Docker, then run up)")
         return 1
     print("daemon: reachable")
+    if reclaimable:
+        print_reclaimable(env)
     relay = True
     if env.get("PROXY_PASSTHROUGH", "auto") == "auto" and any(
             env.get(name) and loopback_proxy(env[name], name) for name in PROXIES):
@@ -186,7 +198,7 @@ def check_ports(project, env):
 
 def input_fingerprint(workspace, env):
     value = hashlib.sha256()
-    extensions = {".php", ".twig", ".json", ".yaml", ".yml", ".js", ".mjs", ".cjs", ".css", ".xml", ".ini", ".lock", ".sh", ".neon", ".py"}
+    extensions = {".php", ".twig", ".json", ".yaml", ".yml", ".js", ".mjs", ".cjs", ".ts", ".css", ".xml", ".ini", ".lock", ".sh", ".neon", ".py"}
     for base in (workspace, PROFILE):
         value.update(str(base).encode() + b"\0")
         if base == workspace and (workspace / ".git").exists():
@@ -203,6 +215,25 @@ def input_fingerprint(workspace, env):
             if not file.is_file() or file.is_symlink() or (file.suffix not in extensions and not file.name.startswith(".env")):
                 continue
             value.update(str(file.relative_to(base)).encode() + b"\0" + file.read_bytes() + b"\0")
+    if env.get("CA_CERTIFICATE"):
+        value.update(Path(env["CA_CERTIFICATE"]).read_bytes())
+    return value.hexdigest()
+
+
+def service_fingerprint(workspace, env):
+    """Restart only for mounted startup/server inputs; source belongs to setup evidence."""
+    value = hashlib.sha256()
+    paths = [(PROFILE, name) for name in (
+        "startup.sh", "trust.py", "reuse.sh", "verify-composer.php", "composer-dist.php",
+        "importmap-state.php", "cache.py", "compose.yaml")]
+    configuration = workspace / "demo/frankenphp"
+    if configuration.is_dir():
+        paths.extend((workspace, str(path.relative_to(workspace)))
+                     for path in sorted(configuration.rglob("*")) if path.is_file())
+    for base, name in paths:
+        path = base / name
+        value.update(str(base).encode() + b"\0" + name.encode() + b"\0")
+        value.update(path.read_bytes() if path.is_file() else b"missing")
     if env.get("CA_CERTIFICATE"):
         value.update(Path(env["CA_CERTIFICATE"]).read_bytes())
     return value.hexdigest()
@@ -249,11 +280,29 @@ def main(arguments):
         raise ValueError("Usage: xr sync [--check]")
     if action == "seed":
         parser = argparse.ArgumentParser(prog="xr seed", description="Seed absent dependencies from an explicitly trusted checkout; never install or overwrite")
-        parser.add_argument("--from", dest="source", type=Path, required=True)
+        mode = parser.add_mutually_exclusive_group(required=True)
+        mode.add_argument("--from", dest="source", type=Path)
+        mode.add_argument("--forget-sharing", action="store_true", help="Clear obsolete sharing guards only after all shared paths were removed and the stack is stopped")
         parser.add_argument("--hardlink", action="store_true", help="Require stopped donor/receiver and protect shared dependencies with durable read-only reuse guards")
         options = parser.parse_args(extra)
+        if options.forget_sharing:
+            if options.hardlink:
+                raise ValueError("--hardlink requires --from")
+            return forget_sharing(workspace, env)
         return seed(workspace, options.source, env, hardlink=options.hardlink)
-    shared = shared_paths(workspace)
+    if action == "cache" and "--orphaned" in extra:
+        parser = argparse.ArgumentParser(prog="xr cache", description="Inspect explicitly registered workspace caches; dry-run by default")
+        parser.add_argument("operation", choices=("usage", "prune"))
+        parser.add_argument("--orphaned", action="store_true", required=True)
+        mode = parser.add_mutually_exclusive_group()
+        mode.add_argument("--apply", action="store_true")
+        mode.add_argument("--dry-run", action="store_true")
+        options = parser.parse_args(extra)
+        if options.operation == "usage" and options.apply:
+            raise ValueError("--apply requires cache prune --orphaned")
+        root = Path(env.get("XORDER_SHARED_CACHE_DIR", str(state_root(env) / "dependencies"))).resolve()
+        return orphan_cache_usage(root, env, apply=options.apply)
+    shared = [] if action in ("down", "logs", "status", "gc") else shared_paths(workspace, env)
     if action not in ("down", "logs", "status", "gc"):
         for path in shared:
             seed_path(workspace, path)
@@ -275,7 +324,9 @@ def main(arguments):
                PGID=env.get("PGID") or str(os.getgid()), FLOWBITE_PROFILE_DIR=str(PROFILE),
                HTTP_PORT=http, HTTPS_PORT=https, HTTP3_PORT=udp, CONTAINER_CA_FILE="")
     if action == "status":
-        return status(project, env)
+        if extra not in ([], ["--reclaimable"]):
+            raise ValueError("Usage: xr status [--reclaimable] (read-only cleanup candidates)")
+        return status(project, env, reclaimable=extra == ["--reclaimable"])
     if action == "gc":
         parser = argparse.ArgumentParser(prog="xr gc", description="List unused resources; dry-run by default")
         mode = parser.add_mutually_exclusive_group()
@@ -309,6 +360,7 @@ def main(arguments):
         env.update({"XORDER_" + key: value for key, value in settings.items()})
     if action == "up":
         env["XORDER_INPUT_FINGERPRINT"] = input_fingerprint(workspace, env)
+        env["XORDER_SERVICE_FINGERPRINT"] = service_fingerprint(workspace, env)
     compose = compose_command(workspace, project, env)
     overlay = {"services": {"php": {"volumes": []}}}
     if (reuse_only or shared) and action not in ("down", "logs"):
@@ -351,6 +403,7 @@ def main(arguments):
         if shared.resolve() != shared:
             raise ValueError("Dependency cache must not be redirected by symlinks")
         shared.mkdir(parents=True, exist_ok=True)
+        register_workspace_cache(shared, workspace, repository, downloads=not bool(env.get("COMPOSER_CACHE_DIR")))
         overlay["services"]["php"]["volumes"].append({"type": "bind", "source": str(shared), "target": "/run/xorder-cache", "bind": {"create_host_path": False}})
         overlay["services"]["php"]["environment"] = {"XORDER_CACHE_IMAGE": env["IMAGE"]}
         if not env.get("COMPOSER_CACHE_DIR"):
@@ -423,7 +476,7 @@ def main(arguments):
             call([*compose, "up", "--wait", "--wait-timeout", "600", "--no-build"], env)
             # Recheck lockfiles even when Compose retained an existing container.
             php_exec(compose, env, "bash", "/run/xorder/startup.sh", "--prepare", cwd="/app/demo")
-            npm = php_exec(compose, env, "node", "/run/xorder/node-state.cjs", "inspect" if reuse_only else "verify", capture=True, check=False)
+            npm = php_exec(compose, env, "node", "/run/xorder/node-state.cjs", "inspect" if reuse_only else "verify", capture=True, check=False, observational=True)
             if npm.returncode:
                 if reuse_only:
                     raise ValueError("Reuse-only npm dependencies changed or are incomplete: " + npm.stderr.strip())
@@ -436,6 +489,10 @@ def main(arguments):
                        "composer": composer_state, "npm": npm.stdout.strip(), "reuse_only": reuse_only}
             if previous != current:
                 # Only a previously successful exact setup can reuse its test cache.
+                # Startup already compiles CSS in a new service. Refresh retained
+                # services after source changes without compiling twice on cold up.
+                if previous.get("containers") == current["containers"] and previous.get("inputs") != current["inputs"]:
+                    php_exec(compose, env, "php", "bin/console", "tailwind:build", "--no-interaction", cwd="/app/demo")
                 php_exec(compose, env, "php", "bin/console", "cache:warmup", "--env=test", cwd="/app/demo")
             php_exec(compose, env, "curl", "--fail", "--silent", "--show-error", "--insecure", "--noproxy", "*", "--max-time", "15", "https://localhost" + env.get("APP_READY_PATH", "/"))
             receipt.parent.mkdir(parents=True, exist_ok=True)
@@ -456,7 +513,13 @@ def main(arguments):
                                  lambda command: php_exec(compose, env, *command, capture=True, check=False),
                                  lambda arguments: run_test(compose, env, workspace, project, arguments, workers=workers))
         elif action == "cache":
-            php_exec(compose, env, "python3", "/run/xorder/cache.py", *extra, cwd="/app/demo")
+            if extra and extra[0] == "import":
+                sync = load_contract(workspace, PROFILE)["sync"]["command"]
+                call([*compose, "run", "--rm", "--no-deps", "--entrypoint", "bash", "php",
+                      "/run/xorder/startup.sh", "--entrypoint", "--seed-sync", *sync], env)
+            call([*compose, "run", "--rm", "--no-deps", "-T", "--workdir", "/app/demo",
+                  "--entrypoint", "bash", "php", "/usr/local/bin/library-entrypoint",
+                  "python3", "/run/xorder/cache.py", *extra], env)
         elif action == "phpunit":
             call([*compose, "exec", "-T", "--user", f'{env["PUID"]}:{env["PGID"]}', "-w", "/app/demo",
                   "-e", "XDEBUG_MODE=" + env.get("PHPUNIT_XDEBUG_MODE", "off"), "-e", "APP_ENV=test", "-e", "APP_DEBUG=1",

@@ -222,6 +222,51 @@ def write_once(path, value):
     path.chmod(0o400)
 
 
+def capped_workers(arguments, budget, cpus):
+    """Normalize every Playwright worker spelling before filters' -- separator."""
+    if budget is None:
+        return list(arguments)
+    remaining, requested = [], []
+    index = 0
+    while index < len(arguments):
+        argument = arguments[index]
+        if argument == "--":
+            remaining.extend(arguments[index:])
+            break
+        value = None
+        if argument in ("--workers", "-j"):
+            index += 1
+            if index >= len(arguments):
+                raise ValueError(argument + " needs a positive worker count or percentage")
+            value = arguments[index]
+        elif argument.startswith("--workers="):
+            value = argument.partition("=")[2]
+        elif argument.startswith("-j") and len(argument) > 2:
+            value = argument[2:].removeprefix("=")
+        if value is None:
+            remaining.append(argument)
+        else:
+            try:
+                if value.endswith("%"):
+                    percentage = float(value[:-1])
+                    if not math.isfinite(percentage) or percentage <= 0:
+                        raise ValueError()
+                    count = max(1, math.floor(cpus * percentage / 100))
+                else:
+                    count = int(value)
+                    if str(count) != value or count < 1:
+                        raise ValueError()
+            except (ValueError, OverflowError) as error:
+                raise ValueError("Worker setting must be a positive integer or percentage") from error
+            requested.append((value, count))
+        index += 1
+    desired = requested[-1][1] if requested else budget
+    effective = min(desired, budget)
+    if requested and desired > budget:
+        print(f"Worker request {requested[-1][0]} capped to host worker budget {budget}", flush=True)
+    return [f"--workers={effective}", *remaining]
+
+
 def run_test(compose, env, workspace, project, arguments, workers=None, input_fingerprint=None):
     arguments = list(arguments)
     requested = list(arguments)
@@ -239,9 +284,7 @@ def run_test(compose, env, workspace, project, arguments, workers=None, input_fi
             raise ValueError("--attest-server requires --trace=on; remove the conflicting explicit trace mode")
         if explicit_trace is None:
             arguments.insert(0, "--trace=on")
-    if workers is not None and not any(arg == "--workers" or arg.startswith("--workers=")
-                                      or arg.startswith("-j") for arg in arguments):
-        arguments.insert(0, f"--workers={workers}")
+    arguments = capped_workers(arguments, workers, resources(workspace)["cpus"])
     run_id = uuid.uuid4().hex
     folder = state_root(env) / "test-attempts" / run_id
     folder.mkdir(parents=True, mode=0o700)
@@ -273,7 +316,7 @@ def run_test(compose, env, workspace, project, arguments, workers=None, input_fi
     facts["container_environment"] = {"demo_url": probe.get("demo_url"), "cwd": probe.get("cwd"),
                                        "sha256": probe.get("environment_sha256")}
     control = f"/app/demo/var/xorder/test-attempts/{run_id}"
-    overrides = {"XORDER_TEST_CONTROL_DIR": control}
+    overrides = {"XORDER_TEST_CONTROL_DIR": control, "npm_config_update_notifier": "false"}
     observer_enabled = "extension_reporter" in probe and not probe.get("extension_reporter")
     if not observer_enabled:
         errors.append("Existing PW_TEST_REPORTER preserved; companion observer unavailable")
@@ -395,6 +438,7 @@ def finalize_attempt(compose, env, workspace, folder, facts, started, exit_code,
         print("Run receipt unavailable: could not save the completed attempt; original test exit retained", flush=True)
         return None
     print(f"Run receipt: {receipt_path}", flush=True)
+    print(f"Full test output: {output_path}", flush=True)
     if facts["observer_status"] != "complete":
         print("Run receipt observer: " + facts["observer_status"] + "; executed tests and resolved server URLs may be unknown", flush=True)
     if exit_code and env.get("XORDER_TEST_FAILURE_HOOK"):
