@@ -23,5 +23,11 @@ jobs:
       - name: Verify new records and protect existing evidence
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
-        run: python scripts/catalog_checks.py --base "$BASE_SHA"
+        run: |
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            python scripts/catalog_checks.py --audit
+          else
+            python scripts/catalog_checks.py --base "$BASE_SHA"
+          fi

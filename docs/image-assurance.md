@@ -63,8 +63,15 @@ Use the verified record's `publication.repository@publication.digest` when
 starting containers. Existing records without an assurance field fail this
 particular command with an explicit explanation; they remain selectable under
 their original behavior verification contract. Consumers decide when to upgrade
-pins or require assurance. `catalog-evidence` verifies the public evidence and
-signatures when an assured record is proposed for acceptance.
+pins or require assurance. `catalog-evidence` requires complete assurance and
+verifies public evidence and signatures for every newly added image record
+relative to the PR's trusted base commit. Existing records keep their original
+contracts; lifecycle edits cannot change their immutable evidence.
+Manual full-ledger checks use `python3 scripts/catalog_checks.py --audit` and
+allow historical unsigned records. That audit is distinct from an additions
+acceptance gate; PR checks require a valid ancestral `--base` and cannot use
+audit mode. Hosted manual audits require the master ref, so an audit on a PR's
+feature ref cannot satisfy its `catalog-evidence` acceptance context.
 
 The equivalent image-signature check is:
 

@@ -37,7 +37,9 @@ def public_release(record, repository):
     return github_json(repository, "releases/tags/" + tag)
 
 
-def verify_image_record(record, repository):
+def verify_image_record(record, repository, *, require_assurance=True):
+    if require_assurance and not record.get("assurance"):
+        raise RuntimeError(f"New image release record requires verified assurance: {record['line_id']} v{record['version']}")
     validate_record(record)
     release = public_release(record, repository)
     if (release["draft"] or release["tag_name"] != record["source_tag"]
@@ -70,7 +72,15 @@ def verify_image_record(record, repository):
 
 
 def changed_image_records(base, root=ROOT):
-    if base:
+    if base is not None:
+        resolved = subprocess.run(["git", "rev-parse", "--verify", "--end-of-options", f"{base}^{{commit}}"],
+                                  cwd=root, capture_output=True, text=True)
+        if not base or resolved.returncode:
+            raise RuntimeError("Image additions require a known base commit")
+        base = resolved.stdout.strip()
+        if subprocess.run(["git", "merge-base", "--is-ancestor", base, "HEAD"], cwd=root,
+                          capture_output=True).returncode:
+            raise RuntimeError("Image additions require a base commit that is an ancestor of HEAD")
         paths = subprocess.check_output(
             ["git", "diff", "--name-only", "--no-renames", base, "HEAD", "--", "release-records"],
             cwd=root, text=True).splitlines()
@@ -99,12 +109,20 @@ def changed_image_records(base, root=ROOT):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--base", help="Trusted PR base commit; requires assurance for every added image record")
+    mode.add_argument("--audit", action="store_true", help="Audit the full ledger under its original contracts; not an additions acceptance gate")
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY", "xormania/xorder"))
     args = parser.parse_args()
+    if args.audit:
+        if os.environ.get("GITHUB_EVENT_NAME") == "pull_request":
+            parser.error("PR additions require --base; --audit cannot serve as their acceptance gate")
+        if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and os.environ.get("GITHUB_REF") != "refs/heads/master":
+            parser.error("Hosted full-ledger audits require master; feature-ref audits cannot satisfy catalog-evidence")
+        print("Full-ledger audit verifies local records under their original public-facts contract; it does not establish acceptance or historical status of those records.")
     count = 0
     for record in changed_image_records(args.base):
-        verify_image_record(record, args.repository)
+        verify_image_record(record, args.repository, require_assurance=not args.audit)
         print(f"Verified public release evidence: {record['line_id']} v{record['version']}")
         count += 1
     print(f"Verified {count} image release records; no image builds requested.")
