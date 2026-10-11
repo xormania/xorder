@@ -10,6 +10,7 @@ METADATA_SCRIPTS = {
     "scripts/registry.py", "scripts/xorder_cli.py", "scripts/validation_base.py",
     "scripts/catalog_checks.py", "scripts/catalog_summary.py",
     "scripts/refresh_browser.py", "scripts/browser_release.py",
+    "scripts/claude_prompt_clock.py",
 }
 METADATA_WORKFLOWS = {
     ".github/workflows/publish.yml", ".github/workflows/refresh.yml",
