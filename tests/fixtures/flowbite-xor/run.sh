@@ -154,14 +154,14 @@ contract = {"schema_version": 1, "plants": {"fixture-markup": {
                "search": "<!DOCTYPE html>",
                "replace": "<!DOCTYPE html>\n<!-- xorder-fixture-plant -->"}],
     "confirm": {"command": ["curl", "--fail", "--silent", "--show-error", "--insecure",
-                             "--noproxy", "*", "--max-time", "15", "https://localhost/"],
+                             "--noproxy", "*", "--max-time", "15", "https://localhost/demo/blank"],
                 "contains": "xorder-fixture-plant"}}}}
 (workspace / ".xorder/testing.json").write_text(json.dumps(contract))
 (workspace / "tests/e2e/xorder.plant.spec.ts").write_text("""import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 test('source plant survives pre-test recipe sync', async ({ request }) => {
   execFileSync('php', ['tools/sync-demo'], { cwd: process.cwd(), stdio: 'ignore' });
-  const response = await request.get('/');
+  const response = await request.get('/demo/blank');
   expect(response.ok()).toBeTruthy();
   expect(await response.text()).not.toContain('xorder-fixture-plant');
 });
