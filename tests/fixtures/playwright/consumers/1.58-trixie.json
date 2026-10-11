@@ -1,5 +1,5 @@
 {
-  "repository": "https://github.com/xormania/flowbite-xor.git",
+  "repository": "https://github.com/xormania/uxor.git",
   "commit": "c8878af66897d8c10af694050a7a588166942117",
   "playwright_version": "1.58.2",
   "application_image": "ghcr.io/xormania/flowbite-xor-dev@sha256:7c795be0d818b4458d7c8730ddebab68878684d0ec52cd3ef5b41f80e29efcd2"

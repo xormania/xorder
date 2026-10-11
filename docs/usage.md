@@ -1,7 +1,7 @@
 # Running project commands
 
 For `flowbite-xor-dev` in Claude cloud, start with the
-[session quick start](claude-cloud.md) and [flowbite-xor runner](flowbite-xor.md).
+[session quick start](claude-cloud.md) and [uxor runner](uxor.md).
 They cover blocked dist downloads, sandbox disk limits and read-only dependency
 reuse across worktrees.
 
@@ -100,13 +100,13 @@ that option only with trusted development content. Compose supplies 1 GiB of
 shared memory. A project server in another container needs its service hostname,
 not `127.0.0.1`.
 
-## FrankenPHP and flowbite-xor
+## FrankenPHP and uxor
 
 `php-frankenphp/8.4-trixie` and `8.5-trixie` add Caddy/FrankenPHP, APCu and worker-mode execution
 to the loaded PHP toolchain. Supply the project's Caddyfile, worker entrypoint
 and PHP settings. Its default command is Bash, like the other library images.
 
-The [`flowbite-xor` profile](flowbite-xor.md) offers `flowbite-xor-dev/8.4-trixie` and `8.5-trixie`,
+The [`uxor` profile](uxor.md) offers `flowbite-xor-dev/8.4-trixie` and `8.5-trixie`,
 which add Node 22/npm and a cached Tailwind CLI to the exact FrankenPHP parent. It overlays the checkout's
 existing demo Compose files, Caddyfile, entrypoint and PHP configuration, and
 starts the official Playwright container at the version in its lockfile. Tests

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the public offline MCP runner on a disposable, pinned flowbite-xor checkout."""
+"""Exercise the public offline MCP runner on a disposable, pinned uxor checkout."""
 import json
 import os
 import queue
@@ -85,7 +85,7 @@ def main():
     image = sys.argv[1]
     fixture = json.loads(Path(__file__).with_name("consumer.json").read_text())
     with tempfile.TemporaryDirectory(prefix="xorder-serena-proof-") as directory:
-        checkout = Path(directory) / "flowbite-xor"
+        checkout = Path(directory) / "uxor"
         run("git", "init", "-q", str(checkout))
         run("git", "-C", str(checkout), "fetch", "--depth=1", fixture["repository"], fixture["commit"])
         run("git", "-C", str(checkout), "checkout", "--detach", "FETCH_HEAD")

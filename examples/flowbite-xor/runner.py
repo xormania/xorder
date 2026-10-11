@@ -66,9 +66,9 @@ def compose_command(workspace, project, env):
 
 def identity(workspace, env, slot):
     key = hashlib.sha256(str(workspace).encode()).hexdigest()
-    project = env.get("FLOWBITE_PROJECT") or "flowbite-" + re.sub(r"[^a-z0-9_-]", "-", workspace.name.lower())[:32] + "-" + key[:10]
+    project = env.get("UXOR_PROJECT") or env.get("FLOWBITE_PROJECT") or "flowbite-" + re.sub(r"[^a-z0-9_-]", "-", workspace.name.lower())[:32] + "-" + key[:10]
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", project):
-        raise ValueError("FLOWBITE_PROJECT must start with a lowercase letter/digit and contain lowercase letters, digits, _ or -")
+        raise ValueError("UXOR_PROJECT (or legacy FLOWBITE_PROJECT) must start with a lowercase letter/digit and contain lowercase letters, digits, _ or -")
     selected = int(key[:8], 16) % 5000 if slot is None else slot
     if not 0 <= selected <= 14999:
         raise ValueError("--slot must be between 0 and 14999")

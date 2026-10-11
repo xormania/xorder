@@ -1,8 +1,8 @@
-# Claude cloud sessions with flowbite-xor-dev
+# Claude cloud sessions for uxor
 
 Start each session from the current [xorder README](../README.md), select an
 accepted image digest from the [catalog](../catalog.json), and read the
-[flowbite-xor profile](flowbite-xor.md). The image provides the toolchain;
+[uxor profile](uxor.md). The image provides the toolchain;
 the checkout owns its application packages, Caddy configuration and tests.
 The runner is mounted from your xorder clone, so runner fixes require updating
 that clone, not rebuilding or replacing an unchanged image.
@@ -23,9 +23,9 @@ that clone, not rebuilding or replacing an unchanged image.
 
 ```sh
 export IMAGE='<accepted flowbite-xor-dev digest_reference>'
-export WORKSPACE='/absolute/path/to/flowbite-xor-worktree'
-bash examples/flowbite-xor/run.sh --slot 2 up
-bash examples/flowbite-xor/run.sh --slot 2 status
+export WORKSPACE='/absolute/path/to/uxor-worktree'
+bash examples/uxor/run.sh --slot 2 up
+bash examples/uxor/run.sh --slot 2 status
 ```
 
 ## When the proxy blocks package archives
@@ -74,7 +74,7 @@ an isolation mechanism; permission changes are shared too.
 For prepared dependencies, use:
 
 ```sh
-bash examples/flowbite-xor/run.sh --slot 2 up --reuse-only
+bash examples/uxor/run.sh --slot 2 up --reuse-only
 ```
 
 This mounts dependency trees read-only, verifies them before services start,
@@ -88,7 +88,7 @@ Tests that deliberately modify dependency packages also require a private copy.
 
 - Use the profile's `test`/`php-tests` commands and heavy-run budget rather than
   independently starting several unbounded test pools.
-- Use one Serena project root (`.` for flowbite-xor) and the daemon for repeated
+- Use one Serena project root (`.` for uxor) and the daemon for repeated
   queries; follow the [Serena coverage and REPL guidance](serena.md).
 - Inspect `status` and scoped logs after a failure. Preserve a healthy sibling
   stack. `down` retains caches; `down --volumes` removes that stack's volumes.

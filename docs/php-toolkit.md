@@ -25,7 +25,7 @@ only. `PUID` and `PGID` default to the invoking user and support `0`.
 For HTTPS through a custom trust gateway, set `CA_CERTIFICATE` to a readable
 absolute PEM file or bundle. Docker mounts it for the shared image entrypoint;
 native Composer receives `COMPOSER_CAFILE`. Docker proxy handling uses the same
-shared [proxy support](flowbite-xor.md) as the development profile: loopback
+shared [proxy support](uxor.md) as the development profile: loopback
 proxies receive a local Docker-bridge relay for the duration of the command;
 `PROXY_PASSTHROUGH=0` disables container proxies. Host settings remain unchanged.
 The relay is cleaned up when the command exits.
@@ -72,7 +72,7 @@ Create a separate empty application ready to run `ux:install`:
 ```sh
 examples/php-toolkit/run.sh fresh /tmp/my-toolkit-test-app
 cd /tmp/my-toolkit-test-app
-php bin/console ux:install button --kit=https://github.com/xormania/flowbite-xor
+php bin/console ux:install button --kit=https://github.com/xormania/uxor
 ```
 
 `IMAGE` also supports this action. It leaves the app in the supplied host
@@ -100,7 +100,7 @@ container and checks that it boots. Each app gets its own generated development
 secret in `.env.local`. AssetMapper JavaScript downloads are left
 to `php bin/console importmap:install` when a browser test needs them. Recipes may
 request additional Composer packages; the consuming project owns those choices
-and its updated lock. The baseline does not preload flowbite-xor's dependencies,
+and its updated lock. The baseline does not preload uxor's dependencies,
 controllers, fixtures, or rendered pages.
 
 Run `bash tests/fixtures/php-toolkit/run.sh` to check the pinned real kit,

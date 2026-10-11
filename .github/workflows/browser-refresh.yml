@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       consumer_ref:
-        description: flowbite-xor branch or commit containing the proposed Playwright bump
+        description: uxor branch or commit containing the proposed Playwright bump
         type: string
         default: main
   repository_dispatch:
