@@ -102,6 +102,18 @@ change an exact image tag, rewrite the historical release record, or claim that
 behavior tests ran again. The receipt distinguishes the original image source
 from the workflow commit that generated these new observations.
 
+The separate evidence Release tag targets the executing master workflow commit,
+which is recorded as `assurance_workflow_commit` in the signed receipt.
+`source_commit` remains the original image source. Ordinary image source Releases
+still target their image source commit. GitHub's
+[release permissions](https://docs.github.com/en/rest/releases/releases#create-a-release)
+require workflow-write authorization when creating a tag at a commit whose
+workflow files differ from the current default branch; `GITHUB_TOKEN` cannot
+receive that permission. An evidence-only observation belongs to its current
+producer, so it does not create a fresh tag at the historical image commit.
+If master changes workflows during a queued run and GitHub still refuses tag
+creation, rerun from the newer master commit; do not broaden credentials.
+
 Download `assurance-publication.json` from the completed workflow artifact, then
 verify it against the consumer's already chosen digest:
 

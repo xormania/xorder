@@ -18,6 +18,7 @@ from test_library import record
 
 IMAGE = "ghcr.io/xormania/php-dev@sha256:" + "d" * 64
 SOURCE = "f" * 40
+WORKFLOW_SOURCE = "a" * 40
 EVIDENCE = "https://github.com/xormania/xorder/actions/runs/42"
 
 
@@ -135,6 +136,8 @@ class AssuranceTests(unittest.TestCase):
                 patch.object(assurance, "create", return_value=self.receipt):
             link = release.stage_assurance("php-dev/8.4-trixie/v1.0.0", SOURCE, IMAGE, EVIDENCE, self.folder)
         uploads = [args[-1] for args in calls if args[:3] == ("gh", "release", "upload")]
+        creation = next(args for args in calls if args[:3] == ("gh", "release", "create"))
+        self.assertEqual(creation[creation.index("--target") + 1], SOURCE)
         self.assertEqual(uploads[-1], str(self.folder / "assurance.json"))
         self.assertEqual(len(uploads), 4)
         assets = {"tag_name": "php-dev/8.4-trixie/v1.0.0", "target_commitish": SOURCE,
@@ -146,6 +149,36 @@ class AssuranceTests(unittest.TestCase):
         self.assertEqual(recovered, link)
         create.assert_not_called()
         verify.assert_called_once()
+
+    def test_sidecar_target_and_recovered_receipt_bind_producer_without_changing_image_source(self):
+        tag = "image-assurance/php-dev/8.4-trixie/v1.0.0/42-1"
+        self.receipt["assurance_workflow_commit"] = WORKFLOW_SOURCE
+        (self.folder / "assurance.json").write_text(encoded(self.receipt))
+        calls = []
+        with patch.object(release, "gh", return_value="[[]]"), \
+                patch.object(release, "run", side_effect=lambda *args: calls.append(args)), \
+                patch.object(assurance, "create", return_value=self.receipt) as create:
+            link = release.stage_assurance(tag, SOURCE, IMAGE, EVIDENCE, self.folder, release_target=WORKFLOW_SOURCE)
+        creation = next(args for args in calls if args[:3] == ("gh", "release", "create"))
+        self.assertEqual(creation[creation.index("--target") + 1], WORKFLOW_SOURCE)
+        self.assertEqual(create.call_args.args[:2], (IMAGE, SOURCE))
+        self.assertEqual(self.receipt["source_commit"], SOURCE)
+        existing = {"tag_name": tag, "target_commitish": WORKFLOW_SOURCE, "assets": [{"name": "assurance.json"}]}
+        with patch.object(release, "gh", side_effect=lambda *args: json.dumps([[existing]])), \
+                patch.object(release, "run"), patch.object(assurance, "create") as create, \
+                patch.object(assurance, "verify_local") as verify:
+            self.assertEqual(release.stage_assurance(tag, SOURCE, IMAGE, "retry", self.folder,
+                                                    release_target=WORKFLOW_SOURCE), link)
+            create.assert_not_called()
+            verify.assert_called_once()
+            existing["target_commitish"] = SOURCE
+            with self.assertRaisesRegex(RuntimeError, "another target commit"):
+                release.stage_assurance(tag, SOURCE, IMAGE, "retry", self.folder, release_target=WORKFLOW_SOURCE)
+            existing["target_commitish"] = WORKFLOW_SOURCE
+            self.receipt["assurance_workflow_commit"] = SOURCE
+            (self.folder / "assurance.json").write_text(encoded(self.receipt))
+            with self.assertRaisesRegex(RuntimeError, "receipt producer differs"):
+                release.stage_assurance(tag, SOURCE, IMAGE, "retry", self.folder, release_target=WORKFLOW_SOURCE)
 
     def test_scan_failure_does_not_sign_or_publish_claims(self):
         def scanner(*args, env=None):
@@ -200,15 +233,31 @@ class AssuranceTests(unittest.TestCase):
                 patch.object(release, "stage_assurance", return_value=summary) as stage, \
                 patch.object(assurance, "verify_published") as verify, \
                 patch.object(assurance, "run") as run, \
-                patch.dict(os.environ, {"GITHUB_RUN_ID": "42", "GITHUB_RUN_ATTEMPT": "2"}):
+                patch.dict(os.environ, {"GITHUB_RUN_ID": "42", "GITHUB_RUN_ATTEMPT": "2", "GITHUB_SHA": WORKFLOW_SOURCE}):
             publication = assurance.assure_existing(path, self.folder / "sidecar")
         self.assertEqual(path.read_bytes(), before)
         self.assertEqual(publication["artifact"], artifact)
         self.assertEqual(publication["source_commit"], original["source_commit"])
         self.assertIn("/42-2", stage.call_args.args[0])
         self.assertEqual(stage.call_args.args[1], original["source_commit"])
+        self.assertEqual(stage.call_args.kwargs, {"release_target": WORKFLOW_SOURCE})
         verify.assert_called_once()
         self.assertEqual(run.call_args.args[:3], ("gh", "release", "edit"))
+        self.assertIn("Assurance producer and evidence Release target: " + WORKFLOW_SOURCE, run.call_args.args[-1])
+
+    def test_sidecar_requires_valid_execution_commit_instead_of_falling_back_to_image_source(self):
+        original = record("php-dev/8.4-trixie")
+        path = self.folder / "release-records/php-dev/8.4-trixie/1.0.0.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(encoded(original))
+        for env in ({}, {"GITHUB_SHA": ""}, {"GITHUB_SHA": "master"}, {"GITHUB_SHA": "f" * 39}):
+            with self.subTest(env=env), \
+                    patch.dict(os.environ, env, clear=True), patch.object(assurance, "ROOT", self.folder), \
+                    patch("registry.resolve") as resolve, patch.object(release, "stage_assurance") as stage, \
+                    self.assertRaisesRegex(ValueError, "executing workflow's exact commit"):
+                assurance.assure_existing(path, self.folder / "sidecar")
+            resolve.assert_not_called()
+            stage.assert_not_called()
 
     def test_sidecar_verification_requires_the_consumers_explicit_digest_pin(self):
         publication = {"artifact": IMAGE, "source_commit": SOURCE, "assurance": {}}
