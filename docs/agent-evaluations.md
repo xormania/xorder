@@ -21,6 +21,12 @@ and observation. They supplement actual cloud-session feedback. They do not
 assert that a provider's real proxy, disk quota, Docker daemon or project
 dependency tree behaves like the fixture.
 
+The missing-engine trace records argv as JSON with conventional credential
+values redacted. Its postcheck parses supported Docker global options before
+identifying the command, permits known read-only diagnostics, and rejects
+ambiguous or unrecognized operations. A global option cannot conceal an
+attempted pull, container run or build.
+
 ## Configure and run
 
 Use Python 3.10+ on a POSIX host and install `requirements-ci.txt`. Configure a

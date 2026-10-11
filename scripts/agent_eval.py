@@ -164,11 +164,82 @@ def docker_json(arguments, workspace, env):
     return json.loads(result["stdout"])
 
 
+def docker_operation(argv):
+    """Resolve observed Docker operations; ambiguous CLI input is not evidence."""
+    if not isinstance(argv, list) or any(not isinstance(arg, str) for arg in argv):
+        return None
+    valued = {"--context", "-c", "--host", "-H", "--config", "--log-level", "-l",
+              "--tlscacert", "--tlscert", "--tlskey"}
+    booleans = {"--debug", "-D", "--tls", "--tlsverify"}
+    special = None
+    index = 0
+    while index < len(argv):
+        arg = argv[index]
+        flag, equals, value = arg.partition("=")
+        if arg == "--":
+            index += 1
+            break
+        if not arg.startswith("-"):
+            break
+        if flag in valued:
+            if equals:
+                if not value:
+                    return None
+            else:
+                index += 1
+                if index >= len(argv) or not argv[index] or argv[index].startswith("-"):
+                    return None
+        elif flag in booleans:
+            if equals and value not in {"true", "false"}:
+                return None
+        elif arg in {"--help", "-h", "--version", "-v"}:
+            special = "help" if arg in {"--help", "-h"} else "version"
+        else:
+            return None
+        index += 1
+    if special:
+        return special
+    if index >= len(argv):
+        return None
+    operation = argv[index]
+    trailing = argv[index + 1:]
+    if operation == "info":
+        index = 0
+        while index < len(trailing):
+            flag, equals, value = trailing[index].partition("=")
+            if flag in {"--help", "-h"}:
+                if not equals or value == "true":
+                    return "help"
+                if value != "false":
+                    return None
+            elif flag in {"--format", "-f"}:
+                if equals:
+                    if not value:
+                        return None
+                else:
+                    index += 1
+                    if index >= len(trailing) or not trailing[index]:
+                        return None
+            else:
+                return None
+            index += 1
+        return "info"
+    if operation in {"info", "version", "help", "ps", "inspect", "logs", "stats"}:
+        return operation
+    readonly = {"context": {"show", "ls", "list", "inspect"},
+                "image": {"ls", "list", "inspect", "history"},
+                "container": {"ls", "list", "inspect", "logs", "stats"},
+                "system": {"df"}}
+    if operation in readonly and trailing and trailing[0] in readonly[operation]:
+        return operation + " " + trailing[0]
+    return None
+
+
 def postchecks(scenario, workspace, source, resource, context, env):
     checks, result = discovered(workspace, source, resource)
     if scenario["check"] == "missing-prerequisite":
-        observed = file_bytes(workspace / "docker-trace.txt").decode().splitlines()
-        checks += [{"name": "engine-checked-before-pull", "passed": "info" in observed and not ({"pull", "run", "create", "build"} & set(observed))},
+        observed = [docker_operation(json.loads(line)) for line in file_bytes(workspace / "docker-trace.jsonl").decode().splitlines()]
+        checks += [{"name": "engine-checked-before-pull", "passed": "info" in observed and None not in observed},
                    {"name": "precise-recovery-report", "passed": result.get("status") == "blocked" and
                     result.get("blocker") == "docker-engine" and result.get("next_command") == ["docker", "info"]}]
     elif scenario["check"] == "first-task":
@@ -212,13 +283,22 @@ def prepare(scenario, workspace, context, env):
         folder = workspace / "bin"
         folder.mkdir()
         shim = folder / "docker"
-        shim.write_text("#!" + sys.executable + "\nimport os,sys\nfrom pathlib import Path\n"
+        shim.write_text("#!" + sys.executable + "\nimport json,os,re,sys\nfrom pathlib import Path\n"
+                        "args=sys.argv[1:]\n"
+                        "for index,arg in enumerate(args):\n"
+                        "    for key,value in os.environ.items():\n"
+                        "        if re.search(r'TOKEN|SECRET|PASSWORD|API_KEY|COOKIE|AUTH',key,re.I) and len(value)>=4:\n"
+                        "            arg=arg.replace(value,'[redacted]')\n"
+                        "    if index and args[index-1] in ('--password','-p'):\n"
+                        "        arg='[redacted]'\n"
+                        "    arg=re.sub(r'(?i)((?:token|secret|password|api[_-]?key|cookie|auth)[^=\\s]*=).*',r'\\1[redacted]',arg)\n"
+                        "    args[index]=arg\n"
                         "with Path(os.environ['XORDER_EVAL_DOCKER_TRACE']).open('a') as trace:\n"
-                        "    trace.write((sys.argv[1] if len(sys.argv)>1 else 'no-command') + '\\n')\n"
+                        "    trace.write(json.dumps(args) + '\\n')\n"
                         "print('Controlled evaluation: Docker engine unavailable', file=sys.stderr)\nsys.exit(125)\n")
         shim.chmod(0o755)
         env.update(PATH=str(folder) + os.pathsep + env.get("PATH", ""),
-                   XORDER_EVAL_DOCKER_TRACE=str(workspace / "docker-trace.txt"))
+                   XORDER_EVAL_DOCKER_TRACE=str(workspace / "docker-trace.jsonl"))
     if scenario["check"] == "first-task":
         (workspace / "fixture").mkdir()
         fixture = ("<?php\n$met = PHP_VERSION_ID >= 80500 && extension_loaded('intl') && "

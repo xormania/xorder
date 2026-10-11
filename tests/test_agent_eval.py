@@ -86,6 +86,25 @@ class AgentEvaluationTests(unittest.TestCase):
         observation = self.run_eval(agent_eval.ROOT / "tests/scenarios/missing-prerequisite.json")
         self.assertEqual(observation["outcome"], "fail")
 
+    def test_global_options_and_unknown_invocations_cannot_hide_a_pull(self):
+        for case, arguments in enumerate((["--context", "example", "pull", "a-moving-tag"],
+                          ["--host=tcp://engine:2375", "image", "pull", "a-moving-tag"],
+                          ["--unrecognized-option", "value", "info"])):
+            with self.subTest(arguments=arguments):
+                self.write_adapter(self.evidence_script() + "subprocess.run(['docker','info'],check=False); subprocess.run(['docker',*" + repr(arguments) + "],check=False)\nr=json.loads((w/'result.json').read_text()); r.update(status='blocked',blocker='docker-engine',next_command=['docker','info']); (w/'result.json').write_text(json.dumps(r))\n")
+                observation = agent_eval.run(agent_eval.ROOT / "tests/scenarios/missing-prerequisite.json", self.adapter,
+                                             self.folder / ("observation-" + str(case) + ".json"))
+                self.assertEqual(observation["outcome"], "fail")
+                self.assertFalse(next(item["passed"] for item in observation["checks"] if item["name"] == "engine-checked-before-pull"))
+
+    def test_global_options_are_parsed_before_readonly_commands(self):
+        self.assertEqual(agent_eval.docker_operation(["--context", "example", "info"]), "info")
+        self.assertEqual(agent_eval.docker_operation(["--debug=true", "--host=tcp://engine:2375", "info"]), "info")
+        self.assertEqual(agent_eval.docker_operation(["info", "--help"]), "help")
+        self.assertEqual(agent_eval.docker_operation(["info", "--format", "{{json .}}"]), "info")
+        self.assertIsNone(agent_eval.docker_operation(["--context"]))
+        self.assertIsNone(agent_eval.docker_operation(["info", "--unknown"]))
+
     def test_timeout_kills_background_child_in_same_process_group(self):
         marker = self.folder / "escaped.txt"
         child = "import time; from pathlib import Path; time.sleep(0.6); Path(" + repr(str(marker)) + ").write_text('escaped')"
