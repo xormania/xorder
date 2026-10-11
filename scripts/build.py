@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from library import ROOT, children, definitions, fingerprint, read, records, validate_inventory
 from image_validation import prerequisites
+from build_cache import current_branch, plan as registry_cache_plan
 
 
 def reusable_artifact(line, parent=None):
@@ -28,7 +29,7 @@ def pinned(base):
     return base["tag"] + "@" + base["digest"]
 
 
-def build(line, image, source, parent=None, cache=None):
+def build(line, image, source, parent=None, cache=None, registry_imports=()):
     d = definitions()[line]
     tools = read(ROOT / "images/tools.json")
     args = {"BASE_IMAGE": parent or pinned(d["base"]), "SOURCE_COMMIT": source,
@@ -55,6 +56,8 @@ def build(line, image, source, parent=None, cache=None):
         # Docker context (as in CI) need not be named "default".
         context = subprocess.check_output(["docker", "context", "show"], text=True).strip()
         cmd += ["--builder", context]
+    for item in registry_imports:
+        cmd += ["--cache-from", item]
     cache_path = None
     if cache and os.environ.get("LIBRARY_CACHE_DIR"):
         cache_path = Path(os.environ["LIBRARY_CACHE_DIR"]) / cache
@@ -130,7 +133,11 @@ def validate_tree(a, defs, selected=None, needed=None):
         subprocess.run(["docker", "pull", "--platform", "linux/amd64", reused], check=True)
         a.image = reused
     else:
-        build(a.line, a.image, a.source, a.parent, a.cache)
+        imports = getattr(a, "registry_imports", ())
+        if imports:
+            build(a.line, a.image, a.source, a.parent, a.cache, registry_imports=imports)
+        else:
+            build(a.line, a.image, a.source, a.parent, a.cache)
     built = time.monotonic()
     should_verify = selected is None or a.line in selected
     if should_verify:
@@ -176,6 +183,10 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("line"); p.add_argument("image")
     p.add_argument("--source", default="local"); p.add_argument("--parent"); p.add_argument("--cache")
+    p.add_argument("--registry-cache", help="Read-only GHCR build cache owned by GitHub owner/name")
+    p.add_argument("--cache-branch", help="Registry cache branch; defaults to this checkout's branch")
+    p.add_argument("--cache-default-branch", default="master", help="Registry cache default branch")
+    p.add_argument("--cache-scope", default="", help="Registry cache scope, matching the consuming CI build")
     p.add_argument("--inventory", default="out/inventory.json")
     p.add_argument("--cache-probe", action="store_true")
     p.add_argument("--reuse-accepted", action="store_true", help="Pull unchanged accepted artifacts and run behavior without rebuilding")
@@ -185,6 +196,14 @@ def main(argv=None):
     defs = definitions()
     if a.line not in defs:
         p.error(f"Unknown image line: {a.line}")
+    if a.registry_cache:
+        try:
+            a.registry_imports = registry_cache_plan(a.registry_cache, a.cache_branch or current_branch(ROOT),
+                                                    a.cache_default_branch, scope=a.cache_scope)["cache-from"]
+        except ValueError as error:
+            p.error(str(error))
+    elif a.cache_branch or a.cache_scope:
+        p.error("--cache-branch and --cache-scope require --registry-cache")
     selected, needed = None, None
     if a.verify_lines is not None:
         try:

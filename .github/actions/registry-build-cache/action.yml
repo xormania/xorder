@@ -1,0 +1,38 @@
+name: Registry build cache
+description: Shared branch, dev, main and default-branch GHCR cache inputs with CI-only exports
+inputs:
+  scope:
+    description: Optional independent build target scope, matching local imports
+    default: ''
+  write:
+    description: Allow cache export on branch pushes; false for reader shards
+    default: 'true'
+outputs:
+  image:
+    description: GHCR cache package derived from the workflow repository
+    value: ${{ steps.cache.outputs.image }}
+  branch-tag:
+    description: Safe current branch cache tag
+    value: ${{ steps.cache.outputs.branch-tag }}
+  cache-from:
+    description: Newline-separated BuildKit registry cache imports
+    value: ${{ steps.cache.outputs.cache-from }}
+  cache-to:
+    description: Branch cache export, or empty for every read-only trigger
+    value: ${{ steps.cache.outputs.cache-to }}
+  write-enabled:
+    description: Whether this invocation may export cache
+    value: ${{ steps.cache.outputs.write-enabled }}
+  bake-set:
+    description: Bake set overrides that clear inherited exports before configuring cache
+    value: ${{ steps.cache.outputs.bake-set }}
+runs:
+  using: composite
+  steps:
+    - id: cache
+      shell: bash
+      env:
+        XORDER_ACTION_PATH: ${{ github.action_path }}
+        XORDER_CACHE_SCOPE: ${{ inputs.scope }}
+        XORDER_CACHE_WRITE: ${{ inputs.write }}
+      run: python3 "$XORDER_ACTION_PATH/../../../scripts/build_cache.py" --github-output "$GITHUB_OUTPUT"

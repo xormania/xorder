@@ -119,6 +119,7 @@ and direct usage pages remains sufficient.
 - [URL discovery and host/container acceptance](docs/discovery.md)
 - [Profiles and private assignment overlays](docs/profiles.md)
 - [Selection and requirement gaps](docs/selection.md)
+- [Shared CI and local registry build caches](docs/build-cache.md)
 - [Workspace, caches, database, and browser recipes](docs/usage.md)
 - [FrankenPHP and uxor development/testing](docs/uxor.md)
 - [Claude cloud session quick start and dependency reuse](docs/claude-cloud.md)
