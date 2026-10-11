@@ -1,0 +1,8 @@
+{
+  "id": "first-task",
+  "description": "Discover a pinned PHP resource and complete one real task in that exact image.",
+  "check": "first-task",
+  "resource_id": "image/php-dev/8.5-trixie",
+  "timeout_seconds": 1200,
+  "task": "I need PHP 8.5 CLI with intl, curl and zip on Linux amd64. Discover the least specialized available resource from {source_url}. Download catalog-v2.json, README.md and its usage page into evidence/catalog-v2.json, evidence/README.md and evidence/usage.md. Write result.json with resource_id, version, identity, documentation and readiness_command (argv for scripts/verify-image.sh). Run the supplied task.php in the selected exact image. Create container {container_name}, label it xorder.agent-eval={run_id}, mount {workspace}/fixture read-only at /evaluation, use --platform linux/amd64, --network none, --read-only, --user 1000:1000 (to avoid root ownership setup on a read-only root filesystem), and command php /evaluation/task.php. Leave the stopped container for independent inspection; the evaluator removes it. Do not change the supplied fixture or run project dependency installs."
+}

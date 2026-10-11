@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/xormania/xorder/schemas/agent-observation.schema.json",
+  "title": "Optional real-agent observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "run_id", "scenario", "started_at", "finished_at", "source", "resource", "harness", "workspace", "outcome", "reason", "checks", "metrics", "execution", "cleanup"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "real-agent-observation"},
+    "run_id": {"type": "string", "pattern": "^[a-f0-9]{32}$"},
+    "scenario": {
+      "type": "object", "additionalProperties": false, "required": ["id", "sha256", "check"],
+      "properties": {"id": {"type": "string", "minLength": 1}, "sha256": {"$ref": "#/$defs/hash"}, "check": {"enum": ["discovery", "first-task", "missing-prerequisite", "warm-reuse"]}}
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": "string", "format": "date-time"},
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["commit", "url", "catalog_sha256"],
+      "properties": {"commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"}, "url": {"type": "string", "format": "uri"}, "catalog_sha256": {"$ref": "#/$defs/hash"}}
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version", "identity", "verification"],
+      "properties": {"id": {"type": "string"}, "version": {"type": "string"}, "identity": {"type": "string"}, "verification": {"type": "object"}}
+    },
+    "harness": {
+      "type": "object", "additionalProperties": false, "required": ["adapter", "name", "version", "model_configured", "model_observed"],
+      "properties": {"adapter": {"type": "string"}, "name": {"type": "string"}, "version": {"type": ["string", "null"]}, "model_configured": {"type": "string"}, "model_observed": {"type": ["string", "null"]}}
+    },
+    "workspace": {"type": "string"},
+    "outcome": {"enum": ["pass", "fail", "indeterminate"]},
+    "reason": {"type": "string", "minLength": 1},
+    "checks": {
+      "type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "passed"], "properties": {"name": {"type": "string"}, "passed": {"type": "boolean"}}}
+    },
+    "metrics": {
+      "type": "object", "additionalProperties": false, "required": ["elapsed_seconds", "human_interventions", "download_bytes", "download_measurement", "before", "after"],
+      "properties": {
+        "elapsed_seconds": {"type": "number", "minimum": 0},
+        "human_interventions": {"type": ["integer", "null"], "minimum": 0},
+        "download_bytes": {"type": "null"}, "download_measurement": {"const": "not-measured"},
+        "before": {"$ref": "#/$defs/disk"}, "after": {"$ref": "#/$defs/disk"}
+      }
+    },
+    "execution": {
+      "oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["exit_code", "timed_out", "output"],
+        "properties": {"exit_code": {"type": "integer"}, "timed_out": {"type": "boolean"}, "output": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["bytes", "sha256"], "properties": {"bytes": {"type": "integer", "minimum": 0}, "sha256": {"$ref": "#/$defs/hash"}}}}}}]
+    },
+    "cleanup": {
+      "type": "object", "additionalProperties": false, "required": ["process_group", "container"],
+      "properties": {"process_group": {"enum": ["not-started", "terminated"]}, "container": {"enum": ["not-applicable", "removed", "not-found-or-cleanup-unconfirmed"]}}
+    }
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "disk": {
+      "type": "object", "additionalProperties": false, "required": ["workspace_file_bytes", "filesystem_free_bytes", "loadavg"],
+      "properties": {"workspace_file_bytes": {"type": "integer", "minimum": 0}, "filesystem_free_bytes": {"type": "integer", "minimum": 0}, "loadavg": {"oneOf": [{"type": "null"}, {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": 0}}]}}
+    }
+  }
+}

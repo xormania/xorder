@@ -1,0 +1,8 @@
+{
+  "id": "missing-prerequisite",
+  "description": "Report a controlled unavailable Docker engine precisely, before attempting a pull or container run.",
+  "check": "missing-prerequisite",
+  "resource_id": "image/php-dev/8.5-trixie",
+  "timeout_seconds": 600,
+  "task": "I need PHP 8.5 CLI with intl, curl and zip on Linux amd64. Discover the least specialized available resource from {source_url}. Download catalog-v2.json, README.md and its usage page into evidence/catalog-v2.json, evidence/README.md and evidence/usage.md. Write result.json with resource_id, version, identity, documentation and readiness_command (argv for scripts/verify-image.sh). Check whether the current Docker engine is usable before any pull or container run. The evaluator has installed an intentionally unavailable docker shim in PATH; this is a controlled recovery scenario. Do not bypass the shim or modify the host. If blocked, include status=blocked, blocker=docker-engine, and next_command=[\"docker\",\"info\"] in result.json, identifying engine readiness as the next prerequisite to restore."
+}
