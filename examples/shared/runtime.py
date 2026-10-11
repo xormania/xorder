@@ -1,6 +1,7 @@
 """Host resource observations, daemon recovery and cooperative heavy-run limits."""
 from contextlib import contextmanager
 import fcntl
+import hashlib
 import json
 import math
 import os
@@ -8,6 +9,8 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import tempfile
+import time
 
 
 def state_root(env):
@@ -33,9 +36,9 @@ def resources(workspace):
             available = min(available, max(0, int(limit) - int(Path("/sys/fs/cgroup/memory.current").read_text())))
     except (OSError, ValueError, KeyError):
         pass
-    load = os.getloadavg()[0] if hasattr(os, "getloadavg") else 0
+    loadavg = os.getloadavg() if hasattr(os, "getloadavg") else (0, 0, 0)
     disk = shutil.disk_usage(workspace)
-    return {"cpus": cpus, "load": round(load, 2), "memory_available": available,
+    return {"cpus": cpus, "load": round(loadavg[0], 2), "loadavg": [round(value, 2) for value in loadavg], "memory_available": available,
             "disk_total": disk.total, "disk_free": disk.free, "disk_used": disk.used}
 
 
@@ -86,6 +89,46 @@ def worker_budget(workspace, env):
     return min(cpu_budget, memory_budget, maximum)
 
 
+def nonnegative_setting(env, name, default):
+    try:
+        value = float(env.get(name, default))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{name} must be a finite nonnegative number") from error
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(f"{name} must be a finite nonnegative number")
+    return value
+
+
+def _lease_metadata(lock, value):
+    lock.seek(0)
+    lock.truncate()
+    lock.write(json.dumps(value) if value else "")
+    lock.flush()
+
+
+def _held_runs(folder):
+    holders = []
+    for filename in sorted(folder.glob("*.lock")):
+        with filename.open("a+") as candidate:
+            try:
+                fcntl.flock(candidate, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                continue  # Released or stale metadata is not an active holder.
+            except BlockingIOError:
+                pass
+            try:
+                candidate.seek(0)
+                owner = json.load(candidate)
+                if not isinstance(owner, dict):
+                    continue
+                age = max(0, time.time() - owner.get("started_at", time.time()))
+                holders.append(f"{owner.get('workspace', 'unknown workspace')} "
+                               f"project={owner.get('project', '?')} PID={owner.get('pid', '?')} "
+                               f"age={age:.0f}s mode={owner.get('mode', 'test')}")
+            except (ValueError, TypeError):
+                pass
+    return "; ".join(dict.fromkeys(holders)) or "holder is acquiring its lease"
+
+
 @contextmanager
 def heavy_run(workspace, env):
     count = int(env.get("XORDER_TEST_MAX_RUNS", "1"))
@@ -93,25 +136,164 @@ def heavy_run(workspace, env):
         raise ValueError("XORDER_TEST_MAX_RUNS must be between 1 and 64")
     folder = state_root(env) / "test-runs"
     folder.mkdir(parents=True, exist_ok=True)
-    lock = None
-    for slot in range(count):
-        candidate = (folder / f"{slot}.lock").open("a+")
-        try:
-            fcntl.flock(candidate, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            lock = candidate
-            break
-        except BlockingIOError:
-            candidate.close()
-    if lock is None:
-        raise ValueError("Another heavy test run holds the host budget. Retry when it finishes "
-                         "or deliberately increase XORDER_TEST_MAX_RUNS")
+    wait = nonnegative_setting(env, "XORDER_TEST_WAIT_SECONDS", "0")
+    measure = env.get("XORDER_TEST_MEASURE", "0")
+    if measure not in ("0", "1"):
+        raise ValueError("XORDER_TEST_MEASURE must be 0 or 1")
+    measure = measure == "1"
+    maximum_load = nonnegative_setting(env, "XORDER_MEASURE_MAX_LOAD_PER_CPU", "0.5")
+    deadline = time.monotonic() + wait
+    gate = (folder / "gate.lock").open("a+")
+    locks = []
+    queued = False
     try:
-        lock.seek(0); lock.truncate()
-        lock.write(json.dumps({"workspace": str(workspace), "pid": os.getpid()})); lock.flush()
+        while True:
+            try:
+                # Exclusive measurement excludes normal runs regardless of their
+                # configured slot count. Existing slot locks also protect older runners.
+                fcntl.flock(gate, (fcntl.LOCK_EX if measure else fcntl.LOCK_SH) | fcntl.LOCK_NB)
+                # Older runner copies know only the numbered slots, not the
+                # gate. Lock every supported slot before measurement so an old
+                # runner cannot create a new higher slot after admission.
+                names = {folder / f"{slot}.lock" for slot in range(64 if measure else count)}
+                if measure:
+                    names.update(path for path in folder.glob("*.lock") if path != folder / "gate.lock")
+                for filename in sorted(names):
+                    candidate = filename.open("a+")
+                    try:
+                        fcntl.flock(candidate, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        locks.append(candidate)
+                        if not measure:
+                            break
+                    except BlockingIOError:
+                        candidate.close()
+                        if measure:
+                            break
+                if locks and (not measure or len(locks) == len(names)):
+                    break
+            except BlockingIOError:
+                pass
+            for lock in locks:
+                lock.close()
+            locks = []
+            fcntl.flock(gate, fcntl.LOCK_UN)
+            description = _held_runs(folder)
+            if time.monotonic() >= deadline:
+                raise ValueError("Another heavy test run holds the host budget: " + description +
+                                 ". Use test --wait [SECONDS] to queue, or deliberately increase XORDER_TEST_MAX_RUNS")
+            if not queued:
+                print("Waiting for host test budget: " + description, flush=True)
+                queued = True
+            time.sleep(min(1, max(0, deadline - time.monotonic())))
+        owner = {"workspace": str(workspace), "project": env.get("UXOR_PROJECT") or env.get("FLOWBITE_PROJECT"),
+                 "pid": os.getpid(), "started_at": time.time(), "mode": "measure" if measure else "test"}
+        for lock in locks:
+            _lease_metadata(lock, owner)
+        if measure:
+            _lease_metadata(gate, owner)
+            announced = False
+            while True:
+                facts = resources(workspace)
+                threshold = facts["cpus"] * maximum_load
+                if facts["load"] <= threshold:
+                    print(f"Measuring lease acquired: load {facts['load']:.2f}, CPU budget {facts['cpus']}, "
+                          f"maximum load {threshold:.2f}", flush=True)
+                    break
+                message = (f"Host is not quiet enough to measure: load {facts['load']:.2f}, "
+                           f"CPU budget {facts['cpus']}, maximum load {threshold:.2f}")
+                if time.monotonic() >= deadline:
+                    raise ValueError(message + ". Use test --measure --wait [SECONDS] to wait for lower load")
+                if not announced:
+                    print(message + "; waiting", flush=True)
+                    announced = True
+                time.sleep(min(1, max(0, deadline - time.monotonic())))
         yield worker_budget(workspace, env)
     finally:
-        lock.seek(0); lock.truncate()
-        lock.close()
+        for lock in locks:
+            _lease_metadata(lock, None)
+            lock.close()
+        if measure:
+            # Never clear another holder's metadata if this gate wasn't acquired.
+            try:
+                fcntl.flock(gate, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                _lease_metadata(gate, None)
+            except BlockingIOError:
+                pass
+        gate.close()
+
+
+def _activity_folder(workspace, project, env):
+    key = hashlib.sha256((str(workspace) + "\0" + project).encode()).hexdigest()
+    return state_root(env) / "stacks" / key
+
+
+def _atomic_json(path, value):
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as temporary:
+        json.dump(value, temporary)
+        filename = Path(temporary.name)
+    filename.replace(path)
+
+
+@contextmanager
+def stack_activity(workspace, project, env, action):
+    """Record runner activity; passive status/logs never make a stack look busy."""
+    if action in ("status", "logs", "gc", "down"):
+        yield
+        return
+    folder = _activity_folder(workspace, project, env)
+    folder.mkdir(parents=True, exist_ok=True)
+    _atomic_json(folder / "workspace.json", {"workspace": str(workspace)})
+    record = {"action": action, "pid": os.getpid(), "started_at": time.time()}
+    with tempfile.NamedTemporaryFile(mode="w+", prefix="active-", suffix=".json", dir=folder) as marker:
+        fcntl.flock(marker, fcntl.LOCK_EX)
+        json.dump(record, marker)
+        marker.flush()
+        _atomic_json(folder / "last.json", record)
+        try:
+            yield
+        finally:
+            _atomic_json(folder / "last.json", dict(record, completed_at=time.time()))
+
+
+def activity_status(workspace, project, env):
+    folder = _activity_folder(workspace, project, env)
+    threshold = nonnegative_setting(env, "XORDER_IDLE_SECONDS", "3600")
+    active = []
+    for filename in folder.glob("active-*.json"):
+        try:
+            with filename.open() as marker:
+                try:
+                    fcntl.flock(marker, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    continue  # Crashed commands leave unlocked files, not live activity.
+                except BlockingIOError:
+                    record = json.load(marker)
+                    if isinstance(record, dict) and "action" in record and "pid" in record:
+                        active.append(record)
+        except (OSError, ValueError):
+            pass
+    if active:
+        return {"state": "active", "commands": active}
+    try:
+        previous = json.loads((folder / "last.json").read_text())
+        if not isinstance(previous, dict):
+            return {"state": "unknown"}
+        age = max(0, time.time() - previous.get("completed_at", previous["started_at"]))
+        return {"state": "idle" if age >= threshold else "recent", "age_seconds": age, **previous}
+    except (OSError, ValueError, KeyError, TypeError):
+        return {"state": "unknown"}
+
+
+def print_activity(workspace, project, env):
+    activity = activity_status(workspace, project, env)
+    if activity["state"] == "active":
+        print("activity: active runner command(s): " + ", ".join(
+            f"{item['action']} PID={item['pid']}" for item in activity["commands"]))
+    elif activity["state"] == "unknown":
+        print("activity: unknown (no runner activity recorded)")
+    else:
+        label = "idle warning" if activity["state"] == "idle" else "activity"
+        print(f"{label}: last runner command {activity['action']} {activity['age_seconds']:.0f}s ago; "
+              "application traffic and commands outside xorder are not observed")
 
 
 def referenced_images(containers, images, keep=()):
@@ -177,7 +359,7 @@ def gc(env, apply=False, runner_copies=(), keep=()):
         result["old_runner_copies"].append(str(path))
     # Receipts and generated git pointers are reconstructable. Never delete repositories.
     root = state_root(env)
-    for folder in (root / "worktrees", root / "flowbite"):
+    for folder in (root / "worktrees", root / "flowbite", root / "stacks"):
         if folder.exists():
             for item in folder.glob("*/workspace.json"):
                 try:

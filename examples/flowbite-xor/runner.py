@@ -15,7 +15,11 @@ PROFILE = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROFILE.parent / "shared"))
 from network import container_environment, local_engine, owner_label, stop, loopback_proxy, PROXIES  # noqa: E402
 from proxy_relay import directory as relay_directory, running as relay_running  # noqa: E402
-from runtime import ensure_daemon, print_resources, heavy_run, gc, state_root  # noqa: E402
+from runtime import ensure_daemon, print_resources, print_activity, stack_activity, heavy_run, gc, state_root  # noqa: E402
+from pull_budget import preflight  # noqa: E402
+from seed import seed, shared_paths, inside as seed_path  # noqa: E402
+from testing_contract import load_contract, run_plant, sync_contract  # noqa: E402
+from test_receipts import parse_test_options, run_test as receipt_test  # noqa: E402
 
 PHP_TEST_ENVIRONMENT = (
     "PHPUNIT_PROJECT", "PHPUNIT_CONFIGURATION",
@@ -99,6 +103,7 @@ def status(project, env):
     daemon = call(["docker", "info", "--format", "{{json .ServerVersion}}"], env, capture=True, check=False)
     print("project: " + project)
     print_resources(Path(env["WORKSPACE"]), env)
+    print_activity(Path(env["WORKSPACE"]), project, env)
     if daemon.returncode:
         print("daemon: unavailable (start Docker, then run up)")
         return 1
@@ -203,9 +208,14 @@ def input_fingerprint(workspace, env):
     return value.hexdigest()
 
 
+def run_test(compose, env, workspace, project, arguments, workers=None):
+    return receipt_test(compose, env, workspace, project, arguments, workers=workers,
+                        input_fingerprint=input_fingerprint(workspace, env))
+
+
 def main(arguments):
     if not arguments:
-        raise ValueError("Usage: run.sh [--slot N] up|status|sync|test|cache|gc|phpunit|php-tests|exec|logs|down [arguments]")
+        raise ValueError("Usage: run.sh [--slot N] up|seed|status|sync|plant|test|cache|gc|phpunit|php-tests|exec|logs|down [arguments]")
     slot = None
     if arguments[0] == "--slot":
         if len(arguments) < 3 or not arguments[1].isdigit():
@@ -217,9 +227,36 @@ def main(arguments):
         if not extra[1].isdigit():
             raise ValueError("--slot must be a nonnegative integer")
         slot = int(extra[1]); extra = extra[2:]
-    if action not in ("up", "status", "sync", "test", "cache", "gc", "phpunit", "php-tests", "exec", "logs", "down"):
+    if action not in ("up", "seed", "status", "sync", "plant", "test", "cache", "gc", "phpunit", "php-tests", "exec", "logs", "down"):
         raise ValueError(f"Unknown action: {action}")
     env = dict(os.environ)
+    if action == "test":
+        extra = parse_test_options(extra, env)
+    workspace = Path(env["WORKSPACE"]).resolve(strict=True)
+    if not workspace.is_dir():
+        raise ValueError("WORKSPACE must be a directory")
+    contract = None
+    if action in ("plant", "sync"):
+        contract = load_contract(workspace, PROFILE)
+    if action == "plant":
+        if extra == ["--list"]:
+            return run_plant(workspace, env, contract, extra, None, None)
+        if not extra:
+            raise ValueError("Usage: xr plant NAME [--wait SECONDS] [--measure] [--attest-server] -- [Playwright arguments] | --list | --restore")
+        if extra != ["--restore"]:
+            extra = [extra[0], *parse_test_options(extra[1:], env)]
+    if action == "sync" and extra not in ([], ["--check"]):
+        raise ValueError("Usage: xr sync [--check]")
+    if action == "seed":
+        parser = argparse.ArgumentParser(prog="xr seed", description="Seed absent dependencies from an explicitly trusted checkout; never install or overwrite")
+        parser.add_argument("--from", dest="source", type=Path, required=True)
+        parser.add_argument("--hardlink", action="store_true", help="Require stopped donor/receiver and protect shared dependencies with durable read-only reuse guards")
+        options = parser.parse_args(extra)
+        return seed(workspace, options.source, env, hardlink=options.hardlink)
+    shared = shared_paths(workspace)
+    if action not in ("down", "logs", "status", "gc"):
+        for path in shared:
+            seed_path(workspace, path)
     if action == "up":
         parser = argparse.ArgumentParser(prog="xr up")
         parser.add_argument("--reuse-only", action="store_true", help="Verify and adopt existing dependencies with read-only mounts; never install or run setup hooks")
@@ -227,13 +264,12 @@ def main(arguments):
         reuse = env.get("XORDER_REUSE_ONLY") or "0"
         if reuse not in ("0", "1"):
             raise ValueError("XORDER_REUSE_ONLY must be 0 or 1")
-        env["XORDER_REUSE_ONLY"] = "1" if options.reuse_only else reuse
+        env["XORDER_REUSE_ONLY"] = "1" if options.reuse_only or shared else reuse
         if env["XORDER_REUSE_ONLY"] == "0" and (env.get("COMPOSER_INSTALL_PREFERENCE") or "dist") != "dist":
             raise ValueError("up installs from dist only. Remove COMPOSER_INSTALL_PREFERENCE=source; source clones can exhaust the sandbox disk. Use up --reuse-only with complete existing dependencies")
     reuse_only = action == "up" and env.get("XORDER_REUSE_ONLY") == "1"
-    workspace = Path(env["WORKSPACE"]).resolve(strict=True)
-    if not workspace.is_dir():
-        raise ValueError("WORKSPACE must be a directory")
+    if shared:
+        env["XORDER_REUSE_ONLY"] = "1"
     project, http, https, udp, key = identity(workspace, env, slot)
     env.update(WORKSPACE=str(workspace), FLOWBITE_PROJECT=project, PUID=env.get("PUID") or str(os.getuid()),
                PGID=env.get("PGID") or str(os.getgid()), FLOWBITE_PROFILE_DIR=str(PROFILE),
@@ -259,7 +295,8 @@ def main(arguments):
         env["CONTAINER_CA_FILE"] = "/run/library-proxy.pem"
     # Only starting a new browser requires the lock. Recovery inspection and
     # cleanup work after deleted/moved dependency files as well.
-    env["PLAYWRIGHT_VERSION"] = playwright(workspace) if action in ("up", "test") else "0.0.0"
+    needs_browser_lock = action in ("up", "test") or (action == "plant" and extra != ["--restore"])
+    env["PLAYWRIGHT_VERSION"] = playwright(workspace) if needs_browser_lock else "0.0.0"
     env["BROWSER_IMAGE"] = env.get("BROWSER_IMAGE") or browser_image(env["PLAYWRIGHT_VERSION"])
     if action == "up":
         ensure_daemon(env)
@@ -274,24 +311,26 @@ def main(arguments):
         env["XORDER_INPUT_FINGERPRINT"] = input_fingerprint(workspace, env)
     compose = compose_command(workspace, project, env)
     overlay = {"services": {"php": {"volumes": []}}}
-    if reuse_only:
+    if (reuse_only or shared) and action not in ("down", "logs"):
         # Protect the actual dependency files even when project code or a tool
         # attempts a write. Receipts, Symfony caches and compiled CSS stay local.
-        paths = [Path("demo/vendor"), Path("node_modules")]
+        paths = [Path("demo/vendor"), Path("node_modules")] if reuse_only else []
+        paths.extend(Path(path) for path in shared)
         map_file = Path(env.get("IMPORTMAP_FILE") or "importmap.php")
         asset_vendor = Path(env.get("IMPORTMAP_VENDOR_DIR") or "assets/vendor")
         for path in (map_file, asset_vendor):
             if path.is_absolute() or ".." in path.parts:
                 raise ValueError("Reuse-only importmap paths must be relative paths inside demo")
-        if (workspace / "demo" / map_file).is_file():
+        if reuse_only and (workspace / "demo" / map_file).is_file():
             paths.append(Path("demo") / asset_vendor)
         missing = []
-        for path in paths:
+        for path in sorted(set(paths)):
             source = (workspace / path).resolve()
             if not source.is_relative_to(workspace):
                 raise ValueError("Reuse-only dependencies must stay inside the mounted workspace")
             if not source.is_dir():
-                missing.append(str(path))
+                if reuse_only:
+                    missing.append(str(path))
                 continue
             overlay["services"]["php"]["volumes"].append({"type": "bind", "source": str(source), "target": "/app/" + path.as_posix(), "read_only": True, "bind": {"create_host_path": False}})
         if missing:
@@ -347,7 +386,7 @@ def main(arguments):
         overlay["services"]["php"].setdefault("environment", {})["GIT_OPTIONAL_LOCKS"] = "0"
         for source, target in ((common, common), (str(pointer), "/app/.git")):
             overlay["services"]["php"]["volumes"].append({"type": "bind", "source": source, "target": target, "read_only": True, "bind": {"create_host_path": False}})
-    with tempfile.TemporaryDirectory(prefix="xorder-compose-") as directory:
+    with stack_activity(workspace, project, env, action), tempfile.TemporaryDirectory(prefix="xorder-compose-") as directory:
         if overlay["services"]["php"]["volumes"] or "browser" in overlay["services"]:
             filename = Path(directory) / "overlay.json"
             filename.write_text(json.dumps(overlay))
@@ -360,6 +399,7 @@ def main(arguments):
                 env[proxy_key] = ",".join(dict.fromkeys([*env[proxy_key].split(","), *service_names]))
             if service_names:
                 configuration = call([*compose, "config", "--format", "json"], env, capture=True).stdout
+            preflight(workspace, json.loads(configuration), env, PROFILE.parents[1])
             configuration_hash = hashlib.sha256(configuration.encode()).hexdigest()
             receipt = Path(env.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "xorder/flowbite" / key / (project + ".json")
             try:
@@ -367,6 +407,14 @@ def main(arguments):
             except (OSError, ValueError):
                 previous = {}
             if reuse_only:
+                if shared:
+                    # Copy receiver recipe sources into private demo destinations.
+                    # Dependency binds already prevent this command from writing
+                    # through to donor files. Use the same project-owned contract
+                    # as explicit sync/check/plant operations.
+                    sync = load_contract(workspace, PROFILE)["sync"]["command"]
+                    call([*compose, "run", "--rm", "--no-deps", "--entrypoint", "bash", "php",
+                          "/run/xorder/startup.sh", "--entrypoint", "--seed-sync", *sync], env)
                 # Inspect before Compose can start/recreate application services.
                 # Initialize only private home/var ownership and trust, then
                 # inspect as PUID without application setup or server hooks.
@@ -398,14 +446,15 @@ def main(arguments):
             print(f"Ready: {project} http://localhost:{http} https://localhost:{https}")
         elif action == "test":
             with heavy_run(workspace, env) as workers:
-                if not any(arg == "--workers" or arg.startswith("--workers=") or arg == "-j" for arg in extra):
-                    extra = [f"--workers={workers}", *extra]
                 print(f"Test budget acquired; automatic worker budget {workers}", flush=True)
-                php_exec(compose, env, "npx", "playwright", "test", *extra)
+                return run_test(compose, env, workspace, project, extra, workers=workers)
         elif action == "sync":
-            sync = json.loads((PROFILE / "profile.json").read_text())["sync"]
-            php_exec(compose, env, *sync)
-            print("Synced project recipes, controllers and templates using " + " ".join(sync))
+            sync_contract(contract, lambda command: php_exec(compose, env, *command, capture=True, check=False), check=extra == ["--check"])
+        elif action == "plant":
+            with heavy_run(workspace, env) as workers:
+                return run_plant(workspace, env, contract, extra,
+                                 lambda command: php_exec(compose, env, *command, capture=True, check=False),
+                                 lambda arguments: run_test(compose, env, workspace, project, arguments, workers=workers))
         elif action == "cache":
             php_exec(compose, env, "python3", "/run/xorder/cache.py", *extra, cwd="/app/demo")
         elif action == "phpunit":

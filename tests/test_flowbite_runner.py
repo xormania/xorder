@@ -115,11 +115,11 @@ if args[:2] == ["context", "inspect"]:
     print(json.dumps(os.environ.get("MOCK_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")))
     sys.exit(0)
 if args[0] == "ps":
-    project = args[-1].rsplit("=", 1)[1]
+    project = args[-1].rsplit("=", 1)[1] if "=" in args[-1] else None
     if not state["containers"] and os.environ.get("MOCK_RESERVED_PORTS") == "1":
         print("port-reservation")
         sys.exit(0)
-    print("\\n".join(c["Id"] for c in state["containers"] if c["Config"]["Labels"]["com.docker.compose.project"] == project))
+    print("\\n".join(c["Id"] for c in state["containers"] if project is None or c["Config"]["Labels"]["com.docker.compose.project"] == project))
 elif args[0] == "inspect":
     if "port-reservation" in args:
         print(json.dumps([{"Id": "port-reservation", "Config": {"Labels": {"com.docker.compose.project": os.environ["FLOWBITE_PROJECT"], "com.docker.compose.service": "php", "dev.xorder.workspace": os.environ["WORKSPACE"]}}, "NetworkSettings": {"Ports": {"80/tcp": [{"HostPort": os.environ["HTTP_PORT"]}], "443/tcp": [{"HostPort": os.environ["HTTPS_PORT"]}], "443/udp": [{"HostPort": os.environ["HTTP3_PORT"]}]}}}]))
@@ -354,6 +354,22 @@ statefile.write_text(json.dumps(state))
         self.assertEqual(self.run_profile("up", MOCK_UP_FAIL="1").returncode, 1)
         self.assertFalse(any("exec" in call["args"] for call in self.calls))
 
+    def test_disk_preflight_refuses_before_container_start_or_dependency_setup(self):
+        result = self.run_profile("up", XORDER_DISK_RESERVE_GIB="1000000")
+        self.assertEqual(result.returncode, 64)
+        self.assertIn("configured stack reserve", result.stderr)
+        self.assertFalse(any("up" in call["args"] or "exec" in call["args"] or "run" in call["args"]
+                             for call in self.calls))
+
+    def test_status_reports_idle_after_completed_work_without_refreshing_it(self):
+        self.assertEqual(self.run_profile("up").returncode, 0)
+        marker = next((self.directory / "cache/xorder/stacks").glob("*/last.json"))
+        previous = marker.read_bytes()
+        result = self.run_profile("status", XORDER_IDLE_SECONDS="0")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("idle warning: last runner command up", result.stdout)
+        self.assertEqual(marker.read_bytes(), previous)
+
     def test_inexact_browser_pin_is_rejected_before_docker(self):
         (self.workspace / "package.json").write_text(json.dumps({"devDependencies": {"@playwright/test": "^1.58.2"}}))
         self.assertEqual(self.run_profile("up").returncode, 64)
@@ -408,6 +424,64 @@ statefile.write_text(json.dumps(state))
         # Recovery must work even when a session-wide reuse flag is inherited
         # and the dependency tree has been removed or redirected.
         self.assertEqual(self.run_profile("down", XORDER_REUSE_ONLY="1").returncode, 0)
+
+    def test_seed_sharing_guard_forces_read_only_up_and_uses_receiver_sync_contract(self):
+        paths = ["demo/vendor", "node_modules", "demo/assets/vendor"]
+        for path in paths:
+            (self.workspace / path).mkdir(parents=True)
+        (self.workspace / "demo/importmap.php").write_text("<?php return [];\n")
+        (self.workspace / ".xorder-shared-dependencies.json").write_text(json.dumps({"schema": 1, "paths": paths}))
+        (self.workspace / ".xorder").mkdir()
+        (self.workspace / ".xorder/testing.json").write_text(json.dumps({"schema_version": 1, "sync": {"command": ["php", "receiver-sync", "--private"]}}))
+        self.assertEqual(self.run_profile("up", XORDER_REUSE_ONLY="0", COMPOSER_INSTALL_PREFERENCE="source").returncode, 0)
+        sync = next(i for i, call in enumerate(self.calls) if "--seed-sync" in call["args"])
+        check = next(i for i, call in enumerate(self.calls) if "--check-reuse" in call["args"])
+        self.assertLess(sync, check)
+        self.assertEqual(self.calls[sync]["args"][-3:], ["php", "receiver-sync", "--private"])
+        self.assertTrue(all(c["env"]["XORDER_REUSE_ONLY"] == "1" for c in self.calls))
+        self.assertFalse(any(c["args"][-2:] == ["npm", "ci"] for c in self.calls))
+        self.commands.unlink()
+        self.assertEqual(self.run_profile("exec", "true", XORDER_REUSE_ONLY="0").returncode, 0)
+        mounts = self.calls[-1]["overlay"]["services"]["php"]["volumes"]
+        self.assertEqual({mount["target"] for mount in mounts}, {"/app/" + path for path in paths})
+        self.assertTrue(all(mount["read_only"] for mount in mounts))
+        # Removed shared trees do not block cleanup; surviving binds remain RO.
+        (self.workspace / "node_modules").rmdir()
+        self.assertEqual(self.run_profile("down").returncode, 0)
+
+    def test_private_seed_dispatch_requires_matching_inputs_but_no_image_or_docker(self):
+        donor = self.directory / "donor checkout"
+        (donor / "demo").mkdir(parents=True)
+        for name in ("package.json", "package-lock.json"):
+            (donor / name).write_bytes((self.workspace / name).read_bytes())
+        for checkout in (donor, self.workspace):
+            (checkout / "demo/composer.json").write_text("{}")
+            (checkout / "demo/composer.lock").write_text('{"packages":[]}')
+        for path in ("demo/vendor", "node_modules"):
+            (donor / path).mkdir(parents=True)
+            (donor / path / "installed").write_text("dependency bytes")
+        self.assertEqual(self.run_profile("seed", "--from", str(donor), IMAGE=None).returncode, 0)
+        self.assertEqual(self.calls, [])
+        self.assertEqual((self.workspace / "demo/vendor/installed").read_text(), "dependency bytes")
+        self.assertNotEqual((donor / "demo/vendor/installed").stat().st_ino, (self.workspace / "demo/vendor/installed").stat().st_ino)
+
+    def test_seed_sharing_guard_keeps_cleanup_available_after_dependency_symlink(self):
+        (self.workspace / ".xorder-shared-dependencies.json").write_text(json.dumps({"schema": 1, "paths": ["demo/vendor", "node_modules"]}))
+        (self.workspace / "node_modules").symlink_to(self.directory, target_is_directory=True)
+        # Recovery works despite a removed vendor and redirected npm directory.
+        self.assertEqual(self.run_profile("down").returncode, 0)
+        self.assertTrue(any("down" in call["args"] for call in self.calls))
+        self.commands.unlink()
+        self.assertEqual(self.run_profile("status", IMAGE=None).returncode, 1)
+        self.assertTrue(any(call["args"][0] == "info" for call in self.calls))
+        self.commands.unlink()
+        self.assertEqual(self.run_profile("gc", IMAGE=None).returncode, 0)
+        # A mutating/start command still refuses the redirected shared directory.
+        self.commands.unlink()
+        result = self.run_profile("up")
+        self.assertEqual(result.returncode, 64)
+        self.assertIn("redirected by symlinks", result.stderr)
+        self.assertEqual(self.calls, [])
 
     def test_source_or_configuration_change_invalidates_setup_receipt(self):
         self.assertEqual(self.run_profile("up").returncode, 0)
@@ -568,7 +642,7 @@ class NodeReuseTests(unittest.TestCase):
 
 
 class StartupBootstrapTests(unittest.TestCase):
-    def run_startup(self, mode="--application", build_failure=False, assets_missing=False, asset_failure=False, composer_reused=False, reuse_only=False, source=False, composer_missing=False):
+    def run_startup(self, mode="--application", build_failure=False, assets_missing=False, asset_failure=False, composer_reused=False, reuse_only=False, source=False, composer_missing=False, arguments=("frankenphp", "run")):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             profile, demo = root / "profile", root / "app/demo"
@@ -616,7 +690,7 @@ if "tailwind:build" in args:
                 path = root / command
                 path.write_text('#!/bin/sh\nprintf "%s\\n" "' + command + ' $*" >> "$STARTUP_COMMANDS"\n')
                 path.chmod(0o755)
-            result = subprocess.run(["bash", str(profile / "startup.sh"), mode, "frankenphp", "run"],
+            result = subprocess.run(["bash", str(profile / "startup.sh"), mode, *arguments],
                                     env=dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"],
                                              STARTUP_COMMANDS=str(commands), BUILD_FAILURE=str(int(build_failure)),
                                              ASSETS_MISSING=str(int(assets_missing)), ASSET_FAILURE=str(int(asset_failure)),
@@ -624,6 +698,14 @@ if "tailwind:build" in args:
                                              COMPOSER_INSTALL_PREFERENCE="source" if source else "dist"),
                                     capture_output=True, text=True)
             return result, commands.read_text().splitlines() if commands.exists() else []
+
+    def test_seed_sync_runs_only_selected_receiver_command_without_install_or_bootstrap(self):
+        result, commands = self.run_startup(mode="--seed-sync", arguments=("php", "receiver-sync", "--private"), source=True, reuse_only=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(commands, ["php receiver-sync --private"])
+        result, commands = self.run_startup(mode="--seed-sync", arguments=())
+        self.assertEqual(result.returncode, 64)
+        self.assertEqual(commands, [])
 
     def test_application_compiles_css_after_priming_before_server(self):
         result, commands = self.run_startup()

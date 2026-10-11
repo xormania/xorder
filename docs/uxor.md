@@ -124,6 +124,12 @@ including when the containers were started with Xdebug off. Reports live under
 The runner sets `APP_ENV=test`, `APP_DEBUG=1` and `CREATE_SNAPSHOTS=false` for
 this process, independently of the development server's environment.
 
+For browser fault catalogs, [source plants and copy checks](local-testing.md)
+describe project-owned named edits, served-content confirmation, recovery, and
+`sync --check`. The latter reports stale ignored demo copies using UXor's own
+sync rules. Named plants use the normal test budget and receipt; source and
+copies are restored after the run, including an expected test failure.
+
 The image stores a checksum-verified Tailwind v4.3.3 binary at `/opt/tailwind`.
 After Composer is ready, `up` reads the demo's resolved tailwind-bundle config
 and copies the binary to `demo/var/tailwind/v4.3.3/tailwindcss-linux-x64`.
@@ -217,6 +223,14 @@ bash examples/uxor/run.sh up
 
 ### Reuse existing dependencies without rewriting them
 
+To populate a new checkout from a trusted prepared worktree, use
+`python3 scripts/xr.py NEW_WORKTREE seed --from PREPARED_WORKTREE`.
+Composer/npm manifests and locks, optional Symfony recipe lock and importmap
+inputs must match. Dependency destinations must be absent. The default creates
+private reflinks/copies; `--hardlink` requires stopped stacks and installs a
+sharing guard in both worktrees. See the
+[cloud seeding workflow](claude-cloud.md#reusing-worktree-dependencies).
+
 ```sh
 bash examples/uxor/run.sh up --reuse-only
 ```
@@ -234,9 +248,13 @@ sync is skipped, and Composer setup hooks and npm ci do not run.
 are mounted read-only in PHP. The dependency paths must already exist inside
 the workspace; the importmap defaults are the paths below in this guide.
 This protects hardlinked package files from application/bootstrap writes too.
-Use the flag on every `up`; later `exec` commands use the retained container
-and its read-only mounts. Changing back to ordinary `up` restores writable
-mounts and normal setup behavior.
+For manual reuse without a sharing receipt, use the flag on every `up`; later
+`exec` commands use the retained container and its read-only mounts. Ordinary
+`up` restores writable mounts and normal setup behavior for these manually
+prepared trees. Worktrees seeded with `--hardlink` instead retain the automatic
+sharing guard: ordinary `up` also verifies read-only reuse, and both donor and
+receiver mounts remain protected. The receiver's project-owned sync command
+copies recipes into private demo destinations before the dependency check.
 
 A missing or changed Composer/npm readiness marker is reported as an unrecorded
 setup step. Complete dependency metadata can be adopted without pretending
@@ -250,9 +268,9 @@ The runner creates a separate `xorder/<workspace-hash>` cache under that existin
 directory and mounts only that child. Writable dependency archives are not shared
 between workspaces. The cache bind is outside HOME and its ownership is never
 changed. Ensure the child is writable by `PUID:PGID`. Without a host cache, Composer uses the persistent named
-home volume. Source preference uses Composer's normal source/dist fallback; it
-requires source-repository access and does not promise success through every
-restricted gateway.
+home volume. Installation remains dist-only. When a restricted gateway blocks
+archive downloads, seed from a trusted prepared checkout or use a verified
+dependency bundle and read-only reuse.
 
 `HTTP_PROXY`, `HTTPS_PROXY`, their lowercase forms and `ALL_PROXY`/`all_proxy`
 are forwarded. In automatic mode, loopback endpoints (`localhost`, 127.0.0.0/8,

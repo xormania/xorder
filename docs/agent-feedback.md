@@ -59,6 +59,9 @@ to four workers selected from CPU load and available memory. Override
 Playwright `--workers` argument is retained; the concurrent-run lease still
 applies. Separate hosts or distinct `XDG_CACHE_HOME` roots have separate budgets.
 
+[Startup budgets and shared host runs](runtime.md) describe pre-pull image size
+observations, queued leases, quiet measurement admission and idle activity signals.
+
 ## Shared dependencies and CI artifacts
 
 Caches are grouped by canonical Git repository and isolated by checkout path.
