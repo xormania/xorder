@@ -85,8 +85,11 @@ per ID with exact pins and usage links; `show ID --version REVISION` selects one
 explicit historical release. `doctor --workspace PATH --resource ID` inspects
 command presence, disk space, lockfile presence and Docker availability with fixed
 read-only probes. Each Docker probe has a three-second deadline by default,
-configurable up to ten seconds; no packages or services are installed or started.
-Engine platform and host platform remain distinct. Output does not establish
+configurable up to ten seconds, followed by at most one second of process cleanup.
+POSIX probes run in a private process group; timeout and normal completion both
+terminate remaining wrapper/plugin children and reap the direct process. Non-POSIX
+Docker probes report `unsupported_platform` without starting commands. No packages
+or services are installed or started. Engine platform and host platform remain distinct. Output does not establish
 network access, scope, harness, or application readiness.
 `resolve PROFILE --target TARGET` reads local JSON files and prints a lock; it
 does not install resources or activate instructions. `generate` and `check` use

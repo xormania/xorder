@@ -30,7 +30,9 @@ configuration behind the user's back.
    diagnostic is `python3 scripts/xorder_cli.py doctor --workspace /path/to/project`.
    Add `--resource ID --version REVISION` to inspect one release's prerequisites.
    It reports actual command presence, disk space, lockfile presence and fixed
-   Docker engine/Compose probes. No downloads, installs or project hooks execute.
+   Docker engine/Compose probes. POSIX probes own a private process group and
+   stop remaining children after timeout or completion; non-POSIX Docker probes
+   report that observation as unsupported. No downloads, installs or project hooks execute.
 3. Select exact identities from the current index, or retain an accepted existing
    pin. Resolve a reusable profile against observed target facts when useful.
    The doctor output's `target` is a partial observation: add inspected harness

@@ -1,5 +1,7 @@
 """Bounded read-only facts for discovery; application readiness remains separate."""
+import os
 import platform
+import signal
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,16 +15,38 @@ LOCKFILES = ("composer.lock", "package-lock.json", "uv.lock", "Cargo.lock", "dev
 
 
 def _probe(argv, timeout):
+    # A fresh POSIX session keeps CLI wrappers and their plugins in a group
+    # that this observation owns. Non-POSIX process-tree cleanup is not
+    # implemented; skip execution rather than claim a bounded observation.
+    if os.name != "posix":
+        return {"status": "unsupported_platform"}
     try:
-        result = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                text=True, timeout=timeout, check=False)
-    except subprocess.TimeoutExpired:
-        return {"status": "timed_out"}
+        process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                   text=True, start_new_session=True)
     except OSError:
         return {"status": "unavailable"}
-    if result.returncode:
-        return {"status": "failed", "exit_code": result.returncode}
-    return {"status": "passed", "value": result.stdout.strip()[:200]}
+    try:
+        try:
+            output, _ = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return {"status": "timed_out"}
+        if process.returncode:
+            return {"status": "failed", "exit_code": process.returncode}
+        return {"status": "passed", "value": output.strip()[:200]}
+    finally:
+        # Clean up descendants even when the wrapper already returned and
+        # closed its pipes. Probes never intentionally leave background work.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        # Do not wait for inherited stdout handles after killing the group.
+        # Closing our handle also bounds cleanup if a platform plugin detached.
+        process.stdout.close()
+        try:
+            process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            return {"status": "cleanup_incomplete"}
 
 
 def inspect_target(workspace, resource=None, timeout=3):
@@ -52,8 +76,11 @@ def inspect_target(workspace, resource=None, timeout=3):
         probes["docker_engine"] = _probe(["docker", "info", "--format", "{{.OSType}}/{{.Architecture}}"], timeout)
         probes["docker_compose"] = _probe(["docker", "compose", "version", "--short"], timeout)
         if resource and resource["kind"] == "image" and probes["docker_engine"]["status"] != "passed":
+            action = ("Run doctor on a POSIX host such as Linux/WSL; bounded Docker process-tree probes are not implemented on this platform."
+                      if probes["docker_engine"]["status"] == "unsupported_platform" else
+                      "Restore the host's Docker engine or connection, then repeat doctor; a client alone is insufficient.")
             gaps.append({"code": "docker_engine_" + probes["docker_engine"]["status"],
-                         "action": "Restore the host's Docker engine or connection, then repeat doctor; a client alone is insufficient."})
+                         "action": action})
     if resource and resource["kind"] == "image":
         # A remote Linux engine may be used by a different host OS. Never
         # substitute host architecture for unknown engine target facts.

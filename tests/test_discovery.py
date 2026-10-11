@@ -1,9 +1,12 @@
 """Current discovery stays small, honest, and tied to exact accepted releases."""
 import copy
 import json
+import os
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -95,8 +98,44 @@ class DiscoveryContracts(unittest.TestCase):
                              (['docker', 'info', '--format', '{{.OSType}}/{{.Architecture}}'], 0.1))
             with self.assertRaisesRegex(ValueError, 'at most 10'):
                 inspect_target(folder, timeout=11)
-        with patch('xorder.inspect.subprocess.run', side_effect=subprocess.TimeoutExpired(['docker'], 0.1)):
-            self.assertEqual(_probe(['docker', 'info'], 0.1), {'status': 'timed_out'})
+
+    @unittest.skipUnless(os.name == 'posix', 'Probe groups require POSIX')
+    def test_probe_terminates_children_on_timeout_and_after_wrapper_returns(self):
+        for wrapper_exits in (False, True):
+            with self.subTest(wrapper_exits=wrapper_exits), tempfile.TemporaryDirectory() as folder:
+                pidfile = Path(folder) / 'child.pid'
+                survived = Path(folder) / 'survived'
+                child = ('import time; from pathlib import Path; time.sleep(0.8); '
+                         f'Path({str(survived)!r}).write_text("survived")')
+                wrapper = ('import subprocess, sys, time; from pathlib import Path; '
+                           f'p = subprocess.Popen([sys.executable, "-c", {child!r}], '
+                           'stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); '
+                           f'Path({str(pidfile)!r}).write_text(str(p.pid)); '
+                           + ('print("ready")' if wrapper_exits else 'time.sleep(30)'))
+                started = time.monotonic()
+                result = _probe([sys.executable, '-c', wrapper], 0.4)
+                self.assertLess(time.monotonic() - started, 2)
+                self.assertTrue(pidfile.is_file(), 'Reproduction must spawn a child before the deadline')
+                pid = int(pidfile.read_text())
+                try:
+                    self.assertEqual(result['status'], 'passed' if wrapper_exits else 'timed_out')
+                    time.sleep(0.9)
+                    self.assertFalse(survived.exists(), 'A probe descendant survived process-group cleanup')
+                    state = Path('/proc') / str(pid) / 'stat'
+                    if state.exists():
+                        # An orphan can briefly remain as a zombie until the
+                        # system reaper collects it; it must not execute.
+                        self.assertEqual(state.read_text().rsplit(')', 1)[1].split()[0], 'Z')
+                finally:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
+    def test_non_posix_probe_reports_unsupported_without_starting_processes(self):
+        with patch('xorder.inspect.os.name', 'nt'), patch('xorder.inspect.subprocess.Popen') as spawn:
+            self.assertEqual(_probe(['docker', 'info'], 0.1), {'status': 'unsupported_platform'})
+            spawn.assert_not_called()
 
 
 if __name__ == '__main__':
