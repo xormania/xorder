@@ -131,6 +131,50 @@ def accepted_resource(record):
     return facts["size_bytes"] == publication["size_bytes"]
 
 
+def record_path(record):
+    if record.get("schema_version") == 2:
+        return Path("release-records/artifacts") / record["id"] / (record["version"] + ".json")
+    return Path("release-records") / record["line_id"] / (record["version"] + ".json")
+
+
+def catalog_identity(release_inputs):
+    """Bind complete durable facts, including original source and verification evidence."""
+    keyed = {}
+    for record in release_inputs:
+        path = record_path(record).as_posix()
+        if path in keyed and keyed[path] != record:
+            raise RuntimeError("Conflicting publication records for " + path)
+        keyed[path] = record
+    return hashlib.sha256(json.dumps(keyed, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def catalog_branch(release_inputs):
+    branch = "automation/catalog-" + catalog_identity(release_inputs)[:24]
+    if output("git", "ls-remote", "--heads", "origin", branch).strip():
+        return branch
+    # Recover pending branches produced by older run-ID automation as well as
+    # content-keyed proposals that contain a superset of this run's records.
+    repository = os.environ["GITHUB_REPOSITORY"]
+    pages = json.loads(output("gh", "api", "--paginate", "--slurp", "--method", "GET",
+                              f"repos/{repository}/pulls", "-f", "base=master", "-f", "state=open", "-f", "per_page=100"))
+    for pull in (pull for page in pages for pull in page):
+        head = pull.get("head", {})
+        candidate = head.get("ref", "")
+        if head.get("repo", {}).get("full_name") != repository or not candidate.startswith("automation/catalog-"):
+            continue
+        run("git", "fetch", "origin", candidate)
+        matches = True
+        for record in release_inputs:
+            prior = subprocess.run(["git", "show", f"FETCH_HEAD:{record_path(record).as_posix()}"],
+                                   cwd=ROOT, capture_output=True, text=True)
+            if prior.returncode or json.loads(prior.stdout) != record:
+                matches = False
+                break
+        if matches:
+            return candidate
+    return branch
+
+
 def main(refresh=False):
     release_inputs = [release_record(read(p)) for p in (ROOT / "out/releases").rglob("record.json")]
     if not refresh and not release_inputs:
@@ -138,7 +182,7 @@ def main(refresh=False):
         return
     run("git", "config", "user.name", "image-library automation")
     run("git", "config", "user.email", "image-library@users.noreply.github.com")
-    branch = "automation/" + ("refresh" if refresh else "catalog") + "-" + os.environ["GITHUB_RUN_ID"]
+    branch = "automation/refresh-" + os.environ["GITHUB_RUN_ID"] if refresh else catalog_branch(release_inputs)
     prepare_branch(branch)
     if refresh:
         # Resolve after checkout. Allocate from master so a rerun of the same
@@ -178,11 +222,13 @@ def main(refresh=False):
                 raise RuntimeError("Existing release identity differs from the publication record")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(encoded(record))
-    for path, content in generated(ROOT).items():
+    outputs = generated(ROOT)
+    for path, content in outputs.items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content)
-    staged_paths = [path for path in ("images", "release-records", "catalog.json", "catalog-v2.json", "README.md", "docs") if (ROOT / path).exists()]
-    run("git", "add", *staged_paths)
+    staged_paths = {str(path.relative_to(ROOT)) for path in outputs}
+    staged_paths.update(path for path in ("images", "release-records") if (ROOT / path).exists())
+    run("git", "add", "--", *sorted(staged_paths))
     changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
     if not changed and output("git", "rev-list", "--count", "origin/master..HEAD").strip() == "0":
         print("Already current; no writeback needed.")

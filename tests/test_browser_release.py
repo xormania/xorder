@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+from urllib.parse import quote
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -85,6 +86,8 @@ class BrowserReleaseTests(unittest.TestCase):
                 patch.object(release, "run"), patch.object(release, "gh", return_value="[[]]"), \
                 patch.object(release.subprocess, "check_output", side_effect=lambda args, **kw: json.dumps(labels) if args[0] == "docker" else ""), \
                 patch.object(release, "promote_exact"), patch.object(release, "finalize_release"), \
+                patch.object(release, "stage_assurance", return_value={"receipt_url": "https://github.com/xormania/xorder/releases/download/" + quote(self.line + "/v" + proof["version"], safe="") + "/assurance.json", "receipt_sha256": "a" * 64, "predicate_type": "https://github.com/xormania/xorder/assurance/v1"}), \
+                patch("image_assurance.verify_record"), \
                 patch.dict(os.environ, {"GH_TOKEN": "test-only-token", "GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42"}):
             evidence = Path(folder) / "proof.json"
             evidence.write_text(encoded(proof))

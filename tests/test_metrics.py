@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.parse import quote
 from unittest.mock import patch
 
 import jsonschema
@@ -164,6 +165,8 @@ class MeasurementTests(unittest.TestCase):
                 patch.object(release, "run"), patch.object(release, "gh", return_value="[[]]"), \
                 patch.object(release.subprocess, "check_output", return_value=""), \
                 patch.object(release, "promote_exact"), patch.object(release, "finalize_release"), \
+                patch.object(release, "stage_assurance", return_value={"receipt_url": "https://github.com/xormania/xorder/releases/download/" + quote(new["source_tag"], safe="") + "/assurance.json", "receipt_sha256": "a" * 64, "predicate_type": "https://github.com/xormania/xorder/assurance/v1"}), \
+                patch("image_assurance.verify_record"), \
                 patch.dict(release.os.environ, {"GITHUB_REPOSITORY": "xormania/docker-image-library", "GITHUB_RUN_ID": "42"}):
             published = release.publish(line, "f" * 40, Path(tmp))
             self.assertEqual(published, read(Path(tmp) / "record.json"))
@@ -183,7 +186,8 @@ class MeasurementTests(unittest.TestCase):
                 patch.object(release, "resolve", return_value=resolved), \
                 patch.object(release, "build") as build_image, \
                 patch.object(release, "image_measurements") as measure, \
-                patch.object(release, "promote_exact"), patch.object(release, "finalize_release"):
+                patch.object(release, "promote_exact"), patch.object(release, "finalize_release"), \
+                patch("image_assurance.verify_record"):
             self.assertEqual(release.publish(line, "f" * 40, Path(tmp)), published)
             build_image.assert_not_called()
             measure.assert_not_called()

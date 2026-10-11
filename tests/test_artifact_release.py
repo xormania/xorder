@@ -357,6 +357,8 @@ class ResourcePublicationTests(unittest.TestCase):
             path.write_text(model.encoded(record))
         def output(*args):
             if args[0] == "gh":
+                if args[1:3] == ("api", "--paginate"):
+                    return "[[]]"
                 self.assertEqual(args[:3], ("gh", "release", "view"))
                 return json.dumps(releases[args[3]])
             return subprocess.check_output(args, cwd=self.repo, text=True)
@@ -377,7 +379,7 @@ class ResourcePublicationTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in json.loads((self.repo / "catalog-v2.json").read_text())["resources"]], [self.resource_id])
         pr.assert_called_once()
         self.assertIn("Skipping unverified public resource release for configuration/broken", diagnostics.getvalue())
-        git("cat-file", "-e", "refs/remotes/origin/automation/catalog-43:release-records/artifacts/configuration/sample/1.0.0.json")
+        git("cat-file", "-e", "refs/remotes/origin/automation/catalog-" + writeback.catalog_identity([bad, good])[:24] + ":release-records/artifacts/configuration/sample/1.0.0.json")
 
     def test_corrupt_payload_does_not_block_independent_verified_writeback(self):
         self.mixed_writeback("corrupt-payload")

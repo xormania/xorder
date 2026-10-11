@@ -4,6 +4,12 @@ on:
     branches: [master]
     paths: ['images/**', 'artifacts/**', 'scripts/**', 'schemas/**', 'tests/**', 'examples/**', '.github/workflows/publish.yml']
   workflow_dispatch:
+    inputs:
+      assurance_record:
+        description: 'Optional accepted image release-records path: scan/sign that digest without building or changing its record'
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: write
   packages: write
@@ -13,12 +19,46 @@ concurrency:
   queue: max
   cancel-in-progress: false
 jobs:
+  assure-existing:
+    needs: prepare
+    if: always() && github.ref == 'refs/heads/master' && ((github.event_name == 'workflow_dispatch' && inputs.assurance_record != '') || (github.event_name == 'push' && needs.prepare.result == 'success' && needs.prepare.outputs.assurance_smoke_record != ''))
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RECORD_PATH: ${{ inputs.assurance_record || needs.prepare.outputs.assurance_smoke_record }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
+        with:
+          cosign-release: v3.1.3
+      - run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
+      - name: Observe and publish assurance for the recorded digest
+        run: python scripts/image_assurance.py assure-existing "$RECORD_PATH" --output out/existing
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: image-assurance-existing
+          path: out/existing/
+          if-no-files-found: ignore
   prepare:
     permissions:
       contents: read
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && !inputs.assurance_record
     runs-on: ubuntu-24.04
     outputs:
+      assurance_smoke_record: ${{ steps.assurance-smoke.outputs.assurance_smoke_record }}
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_images: ${{ steps.matrix.outputs.has_images }}
       browsers: ${{ steps.matrix.outputs.browsers }}
@@ -32,6 +72,11 @@ jobs:
         with:
           fetch-depth: 0
       - run: python -m pip install -r requirements-ci.txt
+      - id: assurance-smoke
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: python scripts/image_assurance.py smoke-record --base "$BEFORE" >> "$GITHUB_OUTPUT"
       - id: matrix
         run: |
           matrix=$(python scripts/library.py release-matrix)
@@ -106,6 +151,10 @@ jobs:
           path: out/resources/**/record.json
           if-no-files-found: ignore
   publish:
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     needs: prepare
     if: needs.prepare.outputs.has_images == 'true'
     strategy:
@@ -137,6 +186,11 @@ jobs:
           key: buildx-v2-${{ runner.os }}-${{ matrix.line }}-${{ steps.cache-key.outputs.key }}
           restore-keys: |
             buildx-v2-${{ runner.os }}-${{ matrix.line }}-
+      - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
+        with:
+          cosign-release: v3.1.3
+      - name: Install checksum-pinned image scanner
+        run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
       - name: Publish or resume exact artifacts
         env:
           LIBRARY_CACHE_DIR: /tmp/image-library-build-cache
@@ -157,7 +211,9 @@ jobs:
         if: always()
         with:
           name: release-${{ strategy.job-index }}
-          path: out/**/record.json
+          path: |
+            out/**/record.json
+            out/**/assurance/**
           if-no-files-found: ignore
   browser-parity:
     # A fresh runner has no publication token, registry login, or checkout credential.
@@ -194,13 +250,14 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
     needs: [prepare, browser-parity]
     if: needs.prepare.outputs.has_browsers == 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.browsers) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 50
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -222,6 +279,11 @@ jobs:
         with:
           name: browser-verification-${{ steps.key.outputs.line }}
           path: out/verified
+      - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
+        with:
+          cosign-release: v3.1.3
+      - name: Install checksum-pinned image scanner
+        run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
       - name: Finalize only the exact anonymously verified digest
         env:
           LINE: ${{ matrix.line }}
@@ -230,7 +292,9 @@ jobs:
         if: always()
         with:
           name: release-browser-${{ strategy.job-index }}
-          path: out/**/record.json
+          path: |
+            out/**/record.json
+            out/**/assurance/**
           if-no-files-found: ignore
   documentation:
     permissions:

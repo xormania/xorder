@@ -62,6 +62,10 @@ def verify_image_record(record, repository):
         actual = remote["platforms"].get(platform["platform"]) if remote["platforms"] else remote["digest"]
         if actual != platform["digest"]:
             raise RuntimeError(f"Public platform digest differs: {exact} ({platform['platform']})")
+    if record.get("assurance"):
+        from image_assurance import verify_record
+        with tempfile.TemporaryDirectory(prefix="xorder-catalog-assurance-") as temporary:
+            verify_record(record, Path(temporary))
     return record
 
 

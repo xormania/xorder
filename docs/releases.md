@@ -50,8 +50,11 @@ PR lands on master, `Publish verified images` follows this path:
 2. Exercise the public readiness recipe and collect actual inventory.
 3. Push a separate source/revision-qualified candidate tag. Pull that same
    artifact by digest without credentials, and execute its readiness recipe.
-4. Persist `record.json` and the inventory as assets on a draft namespaced
-   GitHub Release before changing an exact tag.
+4. Scan the published digest, generate its SBOM, keylessly sign it with GitHub
+   OIDC, and verify the public signatures and signed receipt anonymously. The
+   [assurance contract](image-assurance.md) describes the explicit vulnerability
+   policy and public evidence. Persist these assets, `record.json`, and the
+   inventory on a draft namespaced GitHub Release before changing an exact tag.
 5. Promote the candidate digest to the exact tag. Refuse any different existing
    digest, verify the public exact reference and publish the source Release.
 6. Open a PR containing verified release records and generated catalog/docs.
@@ -88,6 +91,18 @@ evidence cannot be edited, deleted, or renamed in place; lifecycle, reason,
 replacement and lifecycle date can change without depending on the withdrawn
 artifact's availability.
 Manual dispatch checks all accepted image records against public evidence.
+
+Catalog proposal branches are keyed by the complete durable input records,
+including source and verification facts, rather than the workflow run ID.
+Unrelated master/doc merges therefore recover the same pending proposal.
+Existing run-ID catalog branches are also recovered if their pending PR already
+contains all the exact incoming records. Conflicting source, digest, or
+verification observations cannot be treated as the same content.
+
+The [repository gate audit](repository-gates.md) records the external ruleset
+settings and a reviewable administrator update for stable `checks` and
+`catalog-evidence` contexts. A green workflow alone does not prove those contexts
+are required by the live ruleset.
 
 Generated catalog PRs summarize every proposed record on the branch, including
 records retained during recovery. The table shows previous and proposed

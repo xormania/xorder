@@ -159,7 +159,7 @@ def records(root=ROOT):
 
 def image_entry(record):
     d, pub = record["definition"], record["publication"]
-    return {
+    item = {
         "id": "image/" + record["line_id"], "kind": "image", "version": record["version"],
         "purpose": d["purpose"], "capabilities": d["capabilities"],
         "targets": [item["platform"] for item in record["platforms"]],
@@ -173,6 +173,10 @@ def image_entry(record):
                     "extensions": d["extensions"], "tools": d["tools"],
                     "exact_reference": pub["repository"] + ":" + pub["exact_tag"]},
     }
+
+    if record.get("assurance"):
+        item["assurance"] = copy.deepcopy(record["assurance"])
+    return item
 
 
 def artifact_entry(record):
