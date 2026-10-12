@@ -1,8 +1,4 @@
 {
-  "schema_version": 1,
-  "input_fingerprint_version": 2,
-  "family": "playwright-browser",
-  "purpose": "Version-matched Chromium, Firefox and WebKit browser server without PHP or development build tools.",
   "capabilities": [
     "playwright",
     "chromium",
@@ -11,44 +7,48 @@
     "browser-server",
     "node"
   ],
-  "extensions": [],
-  "tools": [
-    "node",
-    "playwright"
-  ],
+  "companions": [],
   "execution": {
-    "workspace": "/workspace",
-    "home": "/home/dev",
-    "default_uid": 1000,
-    "default_gid": 1000,
-    "uid_env": "PUID",
-    "gid_env": "PGID",
     "cache_paths": [
       "/home/dev/.cache"
-    ]
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
   },
-  "companions": [],
+  "extensions": [],
+  "family": "playwright-browser",
+  "input_fingerprint_version": 2,
   "limitations": [
     "Use the exact Playwright version pinned by the consuming project.",
     "Linux/amd64 only. All three engines are included; size savings are measured during validation and publication."
   ],
   "lines": {
     "1.58-trixie": {
-      "runtime_line": "1.58",
+      "base": {
+        "digest": "sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa",
+        "tag": "docker.io/library/node:22-trixie-slim"
+      },
+      "changes": [
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+      ],
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
-      "revision": "1.0.2",
       "platforms": [
         "linux/amd64"
       ],
-      "base": {
-        "tag": "docker.io/library/node:22-trixie-slim",
-        "digest": "sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa"
-      },
-      "changes": [
-        "Retain RGB screenshot parity and isolate browser locks and fixtures by runtime line; prepare matched releases when the consumer Playwright pin changes."
-      ],
-      "migration": "Select the accepted 1.0.2 digest after publication for isolated browser inputs and RGB rendering. Existing exact release pins remain unchanged.",
-      "playwright_version": "1.58.2"
+      "playwright_version": "1.58.2",
+      "revision": "1.0.3",
+      "runtime_line": "1.58"
     }
-  }
+  },
+  "purpose": "Version-matched Chromium, Firefox and WebKit browser server without PHP or development build tools.",
+  "schema_version": 1,
+  "tools": [
+    "node",
+    "playwright"
+  ]
 }

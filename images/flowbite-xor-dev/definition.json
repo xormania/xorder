@@ -1,69 +1,69 @@
 {
-  "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for flowbite-xor development and Playwright orchestration.",
   "capabilities": [
     "node",
     "npm",
     "playwright-client",
     "tailwind-cli"
   ],
+  "companions": [
+    "mcr.microsoft.com/playwright:<project-locked-version>-noble"
+  ],
+  "execution": {
+    "cache_paths": [
+      "/home/dev/.cache"
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
+  },
   "extensions": [],
+  "family": "flowbite-xor-dev",
+  "input_fingerprint_version": 2,
   "limitations": [
     "Playwright and application packages come from project lockfiles; browsers run in the version-matched official Playwright companion.",
     "Use examples/flowbite-xor/run.sh to reuse repository-owned worker, Caddy, PHP and mount configuration without an in-container Docker socket.",
     "The cached Tailwind binary is seeded only when its version and platform match the consuming project configuration."
   ],
-  "schema_version": 1,
-  "family": "flowbite-xor-dev",
-  "tools": [
-    "node",
-    "npm",
-    "tailwindcss"
-  ],
-  "execution": {
-    "workspace": "/workspace",
-    "home": "/home/dev",
-    "default_uid": 1000,
-    "default_gid": 1000,
-    "uid_env": "PUID",
-    "gid_env": "PGID",
-    "cache_paths": [
-      "/home/dev/.cache"
-    ]
-  },
-  "companions": [
-    "mcr.microsoft.com/playwright:<project-locked-version>-noble"
-  ],
   "lines": {
     "8.4-trixie": {
-      "runtime_line": "8.4",
-      "os": "debian-trixie",
-      "revision": "1.1.1",
-      "platforms": [
-        "linux/amd64"
-      ],
       "base": {
         "parent": "php-frankenphp/8.4-trixie"
       },
       "changes": [
-        "Retain only the prepared PHPStan Turbo binary matching the image runtime; omit incompatible native binaries in the installation layer while preserving PHPStan and its Symfony/PHPUnit extensions."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible packaging fix. Select a verified new digest to obtain the smaller image. Prepared PHPStan remains opt-in; project-owned dependencies and analysis configuration are unchanged. Linux PHP 8.4/8.5 ZTS continues to use the upstream fallback when no matching binary is supplied."
-    },
-    "8.5-trixie": {
-      "runtime_line": "8.5",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
-      "revision": "1.2.1",
       "platforms": [
         "linux/amd64"
       ],
+      "revision": "1.1.2",
+      "runtime_line": "8.4"
+    },
+    "8.5-trixie": {
       "base": {
         "parent": "php-frankenphp/8.5-trixie"
       },
       "changes": [
-        "Retain only the prepared PHPStan Turbo binary matching the image runtime; omit incompatible native binaries in the installation layer while preserving PHPStan and its Symfony/PHPUnit extensions."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible packaging fix. Select a verified new digest to obtain the smaller image. Prepared PHPStan remains opt-in; project-owned dependencies and analysis configuration are unchanged. Linux PHP 8.4/8.5 ZTS continues to use the upstream fallback when no matching binary is supplied."
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "os": "debian-trixie",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "revision": "1.2.2",
+      "runtime_line": "8.5"
     }
   },
-  "input_fingerprint_version": 2
+  "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for flowbite-xor development and Playwright orchestration.",
+  "schema_version": 1,
+  "tools": [
+    "node",
+    "npm",
+    "tailwindcss"
+  ]
 }

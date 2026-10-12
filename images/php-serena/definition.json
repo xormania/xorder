@@ -1,7 +1,4 @@
 {
-  "schema_version": 1,
-  "family": "php-serena",
-  "purpose": "Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.",
   "capabilities": [
     "serena-v2-repl",
     "phpactor",
@@ -11,26 +8,21 @@
     "serena-shell",
     "node"
   ],
-  "extensions": [],
-  "tools": [
-    "library-serena",
-    "phpactor",
-    "uv",
-    "node",
-    "typescript-language-server"
-  ],
+  "companions": [],
   "execution": {
-    "workspace": "/workspace",
-    "home": "/home/dev",
-    "default_uid": 1000,
-    "default_gid": 1000,
-    "uid_env": "PUID",
-    "gid_env": "PGID",
     "cache_paths": [
       "/home/dev/.cache"
-    ]
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
   },
-  "companions": [],
+  "extensions": [],
+  "family": "php-serena",
+  "input_fingerprint_version": 2,
   "limitations": [
     "Serena is pinned to the tested v2 beta revision b79e2a55f9d4072084977dd35bd07d31146d88b9.",
     "PHP semantic operations are backed by PHPactor; Twig and Symfony container/service semantics are not established by PHP symbol tests.",
@@ -42,20 +34,28 @@
   ],
   "lines": {
     "8.5-trixie": {
-      "runtime_line": "8.5",
-      "os": "debian-trixie",
-      "revision": "1.1.0",
-      "platforms": [
-        "linux/amd64"
-      ],
       "base": {
         "parent": "php-dev/8.5-trixie"
       },
       "changes": [
-        "Disable PHPactor configuration prompts on clean read-only checkouts; add locked JavaScript tooling, configurable request timeout, complete-index reuse, structured sessions and shell access."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible additions. Existing MCP invocation remains valid; select a verified 1.1 digest for the new capabilities. Pass --write for trusted editing, --languages php_phpactor,typescript for mixed projects and --cache-dir for persistent indexes."
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "os": "debian-trixie",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "revision": "1.1.1",
+      "runtime_line": "8.5"
     }
   },
-  "input_fingerprint_version": 2
+  "purpose": "Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.",
+  "schema_version": 1,
+  "tools": [
+    "library-serena",
+    "phpactor",
+    "uv",
+    "node",
+    "typescript-language-server"
+  ]
 }

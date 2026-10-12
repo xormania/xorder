@@ -1,5 +1,4 @@
 {
-  "purpose": "Rust 2024 native compilation, Clippy, formatting and wasm32-unknown-unknown builds.",
   "capabilities": [
     "rust",
     "cargo",
@@ -9,13 +8,47 @@
     "postgresql-client",
     "wasm32-unknown-unknown"
   ],
+  "companions": [
+    "postgres:17-trixie"
+  ],
+  "execution": {
+    "cache_paths": [
+      "/home/dev/.cache"
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
+  },
   "extensions": [],
+  "family": "rust-dev",
+  "input_fingerprint_version": 2,
   "limitations": [
     "WASM target compilation is tested; a WASM runtime and browser execution are not provided.",
     "No CUE executable or global third-party Cargo tools are included."
   ],
+  "lines": {
+    "1.99-trixie": {
+      "base": {
+        "digest": "sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581",
+        "tag": "docker.io/library/rust:1.99-slim-trixie"
+      },
+      "changes": [
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+      ],
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "os": "debian-trixie",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "revision": "1.1.3",
+      "runtime_line": "1.99"
+    }
+  },
+  "purpose": "Rust 2024 native compilation, Clippy, formatting and wasm32-unknown-unknown builds.",
   "schema_version": 1,
-  "family": "rust-dev",
   "tools": [
     "bash",
     "git",
@@ -24,38 +57,5 @@
     "jq",
     "rg",
     "psql"
-  ],
-  "execution": {
-    "workspace": "/workspace",
-    "home": "/home/dev",
-    "default_uid": 1000,
-    "default_gid": 1000,
-    "uid_env": "PUID",
-    "gid_env": "PGID",
-    "cache_paths": [
-      "/home/dev/.cache"
-    ]
-  },
-  "companions": [
-    "postgres:17-trixie"
-  ],
-  "lines": {
-    "1.99-trixie": {
-      "runtime_line": "1.99",
-      "os": "debian-trixie",
-      "revision": "1.1.2",
-      "platforms": [
-        "linux/amd64"
-      ],
-      "base": {
-        "tag": "docker.io/library/rust:1.99-slim-trixie",
-        "digest": "sha256:24e632c09342c20abf8312cf4f61430a911c01ed3a5e4c02b87292b1c39c5273"
-      },
-      "changes": [
-        "Refresh shared source inputs for PHP testing helpers while preserving complete PEM bundle trust."
-      ],
-      "migration": "Compatible source refresh. Existing exact pins remain valid; select this revision only after its normal publication and verification."
-    }
-  },
-  "input_fingerprint_version": 2
+  ]
 }

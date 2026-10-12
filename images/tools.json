@@ -1,39 +1,39 @@
 {
-  "schema_version": 1,
+  "apcu_version": "5.1.28",
+  "apt_indexes": {
+    "https://deb.debian.org/debian/dists/trixie-updates/Release": "10012cb384dc2613586d7b3d391d92a5637c9faa36017239739f2a6109a0d45f",
+    "https://deb.debian.org/debian/dists/trixie/Release": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
+    "https://security.debian.org/debian-security/dists/trixie-security/Release": "729b118ea4d51c48557d1e597bea15d6eebb615d8f84c37af3be8340be7314ff"
+  },
   "composer": {
-    "tag": "docker.io/library/composer:2",
-    "digest": "sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac"
+    "digest": "sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac",
+    "tag": "docker.io/library/composer:2"
   },
-  "uv": {
-    "tag": "ghcr.io/astral-sh/uv:latest",
-    "digest": "sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21"
-  },
-  "redis_version": "6.3.0",
-  "xdebug_version": "3.5.3",
-  "symfony": {
-    "version": "5.22.0",
-    "url": "https://github.com/symfony-cli/symfony-cli/releases/download/v5.22.0/symfony-cli_linux_amd64.tar.gz",
-    "sha256": "26af8671c2ea0cefd72c3629513e190af7c2e239e81e0ea84842716f4db3a585"
+  "infection": {
+    "sha256": "3fd4216875260b8e47c48ec1a92473f500d88bd36d8ffec21cc0d24e18d7f0ea",
+    "url": "https://github.com/infection/infection/releases/download/0.35.6/infection.phar",
+    "version": "0.35.6"
   },
   "node": {
-    "tag": "docker.io/library/node:22-trixie",
-    "digest": "sha256:def2655045ff1ee91b28a48cb3ec84feafef6d128bda0ff6903e7847ed0b27b4"
-  },
-  "apcu_version": "5.1.28",
-  "tailwind": {
-    "version": "v4.3.3",
-    "url": "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.3.3/tailwindcss-linux-x64",
-    "sha256": "dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a"
+    "digest": "sha256:def2655045ff1ee91b28a48cb3ec84feafef6d128bda0ff6903e7847ed0b27b4",
+    "tag": "docker.io/library/node:22-trixie"
   },
   "pcov_version": "1.0.12",
-  "infection": {
-    "version": "0.35.6",
-    "url": "https://github.com/infection/infection/releases/download/0.35.6/infection.phar",
-    "sha256": "3fd4216875260b8e47c48ec1a92473f500d88bd36d8ffec21cc0d24e18d7f0ea"
+  "redis_version": "6.3.0",
+  "schema_version": 1,
+  "symfony": {
+    "sha256": "26af8671c2ea0cefd72c3629513e190af7c2e239e81e0ea84842716f4db3a585",
+    "url": "https://github.com/symfony-cli/symfony-cli/releases/download/v5.22.0/symfony-cli_linux_amd64.tar.gz",
+    "version": "5.22.0"
   },
-  "apt_indexes": {
-    "https://deb.debian.org/debian/dists/trixie/Release": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
-    "https://deb.debian.org/debian/dists/trixie-updates/Release": "10012cb384dc2613586d7b3d391d92a5637c9faa36017239739f2a6109a0d45f",
-    "https://security.debian.org/debian-security/dists/trixie-security/Release": "5cf72f9c534b27dd9fb350b7d4c31b05a82dea2abcfed19a08097bf8d7e8f847"
-  }
+  "tailwind": {
+    "sha256": "dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a",
+    "url": "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.3.3/tailwindcss-linux-x64",
+    "version": "v4.3.3"
+  },
+  "uv": {
+    "digest": "sha256:cdc6093146eb3ff6a40107b38f008b789e050e77ad87865e381d9917da55a168",
+    "tag": "ghcr.io/astral-sh/uv:latest"
+  },
+  "xdebug_version": "3.5.3"
 }
