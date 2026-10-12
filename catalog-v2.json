@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-10T20:34:02.648679Z",
+  "generated_at": "2026-10-12T23:42:05.317915Z",
   "resources": [
     {
       "capabilities": [
@@ -1377,6 +1377,174 @@
       "version": "1.2.1"
     },
     {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "46ef5f60738961779dc20af0c0dc7f29f439e49768c0762d6dbf5df08c037d75",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-frankenphp%2F8.4-trixie%2Fv1.1.2/assurance.json"
+      },
+      "capabilities": [
+        "php",
+        "composer",
+        "symfony",
+        "postgresql-client",
+        "native-build",
+        "xdebug",
+        "frankenphp",
+        "worker-server",
+        "pcov",
+        "php-testing",
+        "phpstan-isolated",
+        "mutation-testing"
+      ],
+      "created_at": "2026-10-12T23:22:37.468080Z",
+      "details": {
+        "exact_reference": "ghcr.io/xormania/php-frankenphp:8.4-trixie-v1.1.2",
+        "extensions": [
+          "intl",
+          "mbstring",
+          "curl",
+          "zip",
+          "bcmath",
+          "dom",
+          "xml",
+          "pdo_pgsql",
+          "pgsql",
+          "pdo_mysql",
+          "mysqli",
+          "pdo_sqlite",
+          "gd",
+          "redis",
+          "sockets",
+          "pcntl",
+          "xdebug",
+          "apcu",
+          "zend opcache",
+          "pcov"
+        ],
+        "family": "php-frankenphp",
+        "runtime_line": "8.4",
+        "tools": [
+          "bash",
+          "git",
+          "gh",
+          "curl",
+          "jq",
+          "rg",
+          "psql",
+          "frankenphp",
+          "library-php-coverage",
+          "library-php-tests",
+          "infection"
+        ]
+      },
+      "documentation": "docs/images/php-frankenphp-8.4-trixie.md",
+      "id": "image/php-frankenphp/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-frankenphp@sha256:db129945845787737366fe7e8c65510251f031c2ef36e362e08f3c4f398aba2e",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
+      "release_record": "release-records/php-frankenphp/8.4-trixie/1.1.2.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "verification": {
+        "completed_at": "2026-10-12T23:22:37.468080Z",
+        "evidence": "https://github.com/xormania/xorder/actions/runs/38321328835",
+        "status": "passed",
+        "surface": "github-actions-linux-amd64"
+      },
+      "version": "1.1.2"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "b63ebd76fc837159e03a68bec1df8917c1a181b64a9f0627db2a5629fa93ee18",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-frankenphp%2F8.5-trixie%2Fv1.1.2/assurance.json"
+      },
+      "capabilities": [
+        "php",
+        "composer",
+        "symfony",
+        "postgresql-client",
+        "native-build",
+        "xdebug",
+        "frankenphp",
+        "worker-server",
+        "pcov",
+        "php-testing",
+        "phpstan-isolated",
+        "mutation-testing"
+      ],
+      "created_at": "2026-10-12T23:23:26.920125Z",
+      "details": {
+        "exact_reference": "ghcr.io/xormania/php-frankenphp:8.5-trixie-v1.1.2",
+        "extensions": [
+          "intl",
+          "mbstring",
+          "curl",
+          "zip",
+          "bcmath",
+          "dom",
+          "xml",
+          "pdo_pgsql",
+          "pgsql",
+          "pdo_mysql",
+          "mysqli",
+          "pdo_sqlite",
+          "gd",
+          "redis",
+          "sockets",
+          "pcntl",
+          "xdebug",
+          "apcu",
+          "zend opcache",
+          "pcov"
+        ],
+        "family": "php-frankenphp",
+        "runtime_line": "8.5",
+        "tools": [
+          "bash",
+          "git",
+          "gh",
+          "curl",
+          "jq",
+          "rg",
+          "psql",
+          "frankenphp",
+          "library-php-coverage",
+          "library-php-tests",
+          "infection"
+        ]
+      },
+      "documentation": "docs/images/php-frankenphp-8.5-trixie.md",
+      "id": "image/php-frankenphp/8.5-trixie",
+      "identity": "ghcr.io/xormania/php-frankenphp@sha256:ab6312943743a6bdb1480561eb47a7c4bfd38b825b3bc9d453be8105645f7e96",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
+      "release_record": "release-records/php-frankenphp/8.5-trixie/1.1.2.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "verification": {
+        "completed_at": "2026-10-12T23:23:26.920125Z",
+        "evidence": "https://github.com/xormania/xorder/actions/runs/38321328835",
+        "status": "passed",
+        "surface": "github-actions-linux-amd64"
+      },
+      "version": "1.1.2"
+    },
+    {
       "capabilities": [
         "composer",
         "mutation-testing",
@@ -2103,6 +2271,188 @@
         "surface": "github-actions-linux-amd64"
       },
       "version": "1.1.2"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "4f06dc61afa0f1d119e9b33b3e89d355caa518ed24c90ebc09283a89df3e5889",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.4-trixie%2Fv1.0.0/assurance.json"
+      },
+      "capabilities": [
+        "composer",
+        "frankenphp",
+        "mutation-testing",
+        "native-build",
+        "node",
+        "npm",
+        "pcov",
+        "php",
+        "php-testing",
+        "phpstan-isolated",
+        "playwright-client",
+        "postgresql-client",
+        "symfony",
+        "tailwind-cli",
+        "worker-server",
+        "xdebug"
+      ],
+      "created_at": "2026-10-12T23:32:57.633407Z",
+      "details": {
+        "exact_reference": "ghcr.io/xormania/uxor-dev:8.4-trixie-v1.0.0",
+        "extensions": [
+          "apcu",
+          "bcmath",
+          "curl",
+          "dom",
+          "gd",
+          "intl",
+          "mbstring",
+          "mysqli",
+          "pcntl",
+          "pcov",
+          "pdo_mysql",
+          "pdo_pgsql",
+          "pdo_sqlite",
+          "pgsql",
+          "redis",
+          "sockets",
+          "xdebug",
+          "xml",
+          "zend opcache",
+          "zip"
+        ],
+        "family": "uxor-dev",
+        "runtime_line": "8.4",
+        "tools": [
+          "bash",
+          "curl",
+          "frankenphp",
+          "gh",
+          "git",
+          "infection",
+          "jq",
+          "library-php-coverage",
+          "library-php-tests",
+          "node",
+          "npm",
+          "psql",
+          "rg",
+          "tailwindcss"
+        ]
+      },
+      "documentation": "docs/images/uxor-dev-8.4-trixie.md",
+      "id": "image/uxor-dev/8.4-trixie",
+      "identity": "ghcr.io/xormania/uxor-dev@sha256:1dbff6efad5a12e14bab57bad99790ffe0d1eb6ffe12d5e406e13fcea18725f7",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
+      "release_record": "release-records/uxor-dev/8.4-trixie/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "verification": {
+        "completed_at": "2026-10-12T23:32:57.633407Z",
+        "evidence": "https://github.com/xormania/xorder/actions/runs/38321328835",
+        "status": "passed",
+        "surface": "github-actions-linux-amd64"
+      },
+      "version": "1.0.0"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "01159d616525abc304e2adeca09bf4d7cf0b020e53354288e2d72f9425919b33",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.5-trixie%2Fv1.0.0/assurance.json"
+      },
+      "capabilities": [
+        "composer",
+        "frankenphp",
+        "mutation-testing",
+        "native-build",
+        "node",
+        "npm",
+        "pcov",
+        "php",
+        "php-testing",
+        "phpstan-isolated",
+        "playwright-client",
+        "postgresql-client",
+        "symfony",
+        "tailwind-cli",
+        "worker-server",
+        "xdebug"
+      ],
+      "created_at": "2026-10-12T23:42:05.317915Z",
+      "details": {
+        "exact_reference": "ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.0",
+        "extensions": [
+          "apcu",
+          "bcmath",
+          "curl",
+          "dom",
+          "gd",
+          "intl",
+          "mbstring",
+          "mysqli",
+          "pcntl",
+          "pcov",
+          "pdo_mysql",
+          "pdo_pgsql",
+          "pdo_sqlite",
+          "pgsql",
+          "redis",
+          "sockets",
+          "xdebug",
+          "xml",
+          "zend opcache",
+          "zip"
+        ],
+        "family": "uxor-dev",
+        "runtime_line": "8.5",
+        "tools": [
+          "bash",
+          "curl",
+          "frankenphp",
+          "gh",
+          "git",
+          "infection",
+          "jq",
+          "library-php-coverage",
+          "library-php-tests",
+          "node",
+          "npm",
+          "psql",
+          "rg",
+          "tailwindcss"
+        ]
+      },
+      "documentation": "docs/images/uxor-dev-8.5-trixie.md",
+      "id": "image/uxor-dev/8.5-trixie",
+      "identity": "ghcr.io/xormania/uxor-dev@sha256:c271b1f78c7bccaf5a0c3e962c2ac09707d3088705fc8ff8f1bae83c70c0cdfd",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
+      "release_record": "release-records/uxor-dev/8.5-trixie/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "verification": {
+        "completed_at": "2026-10-12T23:42:05.317915Z",
+        "evidence": "https://github.com/xormania/xorder/actions/runs/38321328835",
+        "status": "passed",
+        "surface": "github-actions-linux-amd64"
+      },
+      "version": "1.0.0"
     }
   ],
   "schema_version": 2
