@@ -97,7 +97,7 @@ class FailureHookTests(unittest.TestCase):
         # it must not remain a runnable/sleeping advisory worker.
         try:
             contents = stat.read_text()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
             pass  # Already reaped; the process is gone.
         else:
             self.assertIn(contents.split(") ", 1)[1].split()[0], ("Z", "X"))
@@ -115,7 +115,7 @@ class FailureHookTests(unittest.TestCase):
         stat = Path(f"/proc/{int(pidfile.read_text())}/stat")
         try:
             contents = stat.read_text()
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
             pass  # Already reaped; the process is gone.
         else:
             self.assertIn(contents.split(") ", 1)[1].split()[0], ("Z", "X"))
