@@ -13,11 +13,16 @@ not establish public availability. Historical releases remain in git history
 and their original public Release assets.
 
 The acceptance fixture pins commit
-[`c8878af`](https://github.com/xormania/uxor/tree/c8878af66897d8c10af694050a7a588166942117),
-inspected on 8 October 2026: Symfony 8.1, UX 3.5.1, PHP 8.5/FrankenPHP workers,
+[`8fff45d`](https://github.com/xormania/uxor/tree/8fff45dd72bc11dc4fda29d51e93cb6ea12c9d9a):
+Symfony 8.1, UX 3.5.1, PHP 8.5/FrankenPHP workers,
 Node 22, Playwright 1.58.2 and Tailwind v4.3.3. Both PHP 8.4 and 8.5 profiles
 exercise this baseline, including the PHPUnit suite. Choose 8.4 for the
 minimum-version checks and 8.5 for the browser CI runtime.
+This pin includes the upstream calendar fix for three existing WebKit behavior
+failures: preserving unchanged day text avoids losing a click during focus
+rendering. Its stronger upstream Turbo navigation helper also removes the need
+for the former fixture overlay. The separate browser release parity fixture
+keeps its own reviewed consumer pin.
 
 | Part | Supplied by |
 | --- | --- |
@@ -25,7 +30,7 @@ minimum-version checks and 8.5 for the browser CI runtime.
 | Node 22, npm and checksum-verified Tailwind v4.3.3 CLI | `uxor-dev/8.4-trixie` or `8.5-trixie`, derived from the exact FrankenPHP parent |
 | Caddy/Mercure, worker mode, PHP ini, app entrypoint and source layout | The current uxor checkout's `demo/` configuration |
 | Application and Playwright packages | `composer.lock` and `package-lock.json` using Composer install and npm ci |
-| Browser binaries and fonts matching upstream screenshot baselines | Official `mcr.microsoft.com/playwright:v<locked-version>-noble` companion |
+| Browser binaries and fonts matching the locked Playwright version | Latest accepted, version-matched xorder `playwright-browser` companion (currently 1.0.2); official `mcr.microsoft.com/playwright:v<locked-version>-noble` fallback |
 
 Definitions alone are not pullable releases. Select an available
 `uxor-dev` digest from the [catalog](../catalog.json) after publication,
@@ -317,14 +322,22 @@ The readiness recipe tests persistent workers and executed-line Xdebug coverage
 plus the shared PHP/native/TLS/user contract. It then starts the pinned real
 consuming repository as a linked Git worktree, checks Git access, builds Tailwind
 from the seeded binary, runs PHPUnit with a nonempty Clover coverage report,
-and runs calendar, dropzone, both data-table and both editor lab specs. It never updates screenshot baselines. A source update
+and runs calendar, dropzone, both data-table and both editor lab specs. PHP 8.5
+executes these 45 behavior cases in Chromium, Firefox and WebKit using each
+engine's desktop device profile, for 135 cases; PHP 8.4 retains 45 Chromium cases.
+Both inspect the actual default 4 GiB browser container limit. The 8.5 fixture
+also checks a real child OOM in an isolated browser-service container, including
+the original failed command exit and current-window cgroup evidence. This probe
+still runs when a consumer assertion fails, and the fixture preserves that
+original failure. Receipts, logs and failing traces survive cleanup under
+`out/uxor-runtime/`. It never updates screenshot baselines. A source update
 to `tests/fixtures/uxor/consumer.json` deliberately updates that consumer
 baseline; ordinary users run their current checkout.
 
 References:
 
-- [Inspected demo Dockerfile](https://github.com/xormania/uxor/blob/c8878af66897d8c10af694050a7a588166942117/demo/Dockerfile)
-- [Inspected CI and PHP version coverage](https://github.com/xormania/uxor/blob/c8878af66897d8c10af694050a7a588166942117/.github/workflows/ci.yml)
-- [Existing browser server and PHP helpers](https://github.com/xormania/uxor/blob/c8878af66897d8c10af694050a7a588166942117/playwright.config.ts)
+- [Originally inspected demo Dockerfile](https://github.com/xormania/uxor/blob/c8878af66897d8c10af694050a7a588166942117/demo/Dockerfile)
+- [Originally inspected CI and PHP version coverage](https://github.com/xormania/uxor/blob/c8878af66897d8c10af694050a7a588166942117/.github/workflows/ci.yml)
+- [Pinned browser server and PHP helpers](https://github.com/xormania/uxor/blob/8fff45dd72bc11dc4fda29d51e93cb6ea12c9d9a/playwright.config.ts)
 - [FrankenPHP image and non-root guidance](https://frankenphp.dev/docs/docker/)
 - [Playwright version matching](https://playwright.dev/docs/docker#image-tags)

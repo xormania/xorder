@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/xormania/uxor.git",
-  "commit": "c8878af66897d8c10af694050a7a588166942117",
+  "commit": "8fff45dd72bc11dc4fda29d51e93cb6ea12c9d9a",
   "tests": [
     "tests/e2e/lab.calendar.spec.ts",
     "tests/e2e/lab.dropzone.spec.ts",

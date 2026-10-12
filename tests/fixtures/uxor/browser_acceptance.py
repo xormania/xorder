@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import uuid
@@ -16,18 +17,19 @@ PROJECTS = ("acceptance-chromium", "acceptance-firefox", "acceptance-webkit")
 DEFAULT_LIMIT = 4 * 1024**3
 OOM_LIMIT = 512 * 1024**2
 
-CONFIGURATION = """import { defineConfig } from '@playwright/test';
+CONFIGURATION = """import { defineConfig, devices } from '@playwright/test';
 import upstream from './playwright.config';
 
 const smoke = upstream.projects?.find(project => project.name === 'smoke');
 if (!smoke) throw new Error('Reviewed consumer smoke project is missing');
+const desktop = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' } as const;
 
 export default defineConfig({
   ...upstream,
   projects: (['chromium', 'firefox', 'webkit'] as const).map(browserName => ({
     ...smoke,
     name: `acceptance-${browserName}`,
-    use: { ...smoke.use, browserName },
+    use: { ...smoke.use, ...devices[desktop[browserName]], browserName },
   })),
 });
 """
@@ -69,6 +71,46 @@ def verify_behavior(receipt):
             or any(attempt.get("status") != "passed" or attempt.get("retry") != 0 for attempt in attempts)):
         raise RuntimeError("Expected 45 passed cases per engine without retries: " + json.dumps({"counts": counts, "receipt": receipt}))
     print("Three-browser behavior acceptance: " + json.dumps(counts, sort_keys=True), flush=True)
+
+
+def archive_evidence(workspace, attempts, logs_directory, destination):
+    """Retain receipts and failing traces before the disposable checkout is removed."""
+    workspace, destination = Path(workspace).resolve(), Path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    missing_traces = []
+    for receipt_path in sorted(Path(attempts).glob("*/receipt.json")):
+        receipt = json.loads(receipt_path.read_text())
+        target = destination / "attempts" / receipt_path.parent.name
+        target.mkdir(parents=True, exist_ok=True)
+        for name in ("receipt.json", "events.jsonl", "test-output.log", "server.log", "advisory.json"):
+            source = receipt_path.parent / name
+            if source.is_file():
+                shutil.copy2(source, target / name)
+        for attempt in receipt.get("observed_test_attempts", []):
+            if attempt.get("status") in ("passed", "skipped"):
+                continue
+            for attachment in attempt.get("trace_attachments", []):
+                reported = attachment.get("path")
+                if not isinstance(reported, str) or not reported.startswith("/app/"):
+                    raise RuntimeError("Failed trace is outside the fixture checkout: " + repr(reported))
+                source = workspace / reported.removeprefix("/app/")
+                source.resolve().relative_to(workspace)
+                if not source.is_file():
+                    # Later Playwright runs can replace an earlier plant's output directory.
+                    missing_traces.append({"run": receipt_path.parent.name, "path": reported})
+                    continue
+                for artifact in (source, source.parent / "error-context.md"):
+                    if artifact.is_file():
+                        relative = artifact.resolve().relative_to(workspace)
+                        output = destination / "failure-artifacts" / relative
+                        output.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(artifact, output)
+    for name in ("browser-baseline.json", "normal-memory.log", "child-oom.log", "workload-status.log"):
+        source = Path(logs_directory) / name
+        if source.is_file():
+            shutil.copy2(source, destination / name)
+    (destination / "archive.json").write_text(json.dumps({"missing_reported_traces": missing_traces}, indent=2) + "\n")
+    print("UXor runtime evidence retained: " + str(destination), flush=True)
 
 
 def docker(arguments, env, timeout=30, check=True):
@@ -155,6 +197,9 @@ def main():
     commands = parser.add_subparsers(dest="action", required=True)
     prepare = commands.add_parser("config")
     prepare.add_argument("workspace", type=Path)
+    archive = commands.add_parser("archive")
+    for name in ("workspace", "attempts", "logs_directory", "destination"):
+        archive.add_argument(name, type=Path)
     for action in ("baseline", "normal", "oom"):
         command = commands.add_parser(action)
         command.add_argument("project")
@@ -165,6 +210,9 @@ def main():
     if options.action == "config":
         print(write_config(options.workspace))
         return
+    if options.action == "archive":
+        archive_evidence(options.workspace, options.attempts, options.logs_directory, options.destination)
+        return
     sys.path.insert(0, str(ROOT / "examples/shared"))
     from container_memory import failure_diagnostics, memory_observations
     env = dict(os.environ)
@@ -173,7 +221,8 @@ def main():
     elif options.action == "normal":
         normal_workload(options.project, env, options.baseline_file, memory_observations)
     else:
-        image = normal_workload(options.project, env, options.baseline_file, memory_observations)
+        # An unrelated consumer assertion must not prevent this independent proof.
+        image = json.loads(options.baseline_file.read_text())["container"]["Config"]["Image"]
         child_oom(options.project, env, image, options.state_file, memory_observations, failure_diagnostics)
 
 

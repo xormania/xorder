@@ -28,6 +28,15 @@ seed_run() {
 }
 cleanup() {
   status=$?
+  trap - EXIT
+  if python3 "$root/tests/fixtures/uxor/browser_acceptance.py" archive "$WORKSPACE" \
+      "$XDG_CACHE_HOME/xorder/test-attempts" "$work" "$root/out/uxor-runtime/$UXOR_PROJECT"; then
+    :
+  else
+    archive_status=$?
+    printf 'Runtime evidence archival failed with exit %s (fixture exit %s)\n' "$archive_status" "$status" >&2
+    if [ "$status" = 0 ]; then status=$archive_status; fi
+  fi
   if [ -s "$work/oom-container" ]; then
     docker rm --force "$(cat "$work/oom-container")" >/dev/null 2>&1 || true
   fi
@@ -47,6 +56,7 @@ cleanup() {
       "$image" find /workspace -mindepth 1 -delete >/dev/null 2>&1 || true
   fi
   rm -rf "$work"
+  exit "$status"
 }
 trap cleanup EXIT
 mapfile -t consumer < <(python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); print(c["repository"]); print(c["commit"]); print("\n".join(c["tests"]))' "$root/tests/fixtures/uxor/consumer.json")
@@ -54,17 +64,6 @@ git init "$work/main"
 git -C "$work/main" remote add origin "${consumer[0]}"
 git -C "$work/main" fetch --depth 1 origin "${consumer[1]}"
 git -C "$work/main" worktree add --detach "$WORKSPACE" FETCH_HEAD
-# The upstream test observes history before Turbo's promoted visit completes.
-# Keep this verification-only overlay tied to its reviewed source; changing the
-# consumer pin requires removing or reviewing the overlay, not applying it blindly.
-if [[ "${consumer[1]}" != c8878af66897d8c10af694050a7a588166942117 ]]; then
-  printf 'Review the frame-navigation completion overlay for the new consumer pin\n' >&2
-  exit 1
-fi
-fixture_patch="$root/tests/fixtures/uxor/frame-navigation-completion.patch"
-printf 'Applying xorder-owned test synchronization overlay to pinned uxor %s\n' "${consumer[1]}"
-git -C "$WORKSPACE" apply --check "$fixture_patch"
-git -C "$WORKSPACE" apply --whitespace=error "$fixture_patch"
 bash "$root/examples/uxor/run.sh" up
 bash "$root/examples/uxor/run.sh" sync
 bash "$root/examples/uxor/run.sh" sync --check
@@ -199,13 +198,29 @@ python3 "$root/tests/fixtures/uxor/browser_acceptance.py" baseline "$UXOR_PROJEC
 # Both PHP variants use the same browser image. Keep the wider workload and
 # isolated OOM proof on 8.5; 8.4 retains its existing 45 Chromium behavior cases.
 cross_browser=$(bash "$root/examples/uxor/run.sh" exec php -r 'echo PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === 5 ? "1" : "0";')
+normal_status=0
 if [ "$cross_browser" = 1 ]; then
   python3 "$root/tests/fixtures/uxor/browser_acceptance.py" config "$WORKSPACE"
   bash "$root/examples/uxor/run.sh" test --attest-server --config=xorder.cross-browser.config.ts \
-    --workers=2 --retries=0 --timeout=30000 --global-timeout=300000 "${consumer[@]:2}"
+    --workers=2 --retries=0 --timeout=30000 --global-timeout=300000 "${consumer[@]:2}" || normal_status=$?
 else
-  bash "$root/examples/uxor/run.sh" test --attest-server "${consumer[@]:2}"
+  bash "$root/examples/uxor/run.sh" test --attest-server "${consumer[@]:2}" || normal_status=$?
 fi
+# Observe the normal stack and probe an isolated child OOM even if a consumer
+# assertion failed. Keep the original behavior exit when another check also fails.
+memory_status=0
+python3 "$root/tests/fixtures/uxor/browser_acceptance.py" normal "$UXOR_PROJECT" \
+  "$work/browser-baseline.json" 2>&1 | tee "$work/normal-memory.log" || memory_status=$?
+oom_status=0
+if [ "$cross_browser" = 1 ]; then
+  python3 "$root/tests/fixtures/uxor/browser_acceptance.py" oom "$UXOR_PROJECT" \
+    "$work/browser-baseline.json" "$work/oom-container" 2>&1 | tee "$work/child-oom.log" || oom_status=$?
+fi
+printf 'behavior=%s normal_memory=%s isolated_child_oom=%s\n' \
+  "$normal_status" "$memory_status" "$oom_status" | tee "$work/workload-status.log"
+if [ "$normal_status" != 0 ]; then exit "$normal_status"; fi
+if [ "$memory_status" != 0 ]; then exit "$memory_status"; fi
+if [ "$oom_status" != 0 ]; then exit "$oom_status"; fi
 # Audit the actual pinned consumer run rather than reconstructing cases from
 # the requested filenames or treating baseURL configuration as server evidence.
 python3 - "$XDG_CACHE_HOME/xorder/test-attempts" "$root/tests/fixtures/uxor/browser_acceptance.py" "$cross_browser" <<'PY'
@@ -239,15 +254,6 @@ if sys.argv[3] == "1":
 else:
     assert receipt["selected_test_count"] == 45 and len(receipt["observed_test_attempts"]) == 45
 PY
-# Verify normal-workload memory without changing the live 4 GiB stack, then use
-# its exact browser image for an isolated, deterministic child-OOM diagnostic.
-if [ "$cross_browser" = 1 ]; then
-  rm "$WORKSPACE/xorder.cross-browser.config.ts"
-  python3 "$root/tests/fixtures/uxor/browser_acceptance.py" oom "$UXOR_PROJECT" \
-    "$work/browser-baseline.json" "$work/oom-container"
-else
-  python3 "$root/tests/fixtures/uxor/browser_acceptance.py" normal "$UXOR_PROJECT" "$work/browser-baseline.json"
-fi
 # Composer, Node and the app must write the host mount as the requested user.
 test "$(stat -c %u "$WORKSPACE/node_modules")" = "$(id -u)"
 test "$(stat -c %u "$WORKSPACE/demo/vendor")" = "$(id -u)"

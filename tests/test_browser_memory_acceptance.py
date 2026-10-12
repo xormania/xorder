@@ -3,6 +3,7 @@ from contextlib import contextmanager, redirect_stdout
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -16,6 +17,57 @@ spec.loader.exec_module(acceptance)
 
 
 class BrowserMemoryAcceptanceTests(unittest.TestCase):
+    def test_failed_behavior_keeps_original_exit_and_still_runs_both_memory_checks(self):
+        # Execute the actual fixture dispatch with stand-in commands; a second
+        # failure must not erase the behavior exit or prevent the isolated probe.
+        source = (ROOT / "tests/fixtures/uxor/run.sh").read_text()
+        dispatch = source.split("normal_status=0\n", 1)[1].split("# Audit the actual pinned consumer run", 1)[0]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runner = root / "examples/uxor/run.sh"
+            runner.parent.mkdir(parents=True)
+            runner.write_text("#!/bin/bash\nexit 7\n")
+            python = root / "bin/python3"
+            python.parent.mkdir()
+            python.write_text('#!/bin/bash\nprintf "%s\\n" "$2" >> "$CHECK_LOG"\nif [ "$2" = normal ]; then exit 9; fi\n')
+            python.chmod(0o755)
+            (root / acceptance.CONFIG_NAME).touch()
+            script = 'set -euo pipefail\nroot="$FIXTURE_ROOT"\nwork="$FIXTURE_ROOT"\nWORKSPACE="$FIXTURE_ROOT"\nUXOR_PROJECT=fixture\ncross_browser=1\nconsumer=(repo sha selected.spec.ts)\nnormal_status=0\n' + dispatch
+            result = subprocess.run(["bash", "-c", script], env={**os.environ, "FIXTURE_ROOT": str(root),
+                                    "CHECK_LOG": str(root / "checks"), "PATH": str(python.parent) + ":" + os.environ["PATH"]},
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 7, result.stderr)
+            self.assertEqual((root / "checks").read_text().splitlines(), ["config", "normal", "oom"])
+            self.assertIn("behavior=7 normal_memory=9 isolated_child_oom=0", result.stdout)
+
+    def test_cleanup_archive_retains_failed_trace_context_and_receipt_logs(self):
+        with tempfile.TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
+            root = Path(temporary)
+            workspace, attempts, logs, destination = (root / name for name in ("repo", "attempts", "logs", "out"))
+            attempt = attempts / "run-id"
+            attempt.mkdir(parents=True)
+            logs.mkdir()
+            for state in ("failed", "passed"):
+                folder = workspace / "test-results" / state
+                folder.mkdir(parents=True)
+                (folder / "trace.zip").write_bytes(state.encode())
+                (folder / "error-context.md").write_text(state)
+            receipt = {"exit_code": 1, "observed_test_attempts": [
+                {"status": state, "trace_attachments": [{"path": f"/app/test-results/{state}/trace.zip"}]}
+                for state in ("failed", "passed")]}
+            (attempt / "receipt.json").write_text(json.dumps(receipt))
+            for name in ("events.jsonl", "test-output.log", "server.log"):
+                (attempt / name).write_text(name)
+            (logs / "child-oom.log").write_text("original_exit_code=137")
+            acceptance.archive_evidence(workspace, attempts, logs, destination)
+            self.assertEqual(json.loads((destination / "attempts/run-id/receipt.json").read_text())["exit_code"], 1)
+            self.assertEqual((destination / "failure-artifacts/test-results/failed/trace.zip").read_bytes(), b"failed")
+            self.assertTrue((destination / "failure-artifacts/test-results/failed/error-context.md").is_file())
+            self.assertFalse((destination / "failure-artifacts/test-results/passed").exists())
+            self.assertEqual((destination / "child-oom.log").read_text(), "original_exit_code=137")
+            self.assertTrue((destination / "attempts/run-id/events.jsonl").is_file())
+            self.assertTrue((destination / "attempts/run-id/server.log").is_file())
+
     def receipt(self):
         return {"exit_code": 0, "observer_status": "complete", "selected_test_count": 135,
                 "observed_test_attempts": [{"project": project, "status": "passed", "retry": 0}
