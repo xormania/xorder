@@ -85,7 +85,7 @@ use `test --wait` for normal concurrent work.
 
 ### Browser throttling
 
-The UXor Compose profile defaults to `BROWSER_CPUS=2` and `BROWSER_MEMORY=2g`;
+The UXor Compose profile defaults to `BROWSER_CPUS=2` and `BROWSER_MEMORY=4g`;
 these apply to the separate browser-server container. To reproduce timing bugs
 under a deliberately restricted browser CPU share:
 
