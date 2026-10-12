@@ -267,7 +267,7 @@ def capped_workers(arguments, budget, cpus):
     return [f"--workers={effective}", *remaining]
 
 
-def run_test(compose, env, workspace, project, arguments, workers=None, input_fingerprint=None):
+def run_test(compose, env, workspace, project, arguments, workers=None, input_fingerprint=None, memory_start=None):
     arguments = list(arguments)
     requested = list(arguments)
     attest = env.get("XORDER_TEST_ATTEST_SERVER", "0")
@@ -305,6 +305,8 @@ def run_test(compose, env, workspace, project, arguments, workers=None, input_fi
     except (OSError, subprocess.SubprocessError):
         errors.append("Project source fingerprint unavailable")
     facts["workspace_profile_sha256"] = input_fingerprint
+    if memory_start is not None:
+        facts["memory_start"] = memory_start
     probe = {}
     try:
         probe = json.loads(observe(exec_command(compose, env, "node", "-e", PROBE), env))
@@ -431,6 +433,13 @@ def finalize_attempt(compose, env, workspace, folder, facts, started, exit_code,
     facts["artifacts"] = {"test_output": str(output_path), "server_logs": str(log_path),
                           "events": str(folder / "events.jsonl") if events else None}
     facts["observation_errors"] = errors
+    if exit_code and "memory_start" in facts:
+        from container_memory import memory_observations, report_failure
+        try:
+            facts["memory_end"] = memory_observations(facts["project"], env, before=facts["memory_start"])
+        except Exception:
+            facts["memory_end"] = {"services": [], "unavailable": "failed test memory observation unavailable"}
+        report_failure(facts["project"], env, result=facts["memory_end"])
     receipt_path = folder / "receipt.json"
     try:
         write_once(receipt_path, facts)

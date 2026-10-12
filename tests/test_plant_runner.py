@@ -13,8 +13,8 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "examples/flowbite-xor"))
-spec = importlib.util.spec_from_file_location("plant_runner", ROOT / "examples/flowbite-xor/runner.py")
+sys.path.insert(0, str(ROOT / "examples/uxor"))
+spec = importlib.util.spec_from_file_location("plant_runner", ROOT / "examples/uxor/runner.py")
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 

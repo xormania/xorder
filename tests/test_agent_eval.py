@@ -158,7 +158,7 @@ class AgentEvaluationTests(unittest.TestCase):
         import shutil
         workspace = self.folder / "seed-task"
         workspace.mkdir()
-        context = {"nonce": "c" * 32, "seed_source_file": "examples/flowbite-xor/seed.py"}
+        context = {"nonce": "c" * 32, "seed_source_file": "examples/uxor/seed.py"}
         scenario = agent_eval.read_json(agent_eval.ROOT / "tests/scenarios/warm-reuse.json")
         agent_eval.prepare(scenario, workspace, context, dict(os.environ))
         for relative in ("demo/vendor", "node_modules"):

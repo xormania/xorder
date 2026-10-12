@@ -1,6 +1,6 @@
 # Running project commands
 
-For `flowbite-xor-dev` in Claude cloud, start with the
+For `uxor-dev` in Claude cloud, start with the
 [session quick start](claude-cloud.md) and [uxor runner](uxor.md).
 They cover blocked dist downloads, sandbox disk limits and read-only dependency
 reuse across worktrees.
@@ -106,7 +106,7 @@ not `127.0.0.1`.
 to the loaded PHP toolchain. Supply the project's Caddyfile, worker entrypoint
 and PHP settings. Its default command is Bash, like the other library images.
 
-The [`uxor` profile](uxor.md) offers `flowbite-xor-dev/8.4-trixie` and `8.5-trixie`,
+The [`uxor` profile](uxor.md) offers `uxor-dev/8.4-trixie` and `8.5-trixie`,
 which add Node 22/npm and a cached Tailwind CLI to the exact FrankenPHP parent. It overlays the checkout's
 existing demo Compose files, Caddyfile, entrypoint and PHP configuration, and
 starts the official Playwright container at the version in its lockfile. Tests

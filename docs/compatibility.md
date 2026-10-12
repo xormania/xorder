@@ -1,6 +1,6 @@
 # Execution surfaces and evidence
 
-Claude users of `flowbite-xor-dev`: follow the [session quick start](claude-cloud.md)
+Claude users of `uxor-dev`: follow the [session quick start](claude-cloud.md)
 for network diagnostics, disk budgeting and protected dependency reuse.
 
 | Surface | Documented prerequisite | This library's runtime evidence |

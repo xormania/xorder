@@ -11,8 +11,8 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "examples/flowbite-xor"))
-spec = importlib.util.spec_from_file_location("worktree_seed", ROOT / "examples/flowbite-xor/seed.py")
+sys.path.insert(0, str(ROOT / "examples/uxor"))
+spec = importlib.util.spec_from_file_location("worktree_seed", ROOT / "examples/uxor/seed.py")
 seed = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(seed)
 

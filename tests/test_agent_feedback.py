@@ -1,5 +1,6 @@
 """Regression coverage for cache integrity, MCP shell sessions and host budgets."""
 import importlib.util
+import hashlib
 import io
 from contextlib import redirect_stdout
 import json
@@ -25,11 +26,16 @@ def load(name, path):
     return module
 
 
-cache = load("dependency_cache", "examples/flowbite-xor/cache.py")
+def rootfs(*layers):
+    """Distinct valid diff IDs with deterministic prefix relationships."""
+    return {"Layers": ["sha256:" + hashlib.sha256(layer.encode()).hexdigest() for layer in layers]}
+
+
+cache = load("dependency_cache", "examples/uxor/cache.py")
 runtime = load("host_runtime", "examples/shared/runtime.py")
 client = load("shell_serena", "examples/serena/client.py")
 integration = load("serena_integration", "images/php-serena/integration.py")
-trust = load("profile_trust", "examples/flowbite-xor/trust.py")
+trust = load("profile_trust", "examples/uxor/trust.py")
 
 
 class DependencySnapshotTests(unittest.TestCase):
@@ -173,12 +179,12 @@ class HostBudgetTests(unittest.TestCase):
 
     def test_gc_protects_nonstack_daemons_local_parents_and_explicit_keeps(self):
         images = [
-            {"Id": "base", "RootFS": {"Layers": ["a"]}},
-            {"Id": "parent", "RootFS": {"Layers": ["a", "b"]}},
-            {"Id": "local", "RootFS": {"Layers": ["a", "b", "c"]}},
-            {"Id": "serena", "RootFS": {"Layers": ["a", "d"]}},
-            {"Id": "toolkit", "RepoTags": ["toolkit:lint"], "RootFS": {"Layers": ["a", "e"]}},
-            {"Id": "unused", "RootFS": {"Layers": ["a", "f"]}},
+            {"Id": "base", "RootFS": rootfs("a")},
+            {"Id": "parent", "RootFS": rootfs("a", "b")},
+            {"Id": "local", "RootFS": rootfs("a", "b", "c")},
+            {"Id": "serena", "RootFS": rootfs("a", "d")},
+            {"Id": "toolkit", "RepoTags": ["toolkit:lint"], "RootFS": rootfs("a", "e")},
+            {"Id": "unused", "RootFS": rootfs("a", "f")},
         ]
         for image in images:
             image["Config"] = {"Labels": {"org.opencontainers.image.source": "https://github.com/xormania/xorder"}}
@@ -205,10 +211,81 @@ class HostBudgetTests(unittest.TestCase):
         used = runtime.referenced_images([{"Config": {"Image": "child:latest"}}], images)
         self.assertTrue({"base", "child"} <= used)
 
+    def test_missing_actual_image_cannot_be_replaced_by_a_retagged_config_alias(self):
+        images = [{"Id": "base", "RootFS": rootfs("a")},
+                  {"Id": "new-tag-target", "RepoTags": ["serena:dev"], "RootFS": rootfs("a", "b")},
+                  {"Id": "unrelated", "RootFS": rootfs("c")}]
+        plan = runtime.image_reference_plan([{"Id": "serena-daemon", "Image": "old-missing-id", "Config": {"Image": "serena:dev"}}], images)
+        self.assertEqual(plan["protected"] & {image["Id"] for image in images}, {image["Id"] for image in images})
+        self.assertIn("old-missing-id", plan["unresolved"])
+        # An untagged but observed immutable image ID needs no old tag fallback.
+        plan = runtime.image_reference_plan([{"Id": "created", "Image": "new-tag-target", "Config": {"Image": "removed:old"}}], images)
+        self.assertEqual(plan["protected"], {"base", "new-tag-target"})
+        self.assertEqual(plan["unresolved"], [])
+
+    def test_missing_layer_metadata_never_proves_an_unrelated_local_image(self):
+        for metadata in (None, {}, {"Layers": None}, {"Layers": ["garbage"]}, {"Type": "unknown", **rootfs("a")}):
+            with self.subTest(rootfs=metadata):
+                images = [{"Id": "live", "RootFS": metadata}, {"Id": "possible-base", "RootFS": rootfs("a")}]
+                plan = runtime.image_reference_plan([{"Id": "daemon", "Image": "live"}], images)
+                self.assertEqual(plan["protected"], {"live", "possible-base"})
+                self.assertIn("possible-base", plan["unverified"])
+        images = [{"Id": "live", "RootFS": rootfs("a", "b")}, {"Id": "unknown-base"}]
+        plan = runtime.image_reference_plan([{"Id": "created", "Image": "live"}], images)
+        self.assertIn("unknown-base", plan["protected"])
+        self.assertIn("unknown-base", plan["unverified"])
+
+    def test_typed_scratch_root_and_equal_layer_images_are_conservatively_protected(self):
+        images = [{"Id": "scratch", "RootFS": {"Type": "layers"}},
+                  {"Id": "live", "RootFS": rootfs("a", "b")},
+                  {"Id": "same-files-different-config", "RootFS": rootfs("a", "b")},
+                  {"Id": "sibling", "RootFS": rootfs("a", "c")}]
+        plan = runtime.image_reference_plan([{"Id": "created", "Image": "live", "State": {"Running": False, "Status": "created"}}], images)
+        self.assertEqual(plan["protected"], {"scratch", "live", "same-files-different-config"})
+        self.assertEqual(plan["unverified"], {})
+
+    def test_gc_refuses_partial_inspect_observations_before_any_mutation(self):
+        for missing in ("container", "image"):
+            with self.subTest(missing=missing):
+                def inspect(argv, **kwargs):
+                    if argv[1:3] == ["ps", "-aq"]:
+                        self.assertIn("--no-trunc", argv)
+                        return "daemon"
+                    if argv[1:3] == ["image", "ls"]:
+                        return "image-one image-two"
+                    if argv[1:3] == ["image", "inspect"]:
+                        return json.dumps([{"Id": "image-one"}])
+                    return "[]" if missing == "container" else json.dumps([{"Id": "daemon", "Image": "image-one"}])
+                with tempfile.TemporaryDirectory() as directory, patch.object(runtime.subprocess, "check_output", side_effect=inspect), \
+                        patch.object(runtime.subprocess, "run") as mutate, self.assertRaisesRegex(ValueError, "Incomplete Docker " + missing):
+                    runtime.gc(dict(os.environ, XDG_CACHE_HOME=directory), apply=True)
+                mutate.assert_not_called()
+
+    def test_apply_rechecks_unknown_layer_metadata_from_a_new_other_runner(self):
+        images = [{"Id": "candidate", "RootFS": rootfs("a"),
+                   "Config": {"Labels": {"org.opencontainers.image.source": "https://github.com/xormania/xorder"}}},
+                  {"Id": "serena", "RootFS": rootfs("b")}]
+        observations = {"snapshots": 0}
+        def inspect(argv, **kwargs):
+            if argv[1:3] == ["ps", "-aq"]:
+                observations["snapshots"] += 1
+                return "created-daemon" if observations["snapshots"] > 1 else ""
+            if argv[1:3] == ["image", "ls"]:
+                return "candidate serena"
+            if argv[1:3] == ["image", "inspect"]:
+                if observations["snapshots"] > 1:
+                    return json.dumps([images[0], {"Id": "serena"}])
+                return json.dumps(images)
+            return json.dumps([{"Id": "created-daemon", "Image": "serena", "State": {"Running": False, "Status": "created"}}])
+        with tempfile.TemporaryDirectory() as directory, patch.object(runtime.subprocess, "check_output", side_effect=inspect), \
+                patch.object(runtime.subprocess, "run") as mutate, redirect_stdout(io.StringIO()):
+            runtime.gc(dict(os.environ, XDG_CACHE_HOME=directory), apply=True)
+        mutate.assert_not_called()
+
     def test_apply_rechecks_new_container_ancestry_before_image_removal(self):
-        image = {"Id": "parent", "RootFS": {"Layers": ["a"]},
+        image = {"Id": "parent", "RootFS": rootfs("a"),
                  "Config": {"Labels": {"org.opencontainers.image.source": "https://github.com/xormania/xorder"}}}
-        child = {"Id": "child", "RootFS": {"Layers": ["a", "b"]}}
+        child = {"Id": "child", "RootFS": rootfs("a", "b")}
         listings = iter(["", "new-daemon"])
         def inspect(argv, **kwargs):
             if argv[1:3] == ["ps", "-aq"]:
@@ -247,7 +324,8 @@ class HostBudgetTests(unittest.TestCase):
             {"Id": "stopped", "Image": "image2", "Config": {"Labels": {"dev.xorder.workspace": "/two"}}, "State": {"Running": False}},
             {"Id": "unowned", "Image": "image4", "Config": {"Labels": {}}, "State": {"Running": False}},
         ]
-        images = [{"Id": "image" + str(i), "Config": {"Labels": {"org.opencontainers.image.source": "https://github.com/xormania/xorder"}}} for i in range(1, 5)]
+        images = [{"Id": "image" + str(i), "RootFS": rootfs(str(i)),
+                   "Config": {"Labels": {"org.opencontainers.image.source": "https://github.com/xormania/xorder"}}} for i in range(1, 5)]
         def inspect(argv, **kwargs):
             if argv[1:3] == ["ps", "-aq"]:
                 return "running stopped unowned"

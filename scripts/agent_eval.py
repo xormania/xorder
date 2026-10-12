@@ -401,8 +401,8 @@ def run(scenario_path, adapter_path, output, source_commit="HEAD", timeout=None,
     try:
         if scenario["check"] == "warm-reuse":
             try:
-                source["blob"]("examples/flowbite-xor/seed.py")
-                context["seed_source_file"] = "examples/flowbite-xor/seed.py"
+                source["blob"]("examples/uxor/seed.py")
+                context["seed_source_file"] = "examples/uxor/seed.py"
             except subprocess.CalledProcessError:
                 observation["reason"] = "source-seed-helper-unavailable"
                 raise PrerequisiteUnavailable()

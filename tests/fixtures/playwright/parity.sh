@@ -4,10 +4,16 @@ set -euo pipefail
 browser=${1:?Supply browser image}
 line=${2:?Supply browser line}
 root=$(cd "$(dirname "$0")/../../.." && pwd)
-inputs=$(python3 "$root/scripts/playwright_fixture.py" "$root/tests/fixtures/playwright/consumers/${line#*/}.json" "$root/catalog-v2.json")
+resolver=(python3 "$root/scripts/playwright_fixture.py" "$root/tests/fixtures/playwright/consumers/${line#*/}.json" "$root/catalog-v2.json")
+application_kind=accepted-publication
+if [[ -n "${XORDER_PARITY_LOCAL_APPLICATION:-}" ]]; then
+  resolver+=(--local-application "$XORDER_PARITY_LOCAL_APPLICATION")
+  application_kind=local-source-validation
+fi
+inputs=$("${resolver[@]}")
 mapfile -t consumer <<< "$inputs"
 work=$(mktemp -d)
-export BROWSER_IMAGE="$browser" WORKSPACE="$work/repo" FLOWBITE_PROJECT="browser-parity-${RANDOM}-${RANDOM}"
+export BROWSER_IMAGE="$browser" WORKSPACE="$work/repo" UXOR_PROJECT="browser-parity-${RANDOM}-${RANDOM}"
 export HTTP_PORT=18085 HTTPS_PORT=18445 HTTP3_PORT=18445
 export IMAGE="${consumer[3]}"
 evidence="$root/out/playwright/${line//\//-}"
@@ -15,7 +21,7 @@ mkdir -p "$evidence" "$work/home" "$work/docker"
 parity_runner() {
   env -i PATH="$PATH" HOME="$work/home" DOCKER_CONFIG="$work/docker" \
     WORKSPACE="$WORKSPACE" IMAGE="$IMAGE" BROWSER_IMAGE="$BROWSER_IMAGE" \
-    FLOWBITE_PROJECT="$FLOWBITE_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
+    UXOR_PROJECT="$UXOR_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
     XORDER_PARITY_FIXTURE=1 XORDER_SHARED_CACHE=0 \
     bash "$root/examples/uxor/run.sh" "$@"
 }
@@ -43,16 +49,16 @@ lock = json.loads((root / 'package-lock.json').read_text())
 assert package['devDependencies']['@playwright/test'] == sys.argv[2]
 assert lock['packages']['node_modules/@playwright/test']['version'] == sys.argv[2]
 PY
-docker pull "$IMAGE"
+if [[ "$application_kind" == accepted-publication ]]; then docker pull "$IMAGE"; fi
 parity_runner up
 parity_runner sync
 parity_runner exec env CI=1 npx playwright test \
   --project=examples --retries=0 --workers=4 --update-snapshots=none
 # Enforce preservation of every committed baseline even if the consumer changes defaults.
 git -C "$WORKSPACE" diff --exit-code -- '*.png'
-python3 - "$evidence/consumer.json" "${consumer[1]}" "$browser" "$IMAGE" "${consumer[2]}" <<'PY'
+python3 - "$evidence/consumer.json" "${consumer[1]}" "$browser" "$IMAGE" "${consumer[2]}" "$application_kind" <<'PY'
 import json, pathlib, sys
 pathlib.Path(sys.argv[1]).write_text(json.dumps({'consumer_commit': sys.argv[2], 'browser': sys.argv[3],
-    'application_image': sys.argv[4], 'playwright_version': sys.argv[5],
+    'application_image': sys.argv[4], 'playwright_version': sys.argv[5], 'application_kind': sys.argv[6],
     'project': 'examples', 'baseline_updates': False, 'status': 'passed'}, indent=2) + '\n')
 PY

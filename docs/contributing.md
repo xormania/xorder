@@ -9,6 +9,7 @@ Use feature branches and PRs against master. The canonical source layout is:
 | `images/shared/` | Shared tools and workspace/user handling |
 | `images/tools.json` | Resolved Composer/uv digests, PECL versions and verified Symfony CLI artifact |
 | `release-records/<family>/<line>/<revision>.json` | Published, behavior-tested release facts; created by publication |
+| `retired-records/*.json` | Explicit removal declarations bound to exact historical record bytes and original source commits |
 | `artifacts/<kind>/<name>/definition.json` | Authored binary, environment, configuration, or context contract |
 | `artifacts/<kind>/<name>/payload/` | Explicit bundle inputs and upstream notices |
 | `release-records/artifacts/<kind>/<name>/<revision>.json` | Verified downloadable artifact facts; created by publication |

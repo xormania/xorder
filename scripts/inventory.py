@@ -21,7 +21,7 @@ commands = {"bash": ["bash", "--version"], "git": ["git", "--version"], "gh": ["
             "curl": ["curl", "--version"], "jq": ["jq", "--version"], "rg": ["rg", "--version"],
             "psql": ["psql", "--version"]}
 extensions = {}
-if family.startswith("php") or family == "flowbite-xor-dev":
+if family.startswith("php") or family == "uxor-dev":
     runtime = run("php", "-r", "echo PHP_VERSION;")
     extensions = json.loads(run("php", "-r", '$out=[]; foreach(get_loaded_extensions() as $e) {$out[strtolower($e)]=phpversion($e) ?: "bundled";} echo json_encode($out);'))
     commands.update({"php": ["php", "--version"], "composer": ["composer", "--version"], "symfony": ["symfony", "version"]})
@@ -35,9 +35,9 @@ if family.startswith("php") or family == "flowbite-xor-dev":
                          "uv": ["uv", "--version"]})
     if family == "php-browser":
         commands.update({"chromium": ["chromium", "--version"], "chromedriver": ["chromedriver", "--version"]})
-    if family in ("php-frankenphp", "flowbite-xor-dev"):
+    if family in ("php-frankenphp", "uxor-dev"):
         commands["frankenphp"] = ["frankenphp", "version"]
-    if family == "flowbite-xor-dev":
+    if family == "uxor-dev":
         commands.update({"node": ["node", "--version"], "npm": ["npm", "--version"],
                          "tailwindcss": ["tailwindcss", "--help"]})
 elif family == "python-dev":
