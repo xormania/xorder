@@ -2,13 +2,13 @@
 
 PHP and Symfony development plus real Chromium and Panther browser tests.
 
-Available revision: **1.2.1**. Pin:
+Available revision: **1.2.2**. Pin:
 
 ```text
-ghcr.io/xormania/php-browser@sha256:3bd07aa66ea6af93ee3e690be1cb2e09352d3fa2e19f522f458e7020d664aded
+ghcr.io/xormania/php-browser@sha256:9f8e9d147578381199b3a916f9fc9d4792ce9b310aab499b08bee595cb9b7425
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/38002658722); 2026-10-09T23:12:13.446715Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:51:44.294698Z.
 
 ## Measured inventory — linux/amd64
 
@@ -17,8 +17,8 @@ Runtime: 8.5.11; OS: Debian GNU/Linux 13 (trixie).
 | Tool | Version |
 | --- | --- |
 | bash | GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-gnu) |
-| chromedriver | ChromeDriver 154.0.8037.92 (334b65d254ccc35df4fca82706d1753227b01039-refs/branch-heads/8037@{#1589}) |
-| chromium | Chromium 154.0.8037.92 built on Debian GNU/Linux 13 (trixie) |
+| chromedriver | ChromeDriver 155.0.8059.39 (3ff7ac5a9224be9156d7f8703a06e22890aafd34-refs/branch-heads/8059@{#935}) |
+| chromium | Chromium 155.0.8059.39 built on Debian GNU/Linux 13 (trixie) |
 | composer | Composer version 2.10.3 2026-08-27 13:34:23 |
 | curl | curl 8.14.1 (x86_64-pc-linux-gnu) libcurl/8.14.1 OpenSSL/3.5.7 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10 |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
@@ -39,19 +39,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,645.3 MiB (1,725,237,927 bytes) |
-| Build, cache export and image load | 50.30s |
-| Public-artifact behavior and inventory verification | 24.24s |
+| Local image size | 1,648.6 MiB (1,728,723,524 bytes) |
+| Build, cache export and image load | 55.10s |
+| Public-artifact behavior and inventory verification | 24.09s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38002658722); 2026-10-09T23:12:13.407279Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:51:13.012595Z.
 
 Plan about **4 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `restored`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.2.0, `ghcr.io/xormania/php-browser@sha256:28dcd4508de2caeefbab9db7319bd9edd84b2be51f380c418fab07fec2f18590`; 1,864.3 MiB in the same image store. Change: **-11.7%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/37884893194); 2026-10-09T04:47:29.043585Z.
+Size baseline: v1.2.1, `ghcr.io/xormania/php-browser@sha256:3bd07aa66ea6af93ee3e690be1cb2e09352d3fa2e19f522f458e7020d664aded`; 1,645.3 MiB in the same image store. Change: **+0.2%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38002658722); 2026-10-09T23:12:13.407279Z.
 
-[Release notes](../releases/php-browser-8.5-trixie-v1.2.1.md).
+[Release notes](../releases/php-browser-8.5-trixie-v1.2.2.md).
 
 Capabilities: `browser`, `composer`, `mutation-testing`, `native-build`, `panther`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `symfony`, `xdebug`.
 

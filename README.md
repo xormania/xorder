@@ -54,19 +54,20 @@ prerequisites, release records, and evidence as new resources become available.
 <!-- catalog:start -->
 | Line | Revision | Verified platform | Exact reference |
 | --- | --- | --- | --- |
-| [php-browser/8.4-trixie](docs/images/php-browser-8.4-trixie.md) | 1.2.1 | linux/amd64 | `ghcr.io/xormania/php-browser:8.4-trixie-v1.2.1` |
-| [php-browser/8.5-trixie](docs/images/php-browser-8.5-trixie.md) | 1.2.1 | linux/amd64 | `ghcr.io/xormania/php-browser:8.5-trixie-v1.2.1` |
-| [php-dev/8.4-trixie](docs/images/php-dev-8.4-trixie.md) | 1.2.1 | linux/amd64 | `ghcr.io/xormania/php-dev:8.4-trixie-v1.2.1` |
-| [php-dev/8.5-trixie](docs/images/php-dev-8.5-trixie.md) | 1.2.1 | linux/amd64 | `ghcr.io/xormania/php-dev:8.5-trixie-v1.2.1` |
-| [php-frankenphp/8.4-trixie](docs/images/php-frankenphp-8.4-trixie.md) | 1.1.2 | linux/amd64 | `ghcr.io/xormania/php-frankenphp:8.4-trixie-v1.1.2` |
-| [php-frankenphp/8.5-trixie](docs/images/php-frankenphp-8.5-trixie.md) | 1.1.2 | linux/amd64 | `ghcr.io/xormania/php-frankenphp:8.5-trixie-v1.1.2` |
-| [php-toolkit/8.4-trixie](docs/images/php-toolkit-8.4-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.4-trixie-v1.0.1` |
-| [php-toolkit/8.5-trixie](docs/images/php-toolkit-8.5-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.5-trixie-v1.0.1` |
-| [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.2 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.2` |
-| [python-dev/3.14-trixie](docs/images/python-dev-3.14-trixie.md) | 1.1.2 | linux/amd64 | `ghcr.io/xormania/python-dev:3.14-trixie-v1.1.2` |
-| [rust-dev/1.99-trixie](docs/images/rust-dev-1.99-trixie.md) | 1.1.2 | linux/amd64 | `ghcr.io/xormania/rust-dev:1.99-trixie-v1.1.2` |
-| [uxor-dev/8.4-trixie](docs/images/uxor-dev-8.4-trixie.md) | 1.0.0 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.4-trixie-v1.0.0` |
-| [uxor-dev/8.5-trixie](docs/images/uxor-dev-8.5-trixie.md) | 1.0.0 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.0` |
+| [php-browser/8.4-trixie](docs/images/php-browser-8.4-trixie.md) | 1.2.2 | linux/amd64 | `ghcr.io/xormania/php-browser:8.4-trixie-v1.2.2` |
+| [php-browser/8.5-trixie](docs/images/php-browser-8.5-trixie.md) | 1.2.2 | linux/amd64 | `ghcr.io/xormania/php-browser:8.5-trixie-v1.2.2` |
+| [php-dev/8.4-trixie](docs/images/php-dev-8.4-trixie.md) | 1.2.2 | linux/amd64 | `ghcr.io/xormania/php-dev:8.4-trixie-v1.2.2` |
+| [php-dev/8.5-trixie](docs/images/php-dev-8.5-trixie.md) | 1.2.2 | linux/amd64 | `ghcr.io/xormania/php-dev:8.5-trixie-v1.2.2` |
+| [php-frankenphp/8.4-trixie](docs/images/php-frankenphp-8.4-trixie.md) | 1.1.3 | linux/amd64 | `ghcr.io/xormania/php-frankenphp:8.4-trixie-v1.1.3` |
+| [php-frankenphp/8.5-trixie](docs/images/php-frankenphp-8.5-trixie.md) | 1.1.3 | linux/amd64 | `ghcr.io/xormania/php-frankenphp:8.5-trixie-v1.1.3` |
+| [php-serena/8.5-trixie](docs/images/php-serena-8.5-trixie.md) | 1.1.2 | linux/amd64 | `ghcr.io/xormania/php-serena:8.5-trixie-v1.1.2` |
+| [php-toolkit/8.4-trixie](docs/images/php-toolkit-8.4-trixie.md) | 1.0.2 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.4-trixie-v1.0.2` |
+| [php-toolkit/8.5-trixie](docs/images/php-toolkit-8.5-trixie.md) | 1.0.2 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.5-trixie-v1.0.2` |
+| [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.3 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.3` |
+| [python-dev/3.14-trixie](docs/images/python-dev-3.14-trixie.md) | 1.1.3 | linux/amd64 | `ghcr.io/xormania/python-dev:3.14-trixie-v1.1.3` |
+| [rust-dev/1.99-trixie](docs/images/rust-dev-1.99-trixie.md) | 1.1.3 | linux/amd64 | `ghcr.io/xormania/rust-dev:1.99-trixie-v1.1.3` |
+| [uxor-dev/8.4-trixie](docs/images/uxor-dev-8.4-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.4-trixie-v1.0.1` |
+| [uxor-dev/8.5-trixie](docs/images/uxor-dev-8.5-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.1` |
 <!-- catalog:end -->
 
 Use catalog entries marked `available`, check their verified architecture and
