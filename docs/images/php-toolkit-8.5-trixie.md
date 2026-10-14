@@ -2,13 +2,13 @@
 
 Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.
 
-Available revision: **1.0.1**. Pin:
+Available revision: **1.0.2**. Pin:
 
 ```text
-ghcr.io/xormania/php-toolkit@sha256:8170abf3fadcf200a342bedcc3e85c53305afbfdae3061dad1017c9119bb95e1
+ghcr.io/xormania/php-toolkit@sha256:37c5fbacc336a888a327a5aaf9bb68b33cc0662dbab992a373b8efa0b7ce7e79
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/38002658722); 2026-10-09T23:14:41.381821Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:58:21.963078Z.
 
 ## Measured inventory — linux/amd64
 
@@ -37,19 +37,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 966.6 MiB (1,013,550,222 bytes) |
-| Build, cache export and image load | 11.01s |
-| Public-artifact behavior and inventory verification | 29.33s |
+| Local image size | 966.6 MiB (1,013,550,226 bytes) |
+| Build, cache export and image load | 13.11s |
+| Public-artifact behavior and inventory verification | 31.23s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38002658722); 2026-10-09T23:14:41.342203Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:57:57.620489Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `restored`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.0.0, `ghcr.io/xormania/php-toolkit@sha256:5ba23c9c72a8ddc6f65d79fcbad055ff0ad86c4dd6ff523cddaf4aac5137b818`; 1,185.6 MiB in the same image store. Change: **-18.5%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/37884893194); 2026-10-09T04:49:08.050211Z.
+Size baseline: v1.0.1, `ghcr.io/xormania/php-toolkit@sha256:8170abf3fadcf200a342bedcc3e85c53305afbfdae3061dad1017c9119bb95e1`; 966.6 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38002658722); 2026-10-09T23:14:41.342203Z.
 
-[Release notes](../releases/php-toolkit-8.5-trixie-v1.0.1.md).
+[Release notes](../releases/php-toolkit-8.5-trixie-v1.0.2.md).
 
 Capabilities: `composer`, `mutation-testing`, `native-build`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `prepared-composer-dependencies`, `symfony`, `symfony-toolkit-baseline`, `ux-toolkit-validation`, `xdebug`.
 

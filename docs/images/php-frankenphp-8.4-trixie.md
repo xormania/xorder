@@ -2,13 +2,13 @@
 
 Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.
 
-Available revision: **1.1.2**. Pin:
+Available revision: **1.1.3**. Pin:
 
 ```text
-ghcr.io/xormania/php-frankenphp@sha256:db129945845787737366fe7e8c65510251f031c2ef36e362e08f3c4f398aba2e
+ghcr.io/xormania/php-frankenphp@sha256:0f4167f208cea0466fa39f4612706914f8bd4600f9ccdcba42968fe90a84c37a
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/38321328835); 2026-10-12T23:22:37.468080Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:48:40.338972Z.
 
 ## Measured inventory — linux/amd64
 
@@ -19,7 +19,7 @@ Runtime: 8.4.26; OS: Debian GNU/Linux 13 (trixie).
 | bash | GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-gnu) |
 | composer | Composer version 2.10.3 2026-08-27 13:34:23 |
 | curl | curl 8.14.1 (x86_64-pc-linux-gnu) libcurl/8.14.1 OpenSSL/3.5.7 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10 |
-| frankenphp | FrankenPHP v1.13.0 PHP 8.4.26 Caddy v2.11.7 h1:yj0Y4fYZGPkSvibBJ1sTWE33xC0fxztVyXEW5iIdUT4= |
+| frankenphp | FrankenPHP v1.13.1 PHP 8.4.26 Caddy v2.11.7 h1:yj0Y4fYZGPkSvibBJ1sTWE33xC0fxztVyXEW5iIdUT4= |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
 | infection | Infection - PHP Mutation Testing Framework version 0.35.6 |
@@ -38,17 +38,19 @@ Extensions: `apcu`, `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 963.5 MiB (1,010,350,168 bytes) |
-| Build, cache export and image load | 172.35s |
-| Public-artifact behavior and inventory verification | 29.24s |
+| Local image size | 963.6 MiB (1,010,384,346 bytes) |
+| Build, cache export and image load | 141.85s |
+| Public-artifact behavior and inventory verification | 24.94s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38321328835); 2026-10-12T23:22:08.272114Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:48:07.706964Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
-External build cache at start: `restored`. This does not assert that every layer was a cache hit.
+External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-[Release notes](../releases/php-frankenphp-8.4-trixie-v1.1.2.md).
+Size baseline: v1.1.2, `ghcr.io/xormania/php-frankenphp@sha256:db129945845787737366fe7e8c65510251f031c2ef36e362e08f3c4f398aba2e`; 963.5 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38321328835); 2026-10-12T23:22:08.272114Z.
+
+[Release notes](../releases/php-frankenphp-8.4-trixie-v1.1.3.md).
 
 Capabilities: `php`, `composer`, `symfony`, `postgresql-client`, `native-build`, `xdebug`, `frankenphp`, `worker-server`, `pcov`, `php-testing`, `phpstan-isolated`, `mutation-testing`.
 
