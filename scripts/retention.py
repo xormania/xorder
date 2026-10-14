@@ -191,7 +191,9 @@ def plan(snapshot, policy, releases, now=None, *, cache_days=14, closed_branch_d
         for ref in refs:
             release_by_ref[ref].append(record)
             graph.setdefault(ref, set()).update(refs - {ref})
-            if parent.startswith("ghcr.io/"):
+            # A Docker reference names its registry as the first slash-delimited
+            # component; compare that host exactly before strict digest parsing.
+            if parent.partition("/")[0] == "ghcr.io":
                 identity(parent)
                 graph[ref].add(parent)
     groups_by_ref = defaultdict(list)

@@ -167,6 +167,35 @@ class IdentityObservationTests(unittest.TestCase):
         self.assertEqual(actual[0]["identity"], wrong)
 
 
+class RegistryOwnershipTests(unittest.TestCase):
+    def test_known_repository_union_includes_policy_bootstrap_and_withdrawn_ledger(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record = root / "release-records/old-toolchain/line/1.0.0.json"
+            record.parent.mkdir(parents=True)
+            record.write_text(json.dumps({"lifecycle": "withdrawn", "verification": {"status": "passed"},
+                "publication": {"repository": "ghcr.io/xormania/old-toolchain", "public_pull_verified_at": "2026-10-01T00:00:00Z"}}))
+            bootstrap = root / "lifecycle/bootstrap-group.json"
+            bootstrap.parent.mkdir()
+            bootstrap.write_text(json.dumps({"resources": [{"identity": "ghcr.io/xormania/php-toolkit@sha256:" + "c" * 64}]}))
+            current = policy()
+            current["groups"].append({"support_ends_at": "2026-10-01T00:00:00Z", "resources": [
+                {"identity": "ghcr.io/xormania/historical-toolchain@sha256:" + "d" * 64}]})
+            self.assertEqual(support.known_image_repositories(current, root=root), {
+                "ghcr.io/xormania/php-dev", "ghcr.io/xormania/php-toolkit", "ghcr.io/xormania/old-toolchain",
+                "ghcr.io/xormania/historical-toolchain"})
+
+    def test_registry_references_are_parsed_completely(self):
+        self.assertEqual(support._registry_repository(IDENTITY), "ghcr.io/xormania/php-dev")
+        self.assertEqual(support._registry_repository("ghcr.io/xormania/php-dev:Alias-v1"), "ghcr.io/xormania/php-dev")
+        self.assertEqual(support._registry_repository("ghcr.io/xormania/php-dev-worker:latest"), "ghcr.io/xormania/php-dev-worker")
+        for malformed in ("ghcr.io/xormania/php-dev:one:two", "ghcr.io/xormania/php-dev@sha256:short",
+                          "ghcr.io/xormania/php-dev/../app:latest"):
+            with self.subTest(reference=malformed), self.assertRaisesRegex(ValueError, "complete repository"):
+                support._registry_repository(malformed)
+        self.assertIsNone(support._registry_repository("ghcr.io/xormania.example/php-dev:latest"))
+
+
 class EnforcementTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -229,9 +258,22 @@ class EnforcementTests(unittest.TestCase):
 
     def test_missing_xorder_service_lock_fails_before_workload(self):
         (self.workspace / support.LOCK_NAME).write_text(json.dumps(lock()))
-        with self.assertRaisesRegex(ValueError, "missing from support lock: browser"):
-            support.runner_check(self.workspace, {}, configuration={"services": {
-                "php": {"image": IDENTITY}, "browser": {"image": "ghcr.io/xormania/playwright-browser:1.58-trixie-v1"}}})
+        for family in ("playwright-browser", "php-toolkit"):
+            configuration = {"services": {"php": {"image": IDENTITY}, "extra": {"image": "ghcr.io/xormania/" + family + ":latest"}}}
+            with self.subTest(family=family), self.assertRaisesRegex(ValueError, "missing from support lock: extra"):
+                support.runner_check(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration=configuration)
+            with self.subTest(family=family), self.assertRaisesRegex(ValueError, "missing from support lock: extra"):
+                support.runner_precheck(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration)
+
+    def test_unrelated_same_owner_app_is_outside_both_release_group_gates(self):
+        (self.workspace / support.LOCK_NAME).write_text(json.dumps(lock()))
+        configuration = {"services": {"php": {"image": IDENTITY}, "worker": {"image": "ghcr.io/xormania/my-project-worker:latest"}}}
+        with patch.object(support, "observe_images", return_value=self.actual):
+            prepared = support.runner_precheck(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration)
+            result = support.runner_check(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)},
+                                          configuration=configuration, prepared=prepared)
+        self.assertEqual(prepared["services"], ["php"])
+        self.assertTrue(result["ok"])
 
     def test_source_validation_requires_exact_builder_owned_ids(self):
         observed = [{"service": "php", "image_id": "sha256:" + "c" * 64}]
@@ -425,6 +467,15 @@ class TrustedSourceProofTests(unittest.TestCase):
                 support.runner_check(self.workspace, self.env, containers=containers)
             with self.assertRaisesRegex(ValueError, "omits selected xorder service"):
                 support.runner_precheck(self.workspace, self.env, {"services": {"third": {"image": "ghcr.io/xormania/php-dev:latest"}}})
+
+    def test_source_scope_excludes_unrelated_same_owner_app(self):
+        configuration = {"services": {"php": {"image": "candidate:test"}, "browser": {"image": "companion:test"},
+                                      "worker": {"image": "ghcr.io/xormania/my-project-worker:latest"}}}
+        with patch.object(support, "source_commit", return_value=self.source), \
+                patch.object(support, "observe_source_images", return_value=self.observed) as observe:
+            result = support.runner_check(self.workspace, self.env, configuration=configuration)
+        self.assertEqual(result["status"], "source_validation")
+        self.assertEqual(set(observe.call_args.args[0]), {"php", "browser"})
 
 
 if __name__ == "__main__":

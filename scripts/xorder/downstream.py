@@ -163,6 +163,47 @@ def _repository(reference):
     return (prefix + "/" if prefix else "") + leaf.split(":", 1)[0]
 
 
+def _registry_repository(reference):
+    """Parse the whole registry reference; owner namespaces are not ownership."""
+    if not isinstance(reference, str) or reference.split("/", 2)[:2] != ["ghcr.io", "xormania"]:
+        return None
+    component = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
+    match = re.fullmatch(r"(?P<repository>ghcr\.io/xormania/" + component + r"(?:/" + component + r")*)"
+                         r"(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?(?:@sha256:[a-f0-9]{64})?", reference)
+    if match is None:
+        raise ValueError("Selected GHCR image must use a valid complete repository, tag or digest reference")
+    return match["repository"]
+
+
+def known_image_repositories(policy=None, *, root=None):
+    """Recognize published xorder packages, including historical group members."""
+    root = Path(root or Path(__file__).resolve().parents[2])
+    known = set()
+    def members(group):
+        for member in group.get("resources", []):
+            repository = _registry_repository(member.get("identity"))
+            if repository:
+                known.add(repository)
+    if policy is None:
+        policy_path = root / "lifecycle/release-groups.json"
+        policy = read_json(policy_path) if policy_path.is_file() else {}
+    for group in policy.get("groups", []):
+        members(group)
+    bootstrap = root / "lifecycle/bootstrap-group.json"
+    if bootstrap.is_file():
+        members(read_json(bootstrap))
+    # Availability changes do not erase package ownership. Retain every local
+    # accepted image record, including deprecated/withdrawn revisions.
+    for path in (root / "release-records").glob("*/*/*.json"):
+        item = read_json(path)
+        if (item.get("verification", {}).get("status") == "passed"
+                and item.get("publication", {}).get("public_pull_verified_at")):
+            repository = _registry_repository(item["publication"].get("repository"))
+            if repository:
+                known.add(repository)
+    return known
+
+
 def _identity(entry, inspected, repository):
     if not isinstance(inspected, dict):
         raise ValueError("Docker did not return an observed image identity")
@@ -365,8 +406,9 @@ def _runner_source_check(workspace, env, *, configuration=None, containers=None,
         raise ValueError("Runner source-validation proof must bind exactly the PHP and browser services")
     if configuration is not None:
         services = configuration.get("services", {})
+        known = known_image_repositories()
         for service, item in services.items():
-            if item.get("image", "").startswith("ghcr.io/xormania/") and service not in expected:
+            if _registry_repository(item.get("image")) in known and service not in expected:
                 raise ValueError("Source validation proof omits selected xorder service " + service)
         selected = {service: services.get(service, {}).get("image") for service in expected}
         observed = observe_source_images(selected, env=env)
@@ -415,8 +457,9 @@ def runner_precheck(workspace, env, configuration):
                        next(platform["digest"] for platform in member["platforms"] if platform["platform"] == entry["platform"])}
             if image not in allowed:
                 raise ValueError("Configured image digest differs from support lock for " + entry["service"])
+    known = known_image_repositories(context[0])
     for service, value in services.items():
-        if value.get("image", "").startswith("ghcr.io/xormania/") and service not in expected_services:
+        if _registry_repository(value.get("image")) in known and service not in expected_services:
             raise ValueError("Selected xorder image service is missing from support lock: " + service)
     return {"lock": lock, "policy_context": context, "services": expected_services}
 
@@ -444,14 +487,16 @@ def runner_check(workspace, env, *, configuration=None, containers=None, prepare
     lock = prepared["lock"] if prepared else read_json(path)
     if not isinstance(lock, dict):
         raise ValueError("Support lock must be a JSON object")
+    context = prepared["policy_context"] if prepared else load_policy(
+        policy_file=env.get("XORDER_SUPPORT_POLICY_FILE"), policy_url=env.get("XORDER_SUPPORT_POLICY_URL"))
     if configuration is not None:
         services = configuration.get("services", {})
         declared = {entry.get("service") for entry in _resources(lock)}
         if None in declared:
             raise ValueError("Runner support locks must map every resource to its Compose service")
+        known = known_image_repositories(context[0])
         for service, value in services.items():
-            image = value.get("image", "")
-            if image.startswith("ghcr.io/xormania/") and service not in declared:
+            if _registry_repository(value.get("image")) in known and service not in declared:
                 raise ValueError("Selected xorder image service is missing from support lock: " + service)
         selected = {service: value.get("image") for service, value in services.items()}
         observed = observe_images(lock, selected, env=env)
@@ -459,7 +504,7 @@ def runner_check(workspace, env, *, configuration=None, containers=None, prepare
         observed = observe_containers(lock, containers or [], env=env)
     result = check(lock, observed, policy_file=env.get("XORDER_SUPPORT_POLICY_FILE"),
                    policy_url=env.get("XORDER_SUPPORT_POLICY_URL"),
-                   policy_context=prepared["policy_context"] if prepared else None)
+                   policy_context=context)
     return _report_result(result)
 
 
