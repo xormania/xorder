@@ -1,5 +1,6 @@
 """Anonymous browser verification and exact evidence binding before publication."""
 import importlib.util
+import copy
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ from test_library import record
 from library import ROOT, definitions, encoded, fingerprint
 import browser_release
 import release
+from artifact_identity import build_key
 
 
 class BrowserReleaseTests(unittest.TestCase):
@@ -25,6 +27,55 @@ class BrowserReleaseTests(unittest.TestCase):
                 "input_fingerprint": fingerprint(definitions()[self.line]),
                 "fixture_sha256": browser_release.fixture_hash(self.line)}
 
+    def test_unnecessary_revision_is_refused_before_reservation_or_docker(self):
+        current = copy.deepcopy(definitions()[self.line])
+        accepted = record(self.line, revision=current['revision'])
+        accepted.update(build_key_version=1, build_key=build_key(current))
+        parts = current['revision'].split('.')
+        current['revision'] = '.'.join(parts[:-1] + [str(int(parts[-1]) + 1)])
+        current['purpose'] = 'Only a descriptive change'
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(browser_release, 'definitions', return_value={self.line: current}), \
+                patch.object(browser_release, 'records', return_value=[accepted]), \
+                patch.object(release, 'reserve_candidate') as reserve_candidate, \
+                patch.object(release, 'release_asset') as release_asset, \
+                patch.object(browser_release, 'build') as build, \
+                patch.object(browser_release.subprocess, 'run') as docker:
+            with self.assertRaisesRegex(ValueError, 'no build inputs changed'):
+                browser_release.stage(self.line, 'f' * 40, Path(folder) / 'candidate.json')
+            reserve_candidate.assert_not_called()
+            release_asset.assert_not_called()
+            build.assert_not_called()
+            docker.assert_not_called()
+
+    def test_existing_candidate_retry_retains_original_source_and_evidence_inputs(self):
+        frozen = copy.deepcopy(definitions()[self.line])
+        frozen_fingerprint = fingerprint(frozen)
+        current = copy.deepcopy(frozen)
+        current['purpose'] = 'A later clarification'
+        tools = json.loads((ROOT / 'images/tools.json').read_text())
+        attempt = {'source_commit': self.source, 'definition': frozen, 'tools': tools,
+                   'input_fingerprint': frozen_fingerprint, 'build_key': build_key(frozen),
+                   'candidate': 'ghcr.io/xormania/playwright-browser:reserved-input-key'}
+        labels = {'org.opencontainers.image.revision': self.source,
+                  'org.opencontainers.image.version': frozen['revision']}
+        resolved = {'digest': self.artifact.split('@')[1]}
+        with tempfile.TemporaryDirectory() as folder, \
+                patch.object(browser_release, 'definitions', return_value={self.line: current}), \
+                patch.object(browser_release, 'records', return_value=[]), \
+                patch.object(release, 'release_asset', return_value=None), \
+                patch.object(release, 'reserve_candidate', return_value=attempt), \
+                patch.object(browser_release, 'resolve', side_effect=[None, resolved, resolved]), \
+                patch.object(browser_release, 'image_facts', return_value={'Config': {'Labels': labels}}), \
+                patch.object(browser_release, 'build') as build, \
+                patch.object(browser_release.subprocess, 'run') as docker:
+            candidate = browser_release.stage(self.line, 'f' * 40, Path(folder) / 'candidate.json')
+            self.assertEqual(candidate['source'], self.source)
+            self.assertEqual(candidate['input_fingerprint'], frozen_fingerprint)
+            self.assertEqual(candidate['build_key'], attempt['build_key'])
+            build.assert_not_called()
+            docker.assert_called_once_with(['docker', 'pull', self.artifact], check=True)
+
     def test_staging_never_executes_consumers_and_anonymous_verification_binds_the_digest(self):
         inventory = record(self.line)["platforms"][0]["inventory"]
         inventory["runtime_version"] = "1.58.2"
@@ -32,6 +83,8 @@ class BrowserReleaseTests(unittest.TestCase):
             output.write_text(encoded(inventory))
         with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {}, clear=True), \
                 patch("release.release_asset", return_value=None), \
+                patch.object(release, 'gh', return_value='[[]]'), \
+                patch.object(release, 'run'), \
                 patch.object(browser_release, "resolve", side_effect=[None, None, {"digest": "sha256:" + "d" * 64}, {"digest": "sha256:" + "d" * 64}]), \
                 patch.object(browser_release, "build") as build, \
                 patch.object(browser_release.subprocess, "run") as docker, \

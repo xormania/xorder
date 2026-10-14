@@ -79,6 +79,8 @@ class ParityApplicationTests(unittest.TestCase):
         with patch.object(build, "definitions", return_value={browser_line: {"family": "playwright-browser"}}), \
                 patch.object(build, "read", return_value=self.fixture), \
                 patch.object(build, "prepare_parity_application", return_value=self.image_id), \
+                patch("xorder.downstream.source_commit", return_value=self.source), \
+                patch("xorder.downstream.observe_source_images", return_value=[{"service": "browser", "image_id": self.image_id}]), \
                 patch.object(build, "inspect"), patch.object(build.subprocess, "run") as run:
             build.verify(browser_line, "browser:test", Path("out/inventory.json"), source_validation=True, source=self.source)
             self.assertEqual(run.call_args.kwargs["env"]["XORDER_PARITY_LOCAL_APPLICATION"], self.image_id)

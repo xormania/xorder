@@ -21,6 +21,16 @@ class ImageSelectionTests(unittest.TestCase):
     def selected(self, *paths, **kwargs):
         return affected_lines(paths, self.defs, ROOT, **kwargs)
 
+    def test_group_support_and_retention_metadata_do_not_select_image_builds(self):
+        self.assertEqual(self.selected('lifecycle/release-groups.json',
+                                       'lifecycle/bootstrap-group.json',
+                                       'scripts/release_groups.py',
+                                       'scripts/group_writeback.py',
+                                       'scripts/retention.py',
+                                       'scripts/publication_attempt.py',
+                                       'schemas/release-groups.schema.json',
+                                       '.github/workflows/release-groups.yml'), [])
+
     def test_child_recipe_and_fixture_skip_parent_and_siblings(self):
         for path in ("images/php-toolkit/Dockerfile", "tests/fixtures/php-toolkit/run.sh",
                      "examples/php-toolkit/validator/composer.lock"):

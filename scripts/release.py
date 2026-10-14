@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from build import build, cache_source, image_measurements, pinned, verify
-from library import ROOT, children, definitions, encoded, fingerprint, read, records, validate_record, version
+from library import ROOT, children, definitions, encoded, fingerprint, read, records, reusable_record, record_matches_inputs, validate_record, version
 from registry import resolve
 
 
@@ -23,6 +23,14 @@ def gh(*args):
 
 def now():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def reserve_candidate(definition, source, parent, destination, fp):
+    from publication_attempt import reserve
+    return reserve(definition, source, parent, destination, root=ROOT,
+                   tools=read(ROOT / 'images/tools.json'), fingerprint=fp,
+                   gh=gh, run=run, encoded=encoded, now=now,
+                   repository=os.environ.get('GITHUB_REPOSITORY', 'xormania/xorder'))
 
 
 def exact_guard(current, intended):
@@ -121,14 +129,17 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
         import hashlib
         fp = hashlib.sha256((fp + parent).encode()).hexdigest()
     if prior:
-        if prior[0]["input_fingerprint"] != fp:
+        if not record_matches_inputs(prior[0], d, parent):
             raise RuntimeError(f"{line} changed without a new revision. Bump {d['revision']}.")
         return prior[0]
+    # A descriptive change or arbitrary revision bump cannot allocate another
+    # artifact when a compatible accepted revision already has these inputs.
+    reusable_record(d, accepted, parent)
     source_tag = f"{line}/v{d['revision']}"
     destination.mkdir(parents=True, exist_ok=True)
     record = release_asset(source_tag, destination)
     if record:
-        if record["input_fingerprint"] != fp:
+        if not record_matches_inputs(record, d, parent):
             raise RuntimeError("Interrupted release has different inputs; use a new image revision")
         remote = resolve(record["publication"]["repository"] + "@" + record["publication"]["digest"])
         if not remote or remote["digest"] != record["publication"]["digest"]:
@@ -140,11 +151,13 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
             verify_record(record, destination / "assurance")
         return record
     repository = "ghcr.io/xormania/" + d["family"]
-    candidate = f"{repository}:{d['line']}-candidate-v{d['revision']}-{source}"
     # An existing exact tag without a durable record is ambiguous; never rebuild it.
     existing_exact = resolve(f"{repository}:{d['line']}-v{d['revision']}", authenticated=True)
     if existing_exact:
         raise RuntimeError("Exact tag exists without a durable record. Recover its record; do not rebuild.")
+    attempt = reserve_candidate(d, source, parent, destination, fp)
+    source, d, fp = attempt['source_commit'], attempt['definition'], attempt['input_fingerprint']
+    candidate = attempt['candidate']
     existing = resolve(candidate, authenticated=True)
     inventory_path = destination / "inventory.json"
     resolved_base = parent or pinned(d["base"])
@@ -157,7 +170,8 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
         if browser_evidence is None:
             raise ValueError("Browser publication requires anonymous parity evidence")
         from browser_release import accepted_evidence
-        browser_proof = accepted_evidence(line, source, artifact, browser_evidence)
+        browser_proof = accepted_evidence(line, source, artifact, browser_evidence,
+                                         definition=d, input_fingerprint=fp)
         inventory_path.write_text(encoded(browser_proof["inventory"]))
     build_seconds = build_cache = None
     if existing:
@@ -202,7 +216,8 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
     assurance = stage_assurance(source_tag, source, artifact, evidence, destination / "assurance")
     date = now()
     record = {"schema_version": 1, "line_id": line, "version": d["revision"], "source_commit": source, "source_tag": source_tag,
-              "created_at": date, "definition": d, "tools": read(ROOT / "images/tools.json"), "resolved_base": resolved_base,
+              "created_at": date, "definition": d, "tools": attempt['tools'], "resolved_base": resolved_base,
+              "build_key_version": 1, "build_key": attempt['build_key'],
               "input_fingerprint": fp, "lifecycle": "available", "assurance": assurance,
               "platforms": [{"platform": "linux/amd64", "digest": published["platforms"].get("linux/amd64", digest),
                              "inventory": read(inventory_path), "metrics": measurements}],

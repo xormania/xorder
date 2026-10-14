@@ -64,6 +64,30 @@ git init "$work/main"
 git -C "$work/main" remote add origin "${consumer[0]}"
 git -C "$work/main" fetch --depth 1 origin "${consumer[1]}"
 git -C "$work/main" worktree add --detach "$WORKSPACE" FETCH_HEAD
+if [[ -n "${XORDER_SOURCE_VALIDATION_PROOF:-}" ]]; then
+  # A trusted builder supplied the exact candidate ID. Resolve the companion
+  # from xorder's catalog and the pinned consumer lock before application hooks,
+  # then keep the completed proof outside every mounted consumer worktree.
+  BROWSER_IMAGE=$(python3 - "$root" "$WORKSPACE" <<'PY'
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(sys.argv[1]) / "examples/uxor"))
+from runner import browser_image, playwright
+print(browser_image(playwright(Path(sys.argv[2]))))
+PY
+)
+  export BROWSER_IMAGE
+  if ! docker image inspect -- "$BROWSER_IMAGE" >/dev/null 2>&1; then docker pull "$BROWSER_IMAGE"; fi
+  python3 - "$root" "$XORDER_SOURCE_VALIDATION_PROOF" "$image" "$BROWSER_IMAGE" "$work/source-validation.json" <<'PY'
+import sys
+from pathlib import Path
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "scripts"))
+from xorder.downstream import prepare_fixture_proof
+prepare_fixture_proof(sys.argv[2], {"php": sys.argv[3], "browser": sys.argv[4]}, sys.argv[5], root=root)
+PY
+  export XORDER_SOURCE_VALIDATION_PROOF="$work/source-validation.json"
+fi
 bash "$root/examples/uxor/run.sh" up
 bash "$root/examples/uxor/run.sh" sync
 bash "$root/examples/uxor/run.sh" sync --check

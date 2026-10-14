@@ -1,4 +1,6 @@
 import json
+import datetime as dt
+import hashlib
 import os
 import subprocess
 import socket
@@ -7,6 +9,32 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+SUPPORT_NOW = dt.datetime(2026, 10, 14, 8, tzinfo=dt.timezone.utc)
+
+
+def legacy_support_fixture(directory, *, subprocess_clock=False):
+    """Exercise the announced migration path using a fresh offline policy receipt."""
+    directory = Path(directory)
+    policy = json.loads((ROOT / "lifecycle/release-groups.json").read_text())
+    content = json.dumps(policy, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    snapshot = {"schema_version": 1, "policy": policy, "receipt": {
+        "url": "https://raw.githubusercontent.com/xormania/xorder/master/lifecycle/release-groups.json",
+        "fetched_at": SUPPORT_NOW.isoformat().replace("+00:00", "Z"),
+        "valid_until": (SUPPORT_NOW + dt.timedelta(hours=24)).isoformat().replace("+00:00", "Z"),
+        "policy_sha256": hashlib.sha256(content).hexdigest()}}
+    path = directory / "support-snapshot.json"
+    path.write_text(json.dumps(snapshot))
+    environment = {"XORDER_SUPPORT_POLICY_FILE": str(path)}
+    if subprocess_clock:
+        # Only this fixture's Python subprocesses freeze UTC. They execute the
+        # production freshness and legacy deadline checks without bypasses.
+        (directory / "sitecustomize.py").write_text(
+            "import datetime, sys\n"
+            f"sys.path.insert(0, {str(ROOT / 'scripts')!r})\n"
+            "from xorder import downstream\n"
+            "downstream.utc_now = lambda: datetime.datetime(2026, 10, 14, 8, tzinfo=datetime.timezone.utc)\n")
+        environment["PYTHONPATH"] = str(directory)
+    return environment
 
 
 class WorktreeRunnerTests(unittest.TestCase):
@@ -49,6 +77,9 @@ else:
             env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"],
                        WORKSPACE=str(workspace), IMAGE="fixture:test", WORKTREE_GIT=str(int(enabled)),
                        XDG_CACHE_HOME=str(root / "cache"), COMMANDS=str(commands), PHPUNIT_XDEBUG_MODE="coverage")
+            env.update(legacy_support_fixture(root, subprocess_clock=True))
+            for key in ("XORDER_SUPPORT_LOCK", "XORDER_SUPPORT_POLICY_URL", "XORDER_SOURCE_VALIDATION_PROOF"):
+                env.pop(key, None)
             for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"):
                 env.pop(key, None)
             subprocess.run(["bash", str(ROOT / "examples/uxor/run.sh"), *(action or ["exec", "git", "status"])],
@@ -167,6 +198,9 @@ statefile.write_text(json.dumps(state))
         self.docker.chmod(0o755)
         self.env = {key: value for key, value in os.environ.items() if key not in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy", "PROXY_PASSTHROUGH", "COMPOSER_CACHE_DIR", "WORKTREE_GIT", "UXOR_PROJECT", "HTTP_PORT", "HTTPS_PORT", "HTTP3_PORT", "DOCKER_HOST", "DOCKER_CONTEXT", "PUID", "PGID", "PHPUNIT_PROJECT", "PHPUNIT_CONFIGURATION", "PHPSTAN_PROJECT", "PHPSTAN_WORKSPACE", "PHPSTAN_CONFIGURATION", "PHPSTAN_AUTOLOAD_FILE", "PHPSTAN_PATHS", "COVERAGE_DRIVER", "COVERAGE_SOURCE", "COVERAGE_CLOVER")}
         self.env.update(PATH=str(self.directory) + os.pathsep + os.environ["PATH"], WORKSPACE=str(self.workspace), IMAGE="fixture:test", COMMANDS=str(self.commands), MOCK_STATE=str(self.directory / "state.json"), XDG_CACHE_HOME=str(self.directory / "cache"))
+        self.env.update(legacy_support_fixture(self.directory, subprocess_clock=True))
+        for key in ("XORDER_SUPPORT_LOCK", "XORDER_SUPPORT_POLICY_URL", "XORDER_SOURCE_VALIDATION_PROOF"):
+            self.env.pop(key, None)
         self.env.pop("XORDER_REUSE_ONLY", None)
         self.env.pop("COMPOSER_INSTALL_PREFERENCE", None)
         # Keep kernel-allocated TCP/UDP sockets reserved for this mocked profile.
@@ -551,7 +585,10 @@ statefile.write_text(json.dumps(state))
         self.assertNotIn("Traceback", result.stderr)
 
     def test_captured_project_sync_work_keeps_its_existing_workload_deadline(self):
-        result = self.run_profile("sync", MOCK_CAPTURE_SLEEP="0.1", XORDER_OBSERVE_TIMEOUT_SECONDS="0.01")
+        # Support checks first inspect the mocked engine. Give its Python
+        # startup a realistic observation budget; the captured project command
+        # still runs longer than that budget and must retain its own deadline.
+        result = self.run_profile("sync", MOCK_CAPTURE_SLEEP="0.4", XORDER_OBSERVE_TIMEOUT_SECONDS="0.2")
         self.assertEqual(result.returncode, 0)
         self.assertTrue(any("exec" in call["args"] for call in self.calls))
 

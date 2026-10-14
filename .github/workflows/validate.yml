@@ -31,7 +31,15 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-ci.txt
       - run: python -m pip install -r requirements-ci.txt
-      - run: python scripts/library.py check
+      - name: Validate catalog and immutable support policy
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            python scripts/library.py check --previous-policy-ref "$BASE_SHA"
+          else
+            python scripts/library.py check
+          fi
       - run: python -m unittest discover -s tests -v
       - run: python -m compileall -q scripts tests
       - name: Shell syntax
@@ -187,6 +195,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - name: Enable local PHP parents and cache export
         if: startsWith(matrix.line, 'php-')
         uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5

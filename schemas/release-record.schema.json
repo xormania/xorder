@@ -176,6 +176,13 @@
         }
       },
       "additionalProperties": false
+    },
+    "build_key_version": {
+      "const": 1
+    },
+    "build_key": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   },
   "additionalProperties": false,
@@ -283,5 +290,13 @@
       },
       "additionalProperties": false
     }
+  },
+  "dependentRequired": {
+    "build_key": [
+      "build_key_version"
+    ],
+    "build_key_version": [
+      "build_key"
+    ]
   }
 }

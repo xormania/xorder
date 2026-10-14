@@ -131,9 +131,9 @@ without building it. Missing or changed artifacts still build and verify normall
 `--cache-probe` checks source-label layer reuse when explicitly requested.
 
 Build caches use family-specific input fingerprints rather than commit SHAs.
-Source labels are applied after install layers. Each image revision is passed
-as `APT_REFRESH`, intentionally invalidating Debian package installs during a
-weekly refresh. PHP CI uses Docker's containerd image store so its exact local
+Source labels are applied after install layers. Observed Debian package-index
+checksums form `APT_REFRESH`, invalidating package-install layers only when
+those actual upstream inputs change. PHP CI uses Docker's containerd image store so its exact local
 parent remains visible while both parent and browser caches can be exported.
 Build artifacts and job summaries retain image size and build/verification
 times. A source-label-only rebuild checks that filesystem layers stay identical.

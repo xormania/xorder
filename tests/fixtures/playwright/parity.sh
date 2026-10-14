@@ -18,11 +18,13 @@ export HTTP_PORT=18085 HTTPS_PORT=18445 HTTP3_PORT=18445
 export IMAGE="${consumer[3]}"
 evidence="$root/out/playwright/${line//\//-}"
 mkdir -p "$evidence" "$work/home" "$work/docker"
+source_validation_env=()
 parity_runner() {
   env -i PATH="$PATH" HOME="$work/home" DOCKER_CONFIG="$work/docker" \
     WORKSPACE="$WORKSPACE" IMAGE="$IMAGE" BROWSER_IMAGE="$BROWSER_IMAGE" \
     UXOR_PROJECT="$UXOR_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
     XORDER_PARITY_FIXTURE=1 XORDER_SHARED_CACHE=0 \
+    "${source_validation_env[@]}" \
     bash "$root/examples/uxor/run.sh" "$@"
 }
 cleanup() {
@@ -50,6 +52,20 @@ assert package['devDependencies']['@playwright/test'] == sys.argv[2]
 assert lock['packages']['node_modules/@playwright/test']['version'] == sys.argv[2]
 PY
 if [[ "$application_kind" == accepted-publication ]]; then docker pull "$IMAGE"; fi
+if [[ -n "${XORDER_SOURCE_VALIDATION_PROOF:-}" ]]; then
+  # The anonymous verifier's trusted builder owns the candidate allowlist.
+  # Consumer code never writes this proof, and env -i forwards only the
+  # completed proof path after the pinned companion is observed.
+  python3 - "$root" "$XORDER_SOURCE_VALIDATION_PROOF" "$IMAGE" "$BROWSER_IMAGE" "$work/source-validation.json" <<'PY'
+import sys
+from pathlib import Path
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root / "scripts"))
+from xorder.downstream import prepare_fixture_proof
+prepare_fixture_proof(sys.argv[2], {"php": sys.argv[3], "browser": sys.argv[4]}, sys.argv[5], root=root)
+PY
+  source_validation_env=("XORDER_SOURCE_VALIDATION_PROOF=$work/source-validation.json")
+fi
 parity_runner up
 parity_runner sync
 parity_runner exec env CI=1 npx playwright test \

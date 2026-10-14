@@ -21,7 +21,7 @@ def read(path):
     return json.loads(Path(path).read_text())
 
 
-def validate_schemas(root=ROOT):
+def validate_schemas(root=ROOT, previous_policy=None):
     import jsonschema
     for path in (root / "images").glob("*/definition.json"):
         jsonschema.validate(read(path), read(root / "schemas/definition.schema.json"))
@@ -32,6 +32,14 @@ def validate_schemas(root=ROOT):
     for path in (root / "retired-records").glob("*.json"):
         jsonschema.validate(read(path), read(root / "schemas/image-retirement.schema.json"))
     jsonschema.validate(read(root / "catalog.json"), read(root / "schemas/catalog.schema.json"))
+    policy_path = root / "lifecycle/release-groups.json"
+    if previous_policy is not None and not policy_path.exists():
+        raise ValueError("The accepted support policy cannot be deleted")
+    if policy_path.exists():
+        policy = read(policy_path)
+        jsonschema.validate(policy, read(root / "schemas/release-groups.schema.json"))
+        from release_groups import validate_policy
+        validate_policy(policy, root, previous_policy)
     from xorder.model import check as check_resources
     check_resources(root)
 
@@ -127,6 +135,9 @@ def validate_size_measurement(measurement):
 
 def validate_record(record):
     assert record["schema_version"] == 1
+    if 'build_key' in record or 'build_key_version' in record:
+        assert record.get('build_key_version') == 1
+        assert re.fullmatch(r'[a-f0-9]{64}', str(record.get('build_key', '')))
     version(record["version"])
     assert re.fullmatch(r"[a-f0-9]{40}", record["source_commit"])
     assert record["lifecycle"] in ("available", "deprecated", "withdrawn")
@@ -392,22 +403,53 @@ def cache_key(line, defs):
     return hashlib.sha256("".join(fingerprint(defs[peer]) for peer in peers).encode()).hexdigest()
 
 
+def record_matches_inputs(record, definition, parent=None, root=ROOT):
+    """Keep historical fingerprints; prove metadata-only equivalence separately."""
+    if record['line_id'] != definition['line_id']:
+        return False
+    expected = fingerprint(definition, root)
+    if parent:
+        expected = hashlib.sha256((expected + parent).encode()).hexdigest()
+    if record['input_fingerprint'] == expected:
+        return True
+    from artifact_identity import existing_record_match
+    try:
+        return existing_record_match(record, definition, root=root, parent=parent)
+    except ValueError:
+        # Missing original inputs cannot establish equivalence. Publication
+        # then refuses a changed accepted revision instead of overwriting it.
+        return False
+
+
+def reusable_record(definition, accepted, parent=None, root=ROOT):
+    peers = [record for record in accepted if record['line_id'] == definition['line_id']
+             and record['lifecycle'] == 'available']
+    exact = next((record for record in peers if record['version'] == definition['revision']), None)
+    if exact is not None:
+        return exact if record_matches_inputs(exact, definition, parent, root) else None
+    for record in sorted(peers, key=lambda item: version(item['version']), reverse=True):
+        if record_matches_inputs(record, definition, parent, root):
+            raise ValueError(f"{definition['line_id']}: no build inputs changed; retain accepted "
+                             f"revision {record['version']} and digest {record['publication']['digest']}. "
+                             "Support and descriptive updates belong in release-group metadata.")
+    return None
+
+
 def pending_releases(defs, accepted):
     """Skip accepted inputs, but retain missing browser peers and guard failures."""
     current = {(r["line_id"], r["version"]): r for r in accepted}
     pending = set()
     for line, d in defs.items():
-        fp = fingerprint(d)
         parent_line = d["base"].get("parent")
+        parent_ref = None
         if parent_line:
             parent = current.get((parent_line, defs[parent_line]["revision"]))
             if not parent:
                 pending.add(root_line(line, defs))
                 continue
             parent_ref = parent["publication"]["repository"] + "@" + parent["publication"]["digest"]
-            fp = hashlib.sha256((fp + parent_ref).encode()).hexdigest()
-        prior = current.get((line, d["revision"]))
-        if not prior or prior["input_fingerprint"] != fp:
+        prior = reusable_record(d, accepted, parent_ref if parent_line else None)
+        if not prior:
             pending.add(root_line(line, defs))
     return sorted(pending)
 
@@ -416,7 +458,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("generate")
-    sub.add_parser("check")
+    sub.add_parser("check").add_argument("--previous-policy-ref")
     s = sub.add_parser("select"); s.add_argument("requirements"); s.add_argument("--catalog", default=str(ROOT / "catalog.json"))
     for command in ("affected", "validation-matrix"):
         a = sub.add_parser(command)
@@ -428,7 +470,16 @@ def main():
     args = parser.parse_args()
     if args.command in ("generate", "check"):
         if args.command == "check":
-            validate_schemas()
+            previous = None
+            if args.previous_policy_ref:
+                # Distinguish a valid baseline predating the policy from missing
+                # git history; the latter cannot prove immutable acceptance.
+                subprocess.run(["git", "cat-file", "-e", args.previous_policy_ref + "^{commit}"], cwd=ROOT, check=True)
+                baseline = subprocess.run(["git", "show", args.previous_policy_ref + ":lifecycle/release-groups.json"],
+                                          cwd=ROOT, capture_output=True, text=True)
+                if baseline.returncode == 0:
+                    previous = json.loads(baseline.stdout)
+            validate_schemas(previous_policy=previous)
         errors = []
         for path, content in generated().items():
             if args.command == "generate":

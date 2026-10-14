@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scheduled image release groups and support policy",
+  "type": "object",
+  "required": ["schema_version", "revision", "cadence", "defaults", "legacy", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "revision": {"type": "integer", "minimum": 1},
+    "cadence": {
+      "type": "object",
+      "required": ["interval_days", "anchor"],
+      "additionalProperties": false,
+      "properties": {"interval_days": {"const": 7}, "anchor": {"$ref": "#/$defs/utc"}}
+    },
+    "defaults": {
+      "type": "object",
+      "required": ["support_days", "warning_days", "removal_grace_days", "max_policy_age_hours"],
+      "additionalProperties": false,
+      "properties": {
+        "support_days": {"type": "integer", "minimum": 2},
+        "warning_days": {"type": "integer", "minimum": 1},
+        "removal_grace_days": {"type": "integer", "minimum": 1},
+        "max_policy_age_hours": {"type": "integer", "minimum": 1, "maximum": 24}
+      }
+    },
+    "legacy": {
+      "type": "object",
+      "required": ["enforce_after"],
+      "additionalProperties": false,
+      "properties": {"enforce_after": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/utc"}]}}
+    },
+    "groups": {"type": "array", "items": {"$ref": "#/$defs/accepted"}}
+  },
+  "$defs": {
+    "utc": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "identity": {"type": "string", "pattern": "^ghcr\\.io/xormania/[a-z0-9][a-z0-9-]*@sha256:[a-f0-9]{64}$"},
+    "member": {
+      "type": "object",
+      "required": ["line_id", "version", "identity", "platforms", "parent"],
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*/[a-zA-Z0-9][a-zA-Z0-9.-]*$"},
+        "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+        "identity": {"$ref": "#/$defs/identity"},
+        "parent": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/identity"}]},
+        "platforms": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {
+            "type": "object", "required": ["platform", "digest"], "additionalProperties": false,
+            "properties": {
+              "platform": {"type": "string", "pattern": "^linux/[a-z0-9_]+(/[a-z0-9]+)?$"},
+              "digest": {"$ref": "#/$defs/digest"}
+            }
+          }
+        }
+      }
+    },
+    "accepted": {
+      "type": "object",
+      "required": ["schema_version", "id", "state", "reason", "resources", "accepted_at", "warning_starts_at", "support_ends_at", "removal_eligible_at", "replacement"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": 1},
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,79}$"},
+        "state": {"const": "accepted"},
+        "reason": {"enum": ["scheduled", "security", "migration"]},
+        "resources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/member"}},
+        "accepted_at": {"$ref": "#/$defs/utc"},
+        "warning_starts_at": {"$ref": "#/$defs/utc"},
+        "support_ends_at": {"$ref": "#/$defs/utc"},
+        "removal_eligible_at": {"$ref": "#/$defs/utc"},
+        "replacement": {"type": ["null", "string"]}
+      }
+    },
+    "planned": {
+      "type": "object",
+      "required": ["schema_version", "id", "state", "reason", "scheduled_at", "resources"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": 1},
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,79}$"},
+        "state": {"const": "planned"},
+        "reason": {"enum": ["scheduled", "security", "migration"]},
+        "scheduled_at": {"$ref": "#/$defs/utc"},
+        "resources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/member"}}
+      }
+    }
+  }
+}

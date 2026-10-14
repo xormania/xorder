@@ -32,7 +32,14 @@ Initially there is one amd64 manifest; index and platform digests are retained
 when the registry returns an index. Supporting additional platforms requires
 extending the build and complete acceptance tests first.
 
-Keep existing digest pins until deliberately upgrading. Verify a proposed
+Build identity is separate from release-group support metadata. Descriptions,
+support dates, source commits, and revision numbers do not allocate image bytes.
+Publication refuses a revision bump when an accepted artifact has the same real
+build inputs. Reuse that revision and digest in the next [release group](release-groups.md).
+New candidates reserve their input key and original source before building;
+metadata-only retries resume that same candidate and retain its provenance.
+
+Keep existing digest pins within a supported release group until deliberately upgrading. Verify a proposed
 replacement against the project, then change its recorded digest in a PR.
 Rollback uses an existing verified artifact, without overwriting an old exact
 tag. To withdraw/deprecate a recommendation, change its release record's
@@ -44,6 +51,10 @@ If no available revision remains and an alias still exists, promotion fails
 explicitly before changing any aliases. Restore a verified available replacement
 or retire the alias tag while retaining exact tags and digests, then rerun.
 Withdrawal changes recommendations; it does not itself remove registry artifacts.
+Support expiry is enforced by the [downstream check](downstream-support.md),
+including cached images. Existing consumers must adopt a supported group by
+2026-11-11 08:00 UTC. Registry removal proposals require the additional grace
+period and complete [retention evidence](retention.md).
 
 New language minor/OS lines have separate names and independent revisions.
 A php-dev artifact change must allocate a new revision for its derived browser

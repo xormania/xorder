@@ -48,7 +48,8 @@ PR lands on master, `Publish verified images` follows this path:
 
 1. Build each changed/unreleased line with locked base digests and version labels.
 2. Exercise the public readiness recipe and collect actual inventory.
-3. Push a separate source/revision-qualified candidate tag. Pull that same
+3. Reserve a durable candidate receipt with the original source and build inputs
+   before building. Push a separate input-key/revision-qualified candidate tag. Pull that same
    artifact by digest without credentials, and execute its readiness recipe.
 4. Scan the published digest, generate its SBOM, keylessly sign it with GitHub
    OIDC, and verify the public signatures and signed receipt anonymously. The
@@ -185,16 +186,25 @@ generated tables removed, and those tables are rebuilt from the combined ledger.
 Conflicting release identities, authored files or README prose stop for manual
 recovery. The branch keeps its existing history and uses an ordinary push.
 
-The candidate tag includes full source SHA and revision. A different-input retry
+The candidate tag includes the stable build-input key and revision. The draft
+Release's candidate receipt freezes the original source, definition, tools and
+historical input fingerprint before the first build. Metadata-only source
+changes resume that candidate without generating another image. A different-input retry
 of a persisted revision fails, requiring a new revision. An exact tag without
 its durable record is ambiguous and requires recovery, not a silent rebuild.
 No failed candidate advances the catalog or alias. GitHub Release publication
 alone does not complete catalog writeback and alias promotion; workflow status
 and the default-branch catalog show those separate steps.
 
-Retain all exact released artifacts required by projects. Candidate cleanup is
-separate: inspect package version tags and record digests, preserve any version
-referenced by an exact tag or release record, and only remove abandoned,
-unreferenced candidates after review. Do not apply generic registry retention
-to released digest pins. Docker Hub mirroring is a later optional step and would
+Ordinary image publication batches changed inputs on Sunday 06:00 UTC. The refresh
+proposal runs Saturday 06:23 UTC, and Monday 06:00 UTC proposes a release group
+from accepted records. Each proposal still needs its normal PR acceptance;
+unfinished image evidence never enters a group. Off-schedule publication and
+recovery require an explicit workflow-dispatch reason.
+
+[Release groups](release-groups.md) announce support deadlines. The
+[retention planner](retention.md) protects supported groups and their complete
+digest graph, then proposes eligible removal after the grace period. It does
+not delete registry packages. Known project pins produce migration notices and
+do not silently extend support. Docker Hub mirroring is a later optional step and would
 need its own anonymous-pull verification before entering the catalog.
