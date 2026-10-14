@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import selectors
 import signal
 import subprocess
 import sys
@@ -126,17 +127,47 @@ def _process_json(argv, env=None, label="Support observation"):
     """Bound one observation and only the subprocess group it owns."""
     if os.name != "posix":
         raise ValueError(label + " requires a POSIX host such as Linux/WSL")
-    process = subprocess.Popen(argv, env=env, text=True, start_new_session=True,
+    deadline = time.monotonic() + TIMEOUT
+    process = subprocess.Popen(argv, env=env, start_new_session=True, bufsize=0,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    timeout_message = label + " timed out; restore the selected engine/network or provide a current offline snapshot"
     try:
-        try:
-            stdout, stderr = process.communicate(timeout=TIMEOUT)
-        except subprocess.TimeoutExpired as error:
-            raise ValueError(label + " timed out; restore the selected engine/network or provide a current offline snapshot") from error
+        stdout, received = bytearray(), 0
+        with selectors.DefaultSelector() as selector:
+            for pipe, stream in ((process.stdout, "stdout"), (process.stderr, "stderr")):
+                os.set_blocking(pipe.fileno(), False)
+                selector.register(pipe, selectors.EVENT_READ, stream)
+            while selector.get_map():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise ValueError(timeout_message)
+                ready = selector.select(remaining)
+                if not ready:
+                    raise ValueError(timeout_message)
+                for key, _ in ready:
+                    # Read at most one byte beyond the combined budget. stderr
+                    # counts against the same cap but is never retained/logged.
+                    try:
+                        chunk = os.read(key.fd, min(65536, MAX_BYTES - received + 1))
+                    except BlockingIOError:
+                        continue
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        continue
+                    received += len(chunk)
+                    if received > MAX_BYTES:
+                        raise ValueError(label + " exceeds the combined 2 MiB stdout/stderr limit")
+                    if key.data == "stdout":
+                        stdout.extend(chunk)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ValueError(timeout_message)
+            try:
+                process.wait(timeout=remaining)
+            except subprocess.TimeoutExpired as error:
+                raise ValueError(timeout_message) from error
         if process.returncode:
             raise ValueError(label + " failed; restore access or pull the selected digest before retrying")
-        if len(stdout) > MAX_BYTES:
-            raise ValueError(label + " exceeds the 2 MiB limit")
         return json.loads(stdout)
     finally:
         try:

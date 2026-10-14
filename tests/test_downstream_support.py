@@ -7,8 +7,10 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -52,6 +54,103 @@ def snapshot(value=None, fetched=NOW):
 
 def image(identity=IDENTITY):
     return {"Id": "sha256:" + "c" * 64, "RepoDigests": [identity], "Os": "linux", "Architecture": "amd64"}
+
+
+@unittest.skipUnless(os.name == "posix", "Support subprocess observations require POSIX")
+class ProcessObservationBoundsTests(unittest.TestCase):
+    def failing_child(self, script, message, *arguments, timeout=0.25):
+        launched = []
+        original = subprocess.Popen
+        def launch(*args, **kwargs):
+            process = original(*args, **kwargs)
+            launched.append(process)
+            return process
+        started = time.monotonic()
+        with patch.object(support, "TIMEOUT", timeout), patch.object(support.subprocess, "Popen", side_effect=launch):
+            with self.assertRaisesRegex(ValueError, message):
+                support._process_json([sys.executable, "-c", script, *arguments])
+        self.assertEqual(len(launched), 1)
+        self.assertIsNotNone(launched[0].returncode, "The probe's direct process must be reaped")
+        self.assertLess(time.monotonic() - started, 2)
+
+    def test_real_stdout_stderr_and_combined_floods_hit_output_cap(self):
+        scripts = {
+            "stdout": "import os\nwhile True: os.write(1, b'x' * 8192)",
+            "stderr": "import os\nos.write(1, b'{}')\nwhile True: os.write(2, b'x' * 8192)",
+            "both": "import os\nwhile True:\n os.write(1, b'x' * 8192)\n os.write(2, b'x' * 8192)",
+        }
+        for stream, script in scripts.items():
+            with self.subTest(stream=stream):
+                self.failing_child(script, "combined 2 MiB stdout/stderr limit", timeout=1)
+
+    def test_binary_utf8_json_and_exact_combined_limit_are_accepted(self):
+        script = "import os,sys\nos.write(1, b'{}')\nos.write(2, b'x' * (int(sys.argv[1]) - 2))"
+        self.assertEqual(support._process_json([sys.executable, "-c", script, str(support.MAX_BYTES)]), {})
+        script = "import json,os\nos.write(1,json.dumps({'value':'漢'},ensure_ascii=False).encode('utf-8'))"
+        self.assertEqual(support._process_json([sys.executable, "-c", script]), {"value": "漢"})
+
+    def test_hard_wall_deadline_covers_continuous_output_and_closed_pipes(self):
+        scripts = {
+            "streaming": "import os,time\nwhile True:\n os.write(1,b' ')\n time.sleep(0.01)",
+            "closed-pipes": "import os,time\nos.close(1)\nos.close(2)\ntime.sleep(60)",
+        }
+        for mode, script in scripts.items():
+            with self.subTest(mode=mode):
+                self.failing_child(script, "timed out")
+
+    def assert_descendant_stopped(self, pid):
+        deadline = time.monotonic() + 0.5
+        while time.monotonic() < deadline:
+            try:
+                state = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0]
+            except FileNotFoundError:
+                return
+            if state == "Z":
+                return  # Orphan reaping belongs to PID 1; the process is stopped.
+            time.sleep(0.005)
+        self.fail("Owned probe descendant remained running after cleanup")
+
+    @unittest.skipUnless(Path("/proc/self/stat").exists(), "Linux process observations are required")
+    def test_timeout_cleans_only_owned_process_group(self):
+        script = """import os,sys,time
+from pathlib import Path
+pid = os.fork()
+if pid == 0:
+    os.close(1); os.close(2)
+    time.sleep(60)
+    os._exit(0)
+Path(sys.argv[1]).write_text(str(pid))
+print('{}', flush=True)
+time.sleep(60)
+"""
+        unrelated = subprocess.Popen([sys.executable, "-c", "import time;time.sleep(60)"],
+                                     start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            with tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "descendant.pid"
+                self.failing_child(script, "timed out", str(path))
+                self.assert_descendant_stopped(int(path.read_text()))
+            self.assertIsNone(unrelated.poll(), "Cleanup must not stop a process outside its owned group")
+        finally:
+            unrelated.kill()
+            unrelated.wait(timeout=1)
+
+    @unittest.skipUnless(Path("/proc/self/stat").exists(), "Linux process observations are required")
+    def test_success_also_stops_owned_descendants_after_pipes_close(self):
+        script = """import os,sys,time
+from pathlib import Path
+pid = os.fork()
+if pid == 0:
+    os.close(1); os.close(2)
+    time.sleep(60)
+    os._exit(0)
+Path(sys.argv[1]).write_text(str(pid))
+print('{}', flush=True)
+"""
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "descendant.pid"
+            self.assertEqual(support._process_json([sys.executable, "-c", script, str(path)]), {})
+            self.assert_descendant_stopped(int(path.read_text()))
 
 
 class PolicyAcquisitionTests(unittest.TestCase):
