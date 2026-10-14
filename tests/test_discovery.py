@@ -53,6 +53,10 @@ class DiscoveryContracts(unittest.TestCase):
 
     def test_navigation_is_compact_and_authored_profiles_do_not_establish_availability(self):
         cat = model.catalog()
+        # Exercise an unpublished profile independently of which releases the
+        # live repository ledger has accepted since this test was authored.
+        cat['resources'] = [item for item in cat['resources']
+                            if item['id'] != 'image/uxor-dev/8.5-trixie']
         index = model.discovery(cat)
         self.assertLess(len(model.encoded(index)), len(model.encoded(cat)) // 2)
         self.assertEqual(len(index['resources']), len({item['id'] for item in index['resources']}))
@@ -74,6 +78,24 @@ class DiscoveryContracts(unittest.TestCase):
                          max((item['version'] for item in cat['resources']
                               if item['id'] == 'image/php-dev/8.5-trixie'
                               and item['lifecycle'] == 'available'), key=model.version))
+
+    def test_navigation_offers_a_profile_when_its_exact_release_is_accepted(self):
+        cat = model.catalog()
+        cat['resources'] = [item for item in cat['resources']
+                            if item['id'] != 'image/uxor-dev/8.5-trixie']
+        accepted = copy.deepcopy(next(item for item in cat['resources']
+                                      if item['kind'] == 'image' and item['lifecycle'] == 'available'))
+        accepted.update(id='image/uxor-dev/8.5-trixie', version='1.0.0',
+                        documentation='docs/images/uxor-dev-8.5-trixie.md',
+                        release_record='release-records/uxor-dev/8.5-trixie/1.0.0.json')
+        cat['resources'].append(accepted)
+        index = model.discovery(cat)
+        offered = next(item for item in index['resources'] if item['id'] == accepted['id'])
+        self.assertEqual(offered['identity'], accepted['identity'])
+        self.assertEqual(offered['release_record'], accepted['release_record'])
+        profile = next(item for item in index['profiles'] if item['id'] == 'profile/uxor')
+        self.assertEqual(profile['catalog_status'], 'required_releases_available')
+        self.assertNotIn('missing_roles', profile)
 
     def test_public_cli_retains_history_and_supports_concise_explicit_lookup(self):
         cli = [sys.executable, str(model.ROOT / 'scripts/xorder_cli.py')]
