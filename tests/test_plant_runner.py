@@ -17,6 +17,8 @@ sys.path.insert(0, str(ROOT / "examples/uxor"))
 spec = importlib.util.spec_from_file_location("plant_runner", ROOT / "examples/uxor/runner.py")
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
+from xorder import downstream as support
+from test_uxor_runner import legacy_support_fixture, SUPPORT_NOW
 
 
 class PlantDispatchTests(unittest.TestCase):
@@ -45,6 +47,7 @@ class PlantDispatchTests(unittest.TestCase):
         subprocess.run(["git", "-C", str(self.workspace), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "-qm", "fixture"], check=True)
         self.env = {"PATH": os.environ["PATH"], "WORKSPACE": str(self.workspace), "IMAGE": "fixture:project",
                     "XDG_CACHE_HOME": str(self.root / "cache"), "PROXY_PASSTHROUGH": "0"}
+        self.env.update(legacy_support_fixture(self.root))
         self.events = []
         self.active = False
         self.stdout, self.stderr = io.StringIO(), io.StringIO()
@@ -83,6 +86,8 @@ class PlantDispatchTests(unittest.TestCase):
 
     def dispatch(self, arguments, test=None, env=None, lease=None):
         with patch.dict(os.environ, env or self.env, clear=True), patch.object(runner, "container_environment", return_value={}), \
+                patch.object(support, "utc_now", return_value=SUPPORT_NOW), \
+                patch.object(runner, "containers", return_value=[]), \
                 patch.object(runner, "browser_image", return_value="fixture:browser"), patch.object(runner, "php_exec", side_effect=self.execute), \
                 patch.object(runner, "heavy_run", side_effect=lease or self.lease), patch.object(runner, "run_test", side_effect=test, create=True):
             return runner.main(arguments)

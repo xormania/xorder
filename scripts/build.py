@@ -6,23 +6,20 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 from pathlib import Path
-from library import ROOT, children, definitions, fingerprint, read, records, validate_inventory
+from library import ROOT, children, definitions, fingerprint, read, records, reusable_record, validate_inventory
 from image_validation import prerequisites
 from build_cache import current_branch, plan as registry_cache_plan
 
 
 def reusable_artifact(line, parent=None):
     """Reuse an accepted exact artifact only when all current inputs match."""
-    import hashlib
     d = definitions()[line]
-    fp = fingerprint(d)
-    if parent:
-        fp = hashlib.sha256((fp + parent).encode()).hexdigest()
-    for record in records():
-        if record["lifecycle"] == "available" and (record["line_id"], record["version"], record["input_fingerprint"]) == (line, d["revision"], fp):
-            return record["publication"]["repository"] + "@" + record["publication"]["digest"]
+    record = reusable_record(d, records(), parent)
+    if record is not None:
+        return record["publication"]["repository"] + "@" + record["publication"]["digest"]
     return None
 
 
@@ -33,8 +30,9 @@ def pinned(base):
 def build(line, image, source, parent=None, cache=None, registry_imports=()):
     d = definitions()[line]
     tools = read(ROOT / "images/tools.json")
+    from artifact_identity import apt_refresh
     args = {"BASE_IMAGE": parent or pinned(d["base"]), "SOURCE_COMMIT": source,
-            "IMAGE_VERSION": d["revision"], "APT_REFRESH": d["revision"], "IMAGE_LINE": d["line"]}
+            "IMAGE_VERSION": d["revision"], "APT_REFRESH": apt_refresh(tools), "IMAGE_LINE": d["line"]}
     if d["family"] in ("php-dev", "php-frankenphp"):
         args.update(COMPOSER_IMAGE=pinned(tools["composer"]), REDIS_VERSION=tools["redis_version"],
                     XDEBUG_VERSION=tools["xdebug_version"], PCOV_VERSION=tools["pcov_version"],
@@ -175,16 +173,28 @@ def prepare_parity_application(fixture, source):
 
 def verify(line, image, destination, *, source_validation=False, source=None):
     command = ["bash", str(ROOT / "scripts/verify-image.sh"), line, image]
-    if source_validation and definitions()[line]["family"] == "playwright-browser":
+    family = definitions()[line]["family"]
+    environment = dict(os.environ)
+    # A caller cannot smuggle an unconstrained fixture exemption through the
+    # builder. The trusted verify entry point authors its own observed proof.
+    environment.pop("XORDER_SOURCE_VALIDATION_PROOF", None)
+    if family == "playwright-browser":
+        environment.pop("XORDER_PARITY_LOCAL_APPLICATION", None)
+    if source_validation and family == "playwright-browser":
         fixture = read(ROOT / "tests/fixtures/playwright/consumers" / (line.split("/", 1)[1] + ".json"))
         local_app = prepare_parity_application(fixture, source)
-        environment = dict(os.environ)
-        environment.pop("XORDER_PARITY_LOCAL_APPLICATION", None)
         if local_app:
             environment["XORDER_PARITY_LOCAL_APPLICATION"] = local_app
-        subprocess.run(command, check=True, env=environment)
+    if family in ("uxor-dev", "playwright-browser"):
+        from xorder.downstream import observe_source_images, source_commit, write_source_proof
+        service = "browser" if family == "playwright-browser" else "php"
+        with tempfile.TemporaryDirectory(prefix="xorder-source-proof-") as proof_directory:
+            proof_path = Path(proof_directory) / "builder-proof.json"
+            write_source_proof(proof_path, observe_source_images({service: image}), source_commit(ROOT))
+            environment["XORDER_SOURCE_VALIDATION_PROOF"] = str(proof_path)
+            subprocess.run(command, check=True, env=environment)
     else:
-        subprocess.run(command, check=True)
+        subprocess.run(command, check=True, env=environment)
     inspect(line, image, destination)
 
 

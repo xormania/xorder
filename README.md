@@ -35,6 +35,12 @@ profiles that compose resources. Only verified releases in the generated tables
 and catalog are selectable; authored definitions remain unavailable until accepted.
 Reading the catalog does not activate context bundles.
 
+Image support follows [weekly release groups](docs/release-groups.md). Unchanged
+digests can join a new group without another image. Groups have 28 days of
+support, a seven-day warning, and a fourteen-day removal grace period. Existing
+consumers must adopt the [downstream support check](docs/downstream-support.md)
+by November 11, 2026, 08:00 UTC; local image caches do not extend support.
+
 ## Available downloadable resources
 
 <!-- resources:start -->

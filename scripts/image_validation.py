@@ -12,6 +12,8 @@ METADATA_SCRIPTS = {
     "scripts/refresh_browser.py", "scripts/browser_release.py",
     "scripts/image_assurance.py", "scripts/agent_eval.py",
     "scripts/claude_prompt_clock.py",
+    "scripts/release_groups.py", "scripts/group_writeback.py",
+    "scripts/retention.py", "scripts/publication_attempt.py",
     "examples/shared/failure_hooks.py", "examples/jev/failure_triage.py",
     "examples/jev/failure-questions.json",
 }
@@ -19,6 +21,7 @@ METADATA_WORKFLOWS = {
     ".github/workflows/publish.yml", ".github/workflows/refresh.yml",
     ".github/workflows/aliases.yml", ".github/workflows/catalog.yml",
     ".github/workflows/browser-refresh.yml",
+    ".github/workflows/release-groups.yml",
 }
 METADATA_SCHEMAS = {
     "schemas/definition.schema.json", "schemas/release-record.schema.json",
@@ -27,6 +30,7 @@ METADATA_SCHEMAS = {
     "schemas/profile.schema.json", "schemas/resolution-lock.schema.json",
     "schemas/installation-receipt.schema.json",
     "schemas/discovery-organization.schema.json", "schemas/agent-observation.schema.json",
+    "schemas/release-groups.schema.json",
 }
 
 
@@ -58,7 +62,7 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
     """Propagate changed artifact inputs; keep fixture-only checks on their consumers."""
     selected, inputs = set(), set()
     for path in changed:
-        if (path.startswith(("scripts/xorder/", "artifacts/", "profiles/", "discovery/", "tests/agent-evals/", "tests/scenarios/",
+        if (path.startswith(("scripts/xorder/", "artifacts/", "profiles/", "discovery/", "lifecycle/", "tests/agent-evals/", "tests/scenarios/",
                              "tests/fixtures/devenv/", "tests/fixtures/artifacts/",
                              "examples/resources/", "examples/devenv/",
                              "tests/test_", "tests/requirements/"))

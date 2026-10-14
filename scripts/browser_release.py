@@ -11,7 +11,7 @@ import tempfile
 import time
 
 from build import build, cache_source, image_facts, verify
-from library import ROOT, definitions, encoded, fingerprint, read, validate_inventory
+from library import ROOT, definitions, encoded, fingerprint, read, records, record_matches_inputs, reusable_record, validate_inventory
 from registry import resolve
 
 
@@ -31,22 +31,30 @@ def public_parity_application(line):
 
 
 def stage(line, source, destination):
-    from release import release_asset
+    from release import release_asset, reserve_candidate
+    from artifact_identity import build_key
     definition = definitions()[line]
     if definition["family"] != "playwright-browser":
         raise ValueError("Only browser images use staged parity verification")
+    # A direct stage invocation must enforce the same allocation guard as
+    # final publication, before reserving or building a redundant candidate.
+    reusable_record(definition, records())
     repository = "ghcr.io/xormania/playwright-browser"
-    candidate = f"{repository}:{definition['line']}-candidate-v{definition['revision']}-{source}"
+    fp = fingerprint(definition)
     measurements = {}
     with tempfile.TemporaryDirectory() as folder:
         prior = release_asset(f"{line}/v{definition['revision']}", Path(folder))
     if prior:
-        if prior["input_fingerprint"] != fingerprint(definition):
+        if not record_matches_inputs(prior, definition):
             raise ValueError("Durable browser release has different inputs")
         artifact = repository + "@" + prior["publication"]["digest"]
+        definition, source, fp = prior['definition'], prior['source_commit'], prior['input_fingerprint']
     else:
         if resolve(f"{repository}:{definition['line']}-v{definition['revision']}", authenticated=True):
             raise ValueError("Exact browser tag exists without durable evidence; recover it")
+        attempt = reserve_candidate(definition, source, None, destination.parent / 'attempt', fp)
+        definition, source, fp = attempt['definition'], attempt['source_commit'], attempt['input_fingerprint']
+        candidate = attempt['candidate']
         existing = resolve(candidate, authenticated=True)
         if existing:
             artifact = repository + "@" + existing["digest"]
@@ -67,7 +75,10 @@ def stage(line, source, destination):
     if not resolve(artifact):
         raise ValueError("Staged browser must be publicly pullable before anonymous verification")
     value = {"line": line, "source": source, "version": definition["revision"], "artifact": artifact,
-             "input_fingerprint": fingerprint(definition), "fixture_sha256": fixture_hash(line), **measurements}
+             "input_fingerprint": fp, "build_key_version": 1,
+             "build_key": build_key(definition, root=ROOT, tools=attempt['tools']) if not prior else
+                          build_key(definition, root=ROOT, tools=prior['tools']),
+             "fixture_sha256": fixture_hash(line), **measurements}
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(encoded(value))
     return value
@@ -77,8 +88,11 @@ def verify_candidate(candidate, destination):
     from release import now
     value = read(candidate)
     definition = definitions()[value["line"]]
+    from artifact_identity import build_key
+    matched_inputs = (value.get('input_fingerprint') == fingerprint(definition) or
+                      value.get('build_key_version') == 1 and value.get('build_key') == build_key(definition, root=ROOT))
     if (definition["family"] != "playwright-browser" or value["version"] != definition["revision"]
-            or value["input_fingerprint"] != fingerprint(definition)
+            or not matched_inputs
             or value["fixture_sha256"] != fixture_hash(value["line"])):
         raise ValueError("Staged browser inputs differ from the verifying checkout")
     if os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"):
@@ -96,11 +110,11 @@ def verify_candidate(candidate, destination):
     return value
 
 
-def accepted_evidence(line, source, artifact, path):
-    definition = definitions()[line]
+def accepted_evidence(line, source, artifact, path, *, definition=None, input_fingerprint=None):
+    definition = definition or definitions()[line]
     value = read(path)
     expected = {"line": line, "source": source, "version": definition["revision"], "artifact": artifact,
-                "input_fingerprint": fingerprint(definition), "fixture_sha256": fixture_hash(line), "status": "passed"}
+                "input_fingerprint": input_fingerprint or fingerprint(definition), "fixture_sha256": fixture_hash(line), "status": "passed"}
     if any(value.get(key) != item for key, item in expected.items()):
         raise ValueError("Browser parity evidence does not match the exact publication inputs")
     public_parity_application(line)

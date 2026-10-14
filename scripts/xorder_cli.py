@@ -45,7 +45,12 @@ def main():
             command.add_argument("--cache-dir", type=Path, help="override per-user verified content cache")
     sub.add_parser("generate")
     sub.add_parser("check")
+    from xorder import downstream
+    downstream.configure_check_parser(sub.add_parser("support-check", help="enforce release-group support using fresh policy and observed identities"))
+    downstream.configure_fetch_parser(sub.add_parser("support-fetch", help="fetch an explicit 24-hour offline support policy snapshot"))
     args = parser.parse_args()
+    if args.command in ("support-check", "support-fetch"):
+        raise SystemExit(downstream.check_cli(args) if args.command == "support-check" else downstream.fetch_cli(args))
     if args.command == "generate":
         from library import generated
         for path, content in generated(args.repository_root).items():

@@ -14,6 +14,8 @@ import tempfile
 PROFILE = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROFILE))
 sys.path.insert(0, str(PROFILE.parent / "shared"))
+sys.path.insert(0, str(PROFILE.parents[1] / "scripts"))
+from xorder.downstream import runner_check as support_check, requires_check as support_required, runner_precheck as support_precheck  # noqa: E402
 from network import container_environment, local_engine, owner_label, stop, loopback_proxy, PROXIES  # noqa: E402
 from proxy_relay import directory as relay_directory, running as relay_running  # noqa: E402
 from runtime import ensure_daemon, print_resources, print_activity, stack_activity, heavy_run, gc, state_root, observation_timeout, print_reclaimable  # noqa: E402
@@ -255,7 +257,7 @@ def run_test(compose, env, workspace, project, arguments, workers=None):
 
 def main(arguments):
     if not arguments:
-        raise ValueError("Usage: run.sh [--slot N] up|seed|status|sync|plant|test|cache|gc|phpunit|php-tests|exec|logs|down [arguments]")
+        raise ValueError("Usage: run.sh [--slot N] up|seed|status|support|sync|plant|test|cache|gc|phpunit|php-tests|exec|logs|down [arguments]")
     slot = None
     if arguments[0] == "--slot":
         if len(arguments) < 3 or not arguments[1].isdigit():
@@ -267,7 +269,7 @@ def main(arguments):
         if not extra[1].isdigit():
             raise ValueError("--slot must be a nonnegative integer")
         slot = int(extra[1]); extra = extra[2:]
-    if action not in ("up", "seed", "status", "sync", "plant", "test", "cache", "gc", "phpunit", "php-tests", "exec", "logs", "down"):
+    if action not in ("up", "seed", "status", "support", "sync", "plant", "test", "cache", "gc", "phpunit", "php-tests", "exec", "logs", "down"):
         raise ValueError(f"Unknown action: {action}")
     env = dict(os.environ)
     if action == "test":
@@ -332,6 +334,12 @@ def main(arguments):
     env.update(WORKSPACE=str(workspace), UXOR_PROJECT=project, PUID=env.get("PUID") or str(os.getuid()),
                PGID=env.get("PGID") or str(os.getgid()), UXOR_PROFILE_DIR=str(PROFILE),
                HTTP_PORT=http, HTTPS_PORT=https, HTTP3_PORT=udp, CONTAINER_CA_FILE="")
+    if action == "support":
+        if extra:
+            raise ValueError("Usage: xr support (read-only current policy and running image check)")
+        report = support_check(workspace, env, containers=containers(project, env) if support_required(workspace, env) else [])
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
     if action == "status":
         if extra not in ([], ["--reclaimable"]):
             raise ValueError("Usage: xr status [--reclaimable] (read-only cleanup candidates)")
@@ -360,6 +368,11 @@ def main(arguments):
     env["BROWSER_IMAGE"] = env.get("BROWSER_IMAGE") or browser_image(env["PLAYWRIGHT_VERSION"])
     if action == "up":
         ensure_daemon(env)
+    elif action not in ("down", "logs"):
+        # Existing containers can keep using retired cached images. Check their
+        # engine image IDs before invoking any project test or command.
+        if action != "cache" and support_required(workspace, env):
+            support_check(workspace, env, containers=containers(project, env))
     proxy_owner = f"uxor:{workspace}:{project}"
     env["XORDER_PROXY_OWNER"] = owner_label(proxy_owner)
     if action not in ("down", "logs"):
@@ -461,7 +474,15 @@ def main(arguments):
                 env[proxy_key] = ",".join(dict.fromkeys([*env[proxy_key].split(","), *service_names]))
             if service_names:
                 configuration = call([*compose, "config", "--format", "json"], env, capture=True).stdout
+            support = support_precheck(workspace, env, json.loads(configuration))
             preflight(workspace, json.loads(configuration), env, PROFILE.parents[1])
+            if support:
+                # Pull before application startup so the support gate can check
+                # actual bytes. Already cached images and unrelated third-party
+                # services retain normal behavior.
+                if not support.get("source_validation"):
+                    call([*compose, "pull", "--policy", "missing", "--", *support["services"]], env)
+                support_check(workspace, env, configuration=json.loads(configuration), prepared=support)
             configuration_hash = hashlib.sha256(configuration.encode()).hexdigest()
             receipt = Path(env.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "xorder/uxor" / key / (project + ".json")
             try:
@@ -483,6 +504,8 @@ def main(arguments):
                 call([*compose, "run", "--rm", "--no-deps", "--entrypoint", "bash", "php",
                       "/run/xorder/startup.sh", "--entrypoint", "--check-reuse"], env)
             call([*compose, "up", "--wait", "--wait-timeout", "600", "--no-build"], env)
+            if support_required(workspace, env):
+                support_check(workspace, env, containers=containers(project, env), prepared=support)
             # Recheck lockfiles even when Compose retained an existing container.
             php_exec(compose, env, "bash", "/run/xorder/startup.sh", "--prepare", cwd="/app/demo")
             npm = php_exec(compose, env, "node", "/run/xorder/node-state.cjs", "inspect" if reuse_only else "verify", capture=True, check=False, observational=True)
@@ -522,6 +545,7 @@ def main(arguments):
                                  lambda command: php_exec(compose, env, *command, capture=True, check=False),
                                  lambda arguments: run_test(compose, env, workspace, project, arguments, workers=workers))
         elif action == "cache":
+            support_check(workspace, env, configuration=json.loads(call([*compose, "config", "--format", "json"], env, capture=True).stdout))
             if extra and extra[0] == "import":
                 sync = load_contract(workspace, PROFILE)["sync"]["command"]
                 call([*compose, "run", "--rm", "--no-deps", "--entrypoint", "bash", "php",
