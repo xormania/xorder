@@ -138,14 +138,12 @@ parent remains visible while both parent and browser caches can be exported.
 Build artifacts and job summaries retain image size and build/verification
 times. A source-label-only rebuild checks that filesystem layers stay identical.
 
-The repository is now `xormania/xorder`; existing GHCR package names are unchanged.
-Dockerfile source labels still record the former repository URL. Update those
-labels with the next deliberate image refresh, allocate new patch revisions for
-every affected line and derived consumer, and run normal build/publication
-verification. Changing a label changes the input fingerprint even when the
-filesystem layers are unchanged. Keep that image-input change separate from
-documentation-only rename work; never rebuild an accepted exact revision or
-rewrite historical release evidence to disguise it.
+Fresh image revisions record `https://github.com/xormania/xorder` in their OCI
+source labels; historical artifacts retain their original provenance. Changing a
+label changes the input fingerprint even when filesystem layers are unchanged:
+allocate new revisions for the affected lines and derived consumers and run
+normal build/publication verification. Never rebuild an accepted exact revision
+or rewrite historical release evidence to disguise a provenance change.
 
 PR build metrics describe validation artifacts; they are not published release
 facts. Measured release facts belong in verified `release-records/`, and their

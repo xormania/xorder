@@ -52,6 +52,8 @@ class RefreshRecoveryTests(unittest.TestCase):
 
     @staticmethod
     def upstream(url, **kwargs):
+        if isinstance(url, refresh.urllib.request.Request):
+            url = url.full_url
         if url.endswith("stable.txt"):
             return io.BytesIO(b"1.0.0")
         if url.endswith("/Release"):
@@ -152,6 +154,8 @@ class RefreshRecoveryTests(unittest.TestCase):
                     digests[line["base"]["tag"]] = line["base"]["digest"]
 
         def unchanged(url, **kwargs):
+            if isinstance(url, refresh.urllib.request.Request):
+                url = url.full_url
             if url.endswith("stable.txt"):
                 name = url.split("/r/")[1].split("/")[0]
                 return io.BytesIO(tools[name + "_version"].encode())

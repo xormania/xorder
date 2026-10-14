@@ -3,6 +3,7 @@ import importlib.util
 import json
 import sys
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -104,10 +105,23 @@ class SerenaTests(unittest.TestCase):
     def test_serena_inputs_select_only_the_php85_parent_tree(self):
         from library import affected, definitions
         for path in ('images/php-serena/Dockerfile', 'images/php-serena/requirements-build.txt',
+                     'images/php-serena/security.patch', 'images/php-serena/security-uv.lock',
                      'examples/serena/run.py', 'tests/fixtures/serena/check.py',
                      'tests/fixtures/serena/consumer.json'):
             with self.subTest(path=path):
                 self.assertEqual(affected([path], definitions()), ['php-dev/8.5-trixie'])
+
+    def test_security_closure_pins_fixed_versions_with_artifact_hashes(self):
+        lock = tomllib.loads((ROOT / 'images/php-serena/security-uv.lock').read_text())
+        packages = {item['name']: item for item in lock['package']}
+        for name, expected in (('anyio', '4.14.2'), ('pyjwt', '2.14.0')):
+            with self.subTest(package=name):
+                package = packages[name]
+                self.assertEqual(package['version'], expected)
+                self.assertTrue(package['wheels'])
+                for artifact in [package['sdist'], *package['wheels']]:
+                    self.assertRegex(artifact['hash'], r'^sha256:[a-f0-9]{64}$')
+                    self.assertTrue(artifact['url'].startswith('https://files.pythonhosted.org/'))
 
 
 if __name__ == '__main__':

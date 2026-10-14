@@ -1,69 +1,69 @@
 {
-  "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
   "capabilities": [
     "node",
     "npm",
     "playwright-client",
     "tailwind-cli"
   ],
+  "companions": [
+    "mcr.microsoft.com/playwright:<project-locked-version>-noble"
+  ],
+  "execution": {
+    "cache_paths": [
+      "/home/dev/.cache"
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
+  },
   "extensions": [],
+  "family": "uxor-dev",
+  "input_fingerprint_version": 2,
   "limitations": [
     "Playwright and application packages come from project lockfiles; browsers run in the version-matched official Playwright companion.",
     "Use examples/uxor/run.sh to reuse repository-owned worker, Caddy, PHP and mount configuration without an in-container Docker socket.",
     "The cached Tailwind binary is seeded only when its version and platform match the consuming project configuration."
   ],
-  "schema_version": 1,
-  "family": "uxor-dev",
-  "tools": [
-    "node",
-    "npm",
-    "tailwindcss"
-  ],
-  "execution": {
-    "workspace": "/workspace",
-    "home": "/home/dev",
-    "default_uid": 1000,
-    "default_gid": 1000,
-    "uid_env": "PUID",
-    "gid_env": "PGID",
-    "cache_paths": [
-      "/home/dev/.cache"
-    ]
-  },
-  "companions": [
-    "mcr.microsoft.com/playwright:<project-locked-version>-noble"
-  ],
   "lines": {
     "8.4-trixie": {
-      "runtime_line": "8.4",
-      "os": "debian-trixie",
-      "revision": "1.0.0",
-      "platforms": [
-        "linux/amd64"
-      ],
       "base": {
         "parent": "php-frankenphp/8.4-trixie"
       },
       "changes": [
-        "Publish the canonical uxor development image and executable names as a new independently versioned family."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Select the new digest only after verified publication and catalog acceptance. Historical exact artifacts and their original public evidence are unchanged."
-    },
-    "8.5-trixie": {
-      "runtime_line": "8.5",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
-      "revision": "1.0.0",
       "platforms": [
         "linux/amd64"
       ],
+      "revision": "1.0.1",
+      "runtime_line": "8.4"
+    },
+    "8.5-trixie": {
       "base": {
         "parent": "php-frankenphp/8.5-trixie"
       },
       "changes": [
-        "Publish the canonical uxor development image and executable names as a new independently versioned family."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Select the new digest only after verified publication and catalog acceptance. Historical exact artifacts and their original public evidence are unchanged."
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "os": "debian-trixie",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "revision": "1.0.1",
+      "runtime_line": "8.5"
     }
   },
-  "input_fingerprint_version": 2
+  "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
+  "schema_version": 1,
+  "tools": [
+    "node",
+    "npm",
+    "tailwindcss"
+  ]
 }

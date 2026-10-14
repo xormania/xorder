@@ -9,6 +9,7 @@ import sys
 import tempfile
 import threading
 import time
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -83,6 +84,14 @@ def run(*args, **kwargs):
 
 def main():
     image = sys.argv[1]
+    packages = tomllib.loads((ROOT / "images/php-serena/security-uv.lock").read_text())["package"]
+    expected = {item["name"]: item["version"] for item in packages if item["name"] in ("anyio", "pyjwt")}
+    measured = json.loads(subprocess.check_output([
+        "docker", "run", "--rm", "--network=none", "--read-only", "--user=1000:1000",
+        "--entrypoint=/opt/serena-env/bin/python", image, "-c",
+        "import json; from importlib.metadata import version; "
+        "print(json.dumps({name: version(name) for name in ('anyio', 'pyjwt')}))"], text=True))
+    assert measured == expected, {"expected_security_dependencies": expected, "installed": measured}
     fixture = json.loads(Path(__file__).with_name("consumer.json").read_text())
     with tempfile.TemporaryDirectory(prefix="xorder-serena-proof-") as directory:
         checkout = Path(directory) / "uxor"
@@ -107,7 +116,8 @@ def main():
             "ls_specific_settings": {"php_phpactor": {"ignore_vendor": False}},
         }))
         original_settings = settings.read_bytes()
-        evidence = {"consumer": fixture, "image": image, "checks": []}
+        evidence = {"consumer": fixture, "image": image, "security_dependencies": measured,
+                    "checks": ["installed-security-dependencies-match-effective-lock"]}
         log_path = Path(directory) / "mcp.log"
         client = None
         try:

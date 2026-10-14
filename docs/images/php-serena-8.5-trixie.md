@@ -21,5 +21,6 @@ Workspace `/workspace`, HOME `/home/dev`, default UID/GID 1000; configure `PUID`
 - The REPL can execute Python with container permissions. The standalone runner does not implement Agentscient role permissions or coordination.
 - The consuming project owns its Composer dependencies. Prepared language-server startup needs no runtime downloads.
 - The public runner mounts source read-only by default; pass --write explicitly for trusted editing sessions.
+- The upstream source and original lock remain identified separately from the xorder dependency-only security patch and effective uv lock.
 - Twig and YAML service identifiers use text search; PHP, JavaScript and TypeScript have semantic navigation.
 - Xdebug is off by default; enable with XDEBUG_MODE=coverage or debug.

@@ -8,6 +8,7 @@ import urllib.request
 from library import ROOT, encoded, read, version
 from registry import resolve
 from image_inputs import TOOL_KEYS
+from github_http import fetch_json
 
 
 APT_RELEASES = (
@@ -45,13 +46,11 @@ def refresh(base_ref=None):
     for name in ("redis", "xdebug", "pcov", "apcu"):
         with urllib.request.urlopen(f"https://pecl.php.net/rest/r/{name}/stable.txt", timeout=60) as response:
             tools[name + "_version"] = response.read().decode().strip()
-    with urllib.request.urlopen("https://api.github.com/repos/symfony-cli/symfony-cli/releases/latest", timeout=60) as response:
-        release = json.load(response)
+    release = fetch_json("https://api.github.com/repos/symfony-cli/symfony-cli/releases/latest")
     asset = next(a for a in release["assets"] if a["name"] == "symfony-cli_linux_amd64.tar.gz")
     assert asset.get("digest", "").startswith("sha256:"), "No upstream artifact checksum"
     tools["symfony"] = {"version": release["tag_name"].removeprefix("v"), "url": asset["browser_download_url"], "sha256": asset["digest"].removeprefix("sha256:")}
-    with urllib.request.urlopen("https://api.github.com/repos/infection/infection/releases/latest", timeout=60) as response:
-        release = json.load(response)
+    release = fetch_json("https://api.github.com/repos/infection/infection/releases/latest")
     asset = next(a for a in release["assets"] if a["name"] == "infection.phar")
     assert asset.get("digest", "").startswith("sha256:"), "No upstream Infection artifact checksum"
     tools["infection"] = {"version": release["tag_name"].removeprefix("v"), "url": asset["browser_download_url"], "sha256": asset["digest"].removeprefix("sha256:")}

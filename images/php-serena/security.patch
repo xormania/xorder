@@ -1,0 +1,21 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 05cfe4cf..9c079c97 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -41,6 +41,7 @@ dependencies = [
+   "pystray==0.19.5",
+   "pygls==2.1.1", # used to implement an msl language server
+   "lsprotocol==2025.0.0",
++  "anyio==4.14.2", # xorder release scan: CVE-2026-63374
+   # Transitive deps pinned for security (dependabot alerts).
+   # Exact pins because uvx installs from git, ignoring the lock file.
+   "urllib3==2.7.0",
+@@ -92,7 +93,7 @@ dev = [
+   "tornado==6.5.7",
+   "wheel==0.46.3",
+   "pyasn1==0.6.4",
+-  "PyJWT==2.12.0",
++  "PyJWT==2.14.0",
+ ]
+ agno = ["agno==2.6.6", "sqlalchemy==2.0.41"]  # agno bumped for session state overwrite CVE
+ google = ["google-genai==1.27.0"]

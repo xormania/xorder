@@ -6,6 +6,15 @@ and editing. The [catalog](../catalog-v2.json) is the availability authority:
 the authored image is not available until publication and verification produce
 an accepted release record. No image is pulled automatically during MCP startup.
 
+The prepared source remains Serena commit `b79e2a55f9d4072084977dd35bd07d31146d88b9`.
+The dependency-only [security patch](../images/php-serena/security.patch) and
+[effective uv lock](../images/php-serena/security-uv.lock) pin AnyIO 4.14.2 and
+PyJWT 2.14.0, the fixes identified by the publication scan. The build checks the
+original upstream lock hash before applying the patch, then installs the effective
+closure with `uv sync --locked`. Inventories identify the upstream and effective
+lock hashes separately. Source edits, lock changes, and installed dependency
+versions must pass the normal image behavior and publication assurance gates.
+
 ## Use with uxor
 
 Select an available `image/php-serena/8.5-trixie` entry from the catalog, pull its

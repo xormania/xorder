@@ -66,9 +66,13 @@ if family == "rust-dev":
 if family == "php-serena":
     tools["node"] = run("node", "--version")
     tools["typescript-language-server"] = run("/opt/xorder/serena/javascript/node_modules/.bin/typescript-language-server", "--version")
+    upstream_lock = Path("/opt/xorder/serena/upstream-uv.lock")
+    if not upstream_lock.exists():
+        upstream_lock = Path("/opt/serena-source/uv.lock")
     result["serena"] = {
         "source_revision": run("git", "-c", "safe.directory=/opt/serena-source", "-C", "/opt/serena-source", "rev-parse", "HEAD"),
-        "upstream_lock_sha256": hashlib.sha256(Path("/opt/serena-source/uv.lock").read_bytes()).hexdigest(),
+        "upstream_lock_sha256": hashlib.sha256(upstream_lock.read_bytes()).hexdigest(),
+        "effective_lock_sha256": hashlib.sha256(Path("/opt/serena-source/uv.lock").read_bytes()).hexdigest(),
         "phpactor_sha256": hashlib.sha256(Path("/opt/xorder/serena/phpactor.phar").read_bytes()).hexdigest(),
         "python_version": run("/opt/serena-env/bin/python", "--version"),
     }
