@@ -35,6 +35,7 @@ class BrowserReleaseTests(unittest.TestCase):
                 patch.object(browser_release, "resolve", side_effect=[None, None, {"digest": "sha256:" + "d" * 64}, {"digest": "sha256:" + "d" * 64}]), \
                 patch.object(browser_release, "build") as build, \
                 patch.object(browser_release.subprocess, "run") as docker, \
+                patch.object(browser_release, "public_parity_application", return_value=("https://github.com/xormania/uxor.git", "a" * 40, "1.58.2", "ghcr.io/xormania/uxor-dev@sha256:" + "b" * 64)), \
                 patch.object(browser_release, "verify", side_effect=verify) as consumer:
             candidate, evidence = Path(folder) / "candidate.json", Path(folder) / "verified.json"
             browser_release.stage(self.line, self.source, candidate)
@@ -88,6 +89,7 @@ class BrowserReleaseTests(unittest.TestCase):
                 patch.object(release, "promote_exact"), patch.object(release, "finalize_release"), \
                 patch.object(release, "stage_assurance", return_value={"receipt_url": "https://github.com/xormania/xorder/releases/download/" + quote(self.line + "/v" + proof["version"], safe="") + "/assurance.json", "receipt_sha256": "a" * 64, "predicate_type": "https://github.com/xormania/xorder/assurance/v1"}), \
                 patch("image_assurance.verify_record"), \
+                patch.object(browser_release, "public_parity_application", return_value=("https://github.com/xormania/uxor.git", "a" * 40, "1.58.2", "ghcr.io/xormania/uxor-dev@sha256:" + "b" * 64)), \
                 patch.dict(os.environ, {"GH_TOKEN": "test-only-token", "GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42"}):
             evidence = Path(folder) / "proof.json"
             evidence.write_text(encoded(proof))
@@ -99,7 +101,7 @@ class BrowserReleaseTests(unittest.TestCase):
             self.assertEqual(published["platforms"][0]["metrics"]["build_seconds"], 11)
 
     def test_controlled_compose_ignores_consumer_infrastructure_and_rejects_host_symlinks(self):
-        spec = importlib.util.spec_from_file_location("parity_profile", ROOT / "examples/flowbite-xor/runner.py")
+        spec = importlib.util.spec_from_file_location("parity_profile", ROOT / "examples/uxor/runner.py")
         runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(runner)
         with tempfile.TemporaryDirectory() as folder:

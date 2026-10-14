@@ -18,12 +18,12 @@ if [[ "$family" = playwright-browser ]]; then
   exit 0
 fi
 kind=${family%-dev}
-case "$family" in php-browser|php-toolkit|php-serena|php-frankenphp|flowbite-xor-dev) kind=php ;; esac
+case "$family" in php-browser|php-toolkit|php-serena|php-frankenphp|uxor-dev) kind=php ;; esac
 work=$(mktemp -d)
 project="image-check-${RANDOM}-${RANDOM}"
 cp -a "$root/tests/fixtures/$kind/." "$work/"
 cp "$root/tests/fixtures/native-check.c" "$work/"
-if [[ "$family" = php-frankenphp || "$family" = flowbite-xor-dev ]]; then
+if [[ "$family" = php-frankenphp || "$family" = uxor-dev ]]; then
   cp "$root/tests/fixtures/frankenphp/Caddyfile" "$work/"
   cp "$root/tests/fixtures/frankenphp/index.php" "$work/public/index.php"
 fi
@@ -57,8 +57,8 @@ else
 fi
 WORKSPACE="$work" CACHE_VOLUME="$project-cache" bash "$root/scripts/run-image.sh" "$image" bash -c 'cc native-check.c -o native-proof && ./native-proof'
 bash "$root/tests/fixtures/trust/run.sh" "$image"
-if [[ "$family" = flowbite-xor-dev ]]; then
-  bash "$root/tests/fixtures/flowbite-xor/run.sh" "$image"
+if [[ "$family" = uxor-dev ]]; then
+  bash "$root/tests/fixtures/uxor/run.sh" "$image"
 fi
 if [[ "$family" = php-toolkit ]]; then
   IMAGE="$image" TOOLKIT_LOCAL_IMAGE=1 TOOLKIT_REQUIRE_PREPARED=1 bash "$root/tests/fixtures/php-toolkit/run.sh"

@@ -4,19 +4,18 @@ Generated from the verified release ledger. Sizes describe local Docker images, 
 
 | Line | Revision | Platform | Image size (MiB) | Baseline size (MiB) | Size change | Build (s) | Public verification (s) |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| [flowbite-xor-dev/8.4-trixie](images/flowbite-xor-dev-8.4-trixie.md) | 1.1.1 | linux/amd64 | 1,200.1 | 1,426.1 (v1.1.0) | -15.8% | 26.11 | 108.55 |
-| [flowbite-xor-dev/8.5-trixie](images/flowbite-xor-dev-8.5-trixie.md) | 1.2.1 | linux/amd64 | 1,229.9 | 1,455.8 (v1.2.0) | -15.5% | 30.87 | 91.72 |
 | [php-browser/8.4-trixie](images/php-browser-8.4-trixie.md) | 1.2.1 | linux/amd64 | 1,615.5 | 1,834.5 (v1.2.0) | -11.9% | 56.74 | 28.84 |
 | [php-browser/8.5-trixie](images/php-browser-8.5-trixie.md) | 1.2.1 | linux/amd64 | 1,645.3 | 1,864.3 (v1.2.0) | -11.7% | 50.30 | 24.24 |
 | [php-dev/8.4-trixie](images/php-dev-8.4-trixie.md) | 1.2.1 | linux/amd64 | 912.4 | 1,131.3 (v1.2.0) | -19.4% | 163.56 | 27.67 |
 | [php-dev/8.5-trixie](images/php-dev-8.5-trixie.md) | 1.2.1 | linux/amd64 | 942.2 | 1,161.1 (v1.2.0) | -18.9% | 150.05 | 23.82 |
-| [php-frankenphp/8.4-trixie](images/php-frankenphp-8.4-trixie.md) | 1.1.1 | linux/amd64 | 963.5 | 1,189.4 (v1.1.0) | -19.0% | 169.72 | 28.73 |
-| [php-frankenphp/8.5-trixie](images/php-frankenphp-8.5-trixie.md) | 1.1.1 | linux/amd64 | 993.3 | 1,219.2 (v1.1.0) | -18.5% | 170.51 | 25.43 |
-| [php-serena/8.5-trixie](images/php-serena-8.5-trixie.md) | 1.1.0 | linux/amd64 | 1,242.6 | 1,087.2 (v1.0.0) | +14.3% | 44.36 | 106.33 |
+| [php-frankenphp/8.4-trixie](images/php-frankenphp-8.4-trixie.md) | 1.1.2 | linux/amd64 | 963.5 | — | — | 172.35 | 29.24 |
+| [php-frankenphp/8.5-trixie](images/php-frankenphp-8.5-trixie.md) | 1.1.2 | linux/amd64 | 993.3 | — | — | 198.29 | 29.53 |
 | [php-toolkit/8.4-trixie](images/php-toolkit-8.4-trixie.md) | 1.0.1 | linux/amd64 | 936.8 | 1,155.7 (v1.0.0) | -18.9% | 12.97 | 33.35 |
 | [php-toolkit/8.5-trixie](images/php-toolkit-8.5-trixie.md) | 1.0.1 | linux/amd64 | 966.6 | 1,185.6 (v1.0.0) | -18.5% | 11.01 | 29.33 |
 | [playwright-browser/1.58-trixie](images/playwright-browser-1.58-trixie.md) | 1.0.2 | linux/amd64 | 2,213.9 | 2,213.9 (v1.0.0) | +0.0% | 157.28 | 213.29 |
 | [python-dev/3.14-trixie](images/python-dev-3.14-trixie.md) | 1.1.2 | linux/amd64 | 593.9 | 593.9 (v1.1.0) | +0.0% | 39.93 | 22.71 |
 | [rust-dev/1.99-trixie](images/rust-dev-1.99-trixie.md) | 1.1.2 | linux/amd64 | 1,274.9 | 1,274.9 (v1.1.0) | +0.0% | 63.85 | 8.46 |
+| [uxor-dev/8.4-trixie](images/uxor-dev-8.4-trixie.md) | 1.0.0 | linux/amd64 | 1,200.1 | — | — | 29.42 | 259.97 |
+| [uxor-dev/8.5-trixie](images/uxor-dev-8.5-trixie.md) | 1.0.0 | linux/amd64 | 1,229.9 | — | — | 29.62 | 484.19 |
 
 Image/release pages retain exact bytes, artifact identities, measurement methods, cache inputs and evidence links. Older records without measurements remain valid and are omitted from this table.

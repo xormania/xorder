@@ -95,7 +95,12 @@ class FailureHookTests(unittest.TestCase):
         stat = Path(f"/proc/{pid}/stat")
         # A killed orphan may briefly be a zombie until its adopter reaps it;
         # it must not remain a runnable/sleeping advisory worker.
-        self.assertTrue(not stat.exists() or stat.read_text().split(") ", 1)[1].split()[0] in ("Z", "X"))
+        try:
+            contents = stat.read_text()
+        except (FileNotFoundError, ProcessLookupError):
+            pass  # Already reaped; the process is gone.
+        else:
+            self.assertIn(contents.split(") ", 1)[1].split()[0], ("Z", "X"))
 
     def test_successful_hook_cannot_leave_background_output_writer(self):
         pidfile = self.root / "child.pid"
@@ -108,4 +113,9 @@ class FailureHookTests(unittest.TestCase):
         self.assertEqual(result["status"], "passed")
         self.assertEqual(result["output"], {"advice": "inspect failure"})
         stat = Path(f"/proc/{int(pidfile.read_text())}/stat")
-        self.assertTrue(not stat.exists() or stat.read_text().split(") ", 1)[1].split()[0] in ("Z", "X"))
+        try:
+            contents = stat.read_text()
+        except (FileNotFoundError, ProcessLookupError):
+            pass  # Already reaped; the process is gone.
+        else:
+            self.assertIn(contents.split(") ", 1)[1].split()[0], ("Z", "X"))

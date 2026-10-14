@@ -85,7 +85,7 @@ use `test --wait` for normal concurrent work.
 
 ### Browser throttling
 
-The UXor Compose profile defaults to `BROWSER_CPUS=2` and `BROWSER_MEMORY=2g`;
+The UXor Compose profile defaults to `BROWSER_CPUS=2` and `BROWSER_MEMORY=4g`;
 these apply to the separate browser-server container. To reproduce timing bugs
 under a deliberately restricted browser CPU share:
 
@@ -123,6 +123,44 @@ deletes nothing, and it never proposes deleting worktrees or volumes. Existing
 `gc` remains dry-run by default and protects all referenced image ancestry; its
 source filter recognizes both exact current and historical xorder repository URLs.
 
+### Image retention during garbage collection
+
+The UXor runner inspects every container on the selected Docker engine, including
+created/stopped containers, Serena daemons and containers started by another
+runner. Their immutable image IDs remain protected regardless of project labels.
+Local base images are protected through Docker's `Parent` metadata and ordered
+root filesystem layer identities. Matching layer prefixes prove a shared base
+filesystem; they do not prove which configuration was used as `FROM`. Equal-layer
+images are therefore retained conservatively. Docker can omit `Parent` for
+BuildKit/containerd images, so an empty parent field alone does not establish
+that an image is unused.
+
+Idle tool images without containers can be retained explicitly:
+
+```sh
+python3 scripts/xr.py /path/to/worktree gc --keep php-serena:my-pin --keep php-toolkit:my-pin
+```
+
+Supply actual local tags, digests or IDs; these names are examples. Repeat
+`--keep` for each image. The selected image and its local base images are
+protected, and an unavailable keep reference stops cleanup. The JSON report
+lists protected images, unresolved references and images retained because
+ancestry could not be verified. When a referenced image or its layer metadata
+is missing, all local images are retained; candidates with missing layers are
+also retained while an image is referenced. Incomplete list/inspect observations
+stop cleanup. Malformed or unsupported layer digest formats remain unknown
+metadata rather than becoming ancestry evidence.
+
+`--apply` refreshes the full container/image snapshot before each image removal.
+It uses no forced removal, and it still selects only images bearing xorder's
+exact source labels. Observations cannot lock out independent Docker commands
+between inspection and removal. Docker remains responsible for protecting direct
+container references and retaining shared filesystem layers.
+
+The layer interpretation follows the
+[Docker image specification](https://github.com/moby/docker-image-spec/blob/main/spec.md#image-json-description)
+and [Engine image inspect fields](https://github.com/moby/moby/blob/master/api/types/image/image_inspect.go).
+
 ## Bounded observations and setup reconciliation
 
 Docker status, inspect, context, registry and other captured observations have
@@ -139,3 +177,45 @@ CSS and test cache on `up` without forcing Compose to recreate healthy services.
 FrankenPHP remains under its normal `--watch` mode; Caddy/INI/startup changes still
 invalidate the service fingerprint. These hashes select setup work, never reuse a
 previous test result.
+
+## Service memory and OOM observations
+
+The browser service defaults to `BROWSER_MEMORY=4g`; PHP retains
+`PHP_MEMORY=2g`. These are configurable limits, not reservations or proof that
+every workload fits. An existing stack keeps its actual limits until `up`
+reconciles it. Check host capacity when running several stacks.
+
+`status` shows each service's exact container ID, Docker-configured memory
+limit, observed cgroup limit/current/peak, Docker `OOMKilled` flag and kernel
+`oom_kill` counter. It also names `BROWSER_MEMORY` or `PHP_MEMORY` and the value
+the next `up` will use. The observation reads the selected daemon's containers,
+including remote engines; it never substitutes the client's cgroup or a
+potentially unrelated client PID for that container.
+
+Failures in tests and runner workloads print the same observations while
+preserving the failed command's exit code. A browser child can be OOM-killed
+while its container's main process survives and Docker reports
+`OOMKilled=false`. The runner therefore compares cgroup OOM counters before and
+after a command. Counter deltas require the same container ID and `StartedAt`;
+a restart, decreased counter or missing observation makes the delta unknown.
+A new Docker `OOMKilled` flag is reported separately. Existing cumulative
+counters remain historical evidence, and a positive delta establishes an OOM
+event in the observed window rather than proving the cause of every test error.
+Failed test receipts include `memory_start` and `memory_end` before advisory
+classification, alongside their existing host load and test output.
+
+Linux cgroup v2 supplies `memory.max`, `memory.current`, `memory.peak` and
+`memory.events`; cgroup v1 supplies its limit, current/max usage and OOM-control
+counter. The read-only probe resolves the container process's cgroup membership
+and mount rather than assuming that the mounted root always belongs to it.
+The profile's existing Node runtime runs this small probe. Older kernels may
+have no peak file. The brief diagnostic process itself contributes a small amount
+of memory to the observed current/peak values. Stopped/removed containers,
+missing Node, unreadable cgroups,
+or failed daemon calls leave metrics unavailable rather than inventing zeros.
+Each complete observation uses the existing observation deadline; failed
+diagnostics cannot replace the workload result.
+
+Controller semantics: [Linux cgroup v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html),
+[Linux memory controller v1](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v1/memory.html),
+and [Docker runtime metrics](https://docs.docker.com/engine/containers/runmetrics/).

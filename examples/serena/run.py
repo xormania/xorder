@@ -57,7 +57,7 @@ def command(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("workspace", type=Path)
-    parser.add_argument("--project", default=".", help="Project directory within the checkout; use . for flowbite-xor recipes and demo source")
+    parser.add_argument("--project", default=".", help="Project directory within the checkout; use . for uxor recipes and demo source")
     parser.add_argument("--image", help="An explicitly selected digest or locally built candidate; images are never pulled during MCP startup")
     parser.add_argument("--cache-dir", type=Path, help="Optional host directory for a per-worktree, per-image index")
     parser.add_argument("--request-timeout", type=float, help="Language-server request timeout in seconds (default 180)")

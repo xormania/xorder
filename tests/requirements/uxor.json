@@ -1,0 +1,18 @@
+{
+  "runtime_line": "8.5",
+  "family": "uxor-dev",
+  "platform": "linux/amd64",
+  "capabilities": [
+    "frankenphp",
+    "worker-server",
+    "node",
+    "npm",
+    "playwright-client",
+    "tailwind-cli"
+  ],
+  "extensions": [
+    "intl",
+    "dom",
+    "apcu"
+  ]
+}

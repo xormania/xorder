@@ -1,6 +1,6 @@
 # Agent environment feedback — implementation
 
-Claude's 2026-10-10 flowbite-xor report (now uxor) identified failures in clean Serena
+Claude's 2026-10-10 uxor report (now uxor) identified failures in clean Serena
 sessions, repeated indexing/downloads, disk use, and concurrent browser tests.
 The following changes implement the requested operations. Browser image size
 and real language-server behavior are measured by image acceptance, rather
@@ -24,11 +24,11 @@ only after publication and accepted release evidence.
 ## Runner operations
 
 Use `WORKSPACE=... examples/uxor/run.sh ACTION`. The legacy
-`examples/flowbite-xor/run.sh` entry point remains valid. The optional adapter
+`examples/uxor/run.sh` entry point remains valid. The optional adapter
 is `python3 scripts/xr.py WORKSPACE ACTION`:
 
 ```sh
-export IMAGE=ghcr.io/xormania/flowbite-xor-dev@sha256:YOUR_ACCEPTED_DIGEST
+export IMAGE=ghcr.io/xormania/uxor-dev@sha256:YOUR_ACCEPTED_DIGEST
 python3 scripts/xr.py /path/to/worktree up
 python3 scripts/xr.py /path/to/worktree sync
 python3 scripts/xr.py /path/to/worktree status
@@ -51,7 +51,8 @@ Docker data filesystem as well as the checkout; their available space can differ
 `XORDER_DOCKER_START_COMMAND` supplies an explicit executable and arguments where
 the service manager differs. The runner does not launch a keepalive daemon.
 
-The PHP and browser service defaults are two CPUs and 2 GiB each. Override
+The PHP and browser service defaults are two CPUs each, with 2 GiB for PHP and
+4 GiB for the browser. Override
 `PHP_CPUS`, `PHP_MEMORY`, `BROWSER_CPUS`, and `BROWSER_MEMORY` as needed. Heavy
 test runs share the host's xorder state directory: one run by default, with up
 to four workers selected from CPU load and available memory. Override
@@ -103,7 +104,7 @@ runtime/image/lock bundle fails instead of reporting an empty successful import.
 The public cold-import acceptance starts an empty checkout, imports through this
 command and checks that `up` reaches readiness without reinstalling Composer.
 A CI preparation job
-can run `python3 examples/flowbite-xor/cache.py export --project demo --cache CACHE
+can run `python3 examples/uxor/cache.py export --project demo --cache CACHE
 --output dependencies.zip --image EXACT_IMAGE` and upload that file. Consumers
 with matching runtime/image/lock inputs import the same bytes using
 `--sha256 EXPECTED_DIGEST`. Obtain the digest from the trusted preparation job,

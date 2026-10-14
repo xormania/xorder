@@ -116,7 +116,7 @@ class LeaseAndActivityTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.workspace = Path(self.temporary.name)
         self.env = dict(os.environ, XDG_CACHE_HOME=str(self.workspace), XORDER_TEST_MAX_RUNS="1",
-                        XORDER_TEST_WAIT_SECONDS="0", XORDER_TEST_MEASURE="0", FLOWBITE_PROJECT="lease-owner")
+                        XORDER_TEST_WAIT_SECONDS="0", XORDER_TEST_MEASURE="0", UXOR_PROJECT="lease-owner")
 
     def child(self, **overrides):
         code = ("import os; from pathlib import Path; import runtime;\n"

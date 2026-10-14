@@ -1,6 +1,6 @@
 {
   "_readme": [
-    "Pinned PHPUnit dependency closure from flowbite-xor c8878af66897d8c10af694050a7a588166942117/demo/composer.lock; see consumer.json."
+    "Pinned PHPUnit dependency closure from uxor c8878af66897d8c10af694050a7a588166942117/demo/composer.lock; see consumer.json."
   ],
   "content-hash": "a0d3b8afdab493deac1c5ceeb208b98d",
   "packages": [

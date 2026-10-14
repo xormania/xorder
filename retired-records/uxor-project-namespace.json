@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "history_commit": "04f4872b020640ac7ace216c730a935b84ed9a6c",
+  "reason": "Retire obsolete project namespace recommendations. Original records remain unchanged in accepted git history and durable public Release assets; new authored revisions require verified publication.",
+  "records": [
+    {
+      "sha256": "11af438fc8b7d84b49f61e14f7d65530f73a13a39a53ae8a8e7b07c1d43aa360",
+      "source_commit": "45e9220d768155b15b4d7ca89cdc5e58cebcd3b2"
+    },
+    {
+      "sha256": "1968b2b013bac7201c71c58e9487488cdae99f9f3e9e02c865841fe138a06273",
+      "source_commit": "fe9dd2386cafb65936477548b3dbe368ba339a27"
+    },
+    {
+      "sha256": "54996a3e0c6d09ac49ddcc4b5dd8c3d8b4a7f53e8eaab8da00e8178285588ec8",
+      "source_commit": "ea9133bbb23d222c1e0ff800250ccbb98066f254"
+    },
+    {
+      "sha256": "84ff27ae554c29181a8c9fdd89bee8d4eb297ead3e87b8ac15fbb6c8727f218e",
+      "source_commit": "d70d6147534972c34dded90977551f25d98bc61e"
+    },
+    {
+      "sha256": "a0f377e18339dc29501761ad5b0c5e8f0f303a07d6038473d5b55db1217be670",
+      "source_commit": "fe9dd2386cafb65936477548b3dbe368ba339a27"
+    },
+    {
+      "sha256": "a147cc6f6ffd66459cd554058174f09251d0a535736129700c4ac8c15d2e278e",
+      "source_commit": "ea9133bbb23d222c1e0ff800250ccbb98066f254"
+    },
+    {
+      "sha256": "b955d5e6c5f9b74763f3db5b6af753ea8c7cc08c1439ca91c4004f9d2c71ec14",
+      "source_commit": "d70d6147534972c34dded90977551f25d98bc61e"
+    },
+    {
+      "sha256": "bc68f277bb61b4400a3b3d810ff3314f982e06b175954403b68113207af7d70c",
+      "source_commit": "fe9dd2386cafb65936477548b3dbe368ba339a27"
+    },
+    {
+      "sha256": "c9fc0d00adf896084deb76f1c63c16e9f246d709e356bb45e5f2b9522f2aa6a1",
+      "source_commit": "fe9dd2386cafb65936477548b3dbe368ba339a27"
+    },
+    {
+      "sha256": "d24ac63e9380ef791e4821146332f8dfcdb674be84c85511db29c512e4e6552c",
+      "source_commit": "fa8d56c5d733f0903883a2578016e904b27fa3c3"
+    },
+    {
+      "sha256": "d883583ff7ba650c2b3e0ed847c83357708cfa1e923e8d70f22ce602382d6d1c",
+      "source_commit": "ea9133bbb23d222c1e0ff800250ccbb98066f254"
+    },
+    {
+      "sha256": "dcfe73ed9fa91cde567893efa155383ec832674598988d979a5f9ffe31ced8a3",
+      "source_commit": "b37b38aeb332765ee2beb889fdaf1030dfed4589"
+    },
+    {
+      "sha256": "edabf89b36eff1c683a58ab4e20195d87532dceca6adba0fa3762075384d9713",
+      "source_commit": "ea9133bbb23d222c1e0ff800250ccbb98066f254"
+    },
+    {
+      "sha256": "face4ed9f50c217339f19f20f2aeb8f5aec8ebc9a23211f9cf811bdd6337f50d",
+      "source_commit": "b37b38aeb332765ee2beb889fdaf1030dfed4589"
+    },
+    {
+      "sha256": "fb16abfe2b72fd9e9c390ce6a051ca1887f78e1b4c9af7c0f91773db32906f3b",
+      "source_commit": "d70d6147534972c34dded90977551f25d98bc61e"
+    }
+  ]
+}

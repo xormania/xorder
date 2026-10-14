@@ -6,7 +6,7 @@ from image_inputs import TOOL_KEYS, consumes
 
 
 METADATA_SCRIPTS = {
-    "scripts/release.py", "scripts/writeback.py", "scripts/refresh.py",
+    "scripts/release.py", "scripts/writeback.py", "scripts/refresh.py", "scripts/github_http.py",
     "scripts/registry.py", "scripts/xorder_cli.py", "scripts/validation_base.py",
     "scripts/catalog_checks.py", "scripts/catalog_summary.py",
     "scripts/refresh_browser.py", "scripts/browser_release.py",
@@ -96,7 +96,7 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
             if path.startswith("images/shared/") or path == ".dockerignore":
                 continue
             elif path.startswith(("tests/fixtures/php/", "tests/fixtures/mutation/")):
-                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "flowbite-xor-dev"}
+                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev"}
             elif path.startswith(("examples/php-toolkit/", "tests/fixtures/php-toolkit/")):
                 families = {"php-toolkit"}
             elif path.startswith(("examples/serena/", "tests/fixtures/serena/")):
@@ -108,13 +108,13 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
             elif path == "scripts/playwright_fixture.py" or path.startswith("tests/fixtures/playwright/"):
                 families = {"playwright-browser"}
             elif path.startswith("tests/fixtures/frankenphp/"):
-                families = {"php-frankenphp", "flowbite-xor-dev"}
+                families = {"php-frankenphp", "uxor-dev"}
             elif path.startswith(("examples/shared/", "tests/fixtures/network/")):
-                families = {"flowbite-xor-dev", "php-toolkit"}
-            elif path.startswith(("examples/uxor/", "examples/flowbite-xor/", "tests/fixtures/flowbite-xor/")):
-                families = {"flowbite-xor-dev"}
+                families = {"uxor-dev", "php-toolkit"}
+            elif path.startswith(("examples/uxor/", "tests/fixtures/uxor/")):
+                families = {"uxor-dev"}
             elif path.startswith("examples/php/"):
-                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "flowbite-xor-dev", "python-dev"}
+                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev", "python-dev"}
             elif path.startswith("tests/fixtures/python/"):
                 families = {"python-dev"}
             elif path.startswith("tests/fixtures/rust/"):

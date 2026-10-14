@@ -179,8 +179,7 @@ The canonical URL is https://github.com/xormania/xorder. Current navigation uses
 that identity; historical source/run links can retain their original provenance.
 GHCR family names and exact references do not change with the repository name.
 
-Dockerfile source labels remain on the old URL until the next deliberate patch
-refresh. Their bytes affect image fingerprints, so updating them requires fresh
-affected revisions and normal publication. See [contributing](contributing.md)
-for that explicit next-refresh item and [versioning](versioning.md) for the
-existing exact-release contract.
+Fresh image revisions label this canonical source URL. Historical exact artifacts
+retain their original source labels and release evidence. Label bytes participate
+in image fingerprints, so changing provenance requires fresh affected revisions
+and normal publication; see [versioning](versioning.md).

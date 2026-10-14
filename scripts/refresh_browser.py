@@ -6,19 +6,13 @@ import json
 import re
 import subprocess
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from library import ROOT, encoded, version
 from playwright_fixture import application_image
+from github_http import fetch_json
 
 REPOSITORY = "xormania/uxor"
-
-
-def fetch_json(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "xorder-browser-refresh"})
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.load(response)
 
 
 def consumer_pin(ref):

@@ -82,7 +82,7 @@ def container_environment(env, owner, *, reconfigure=False, services=()):
 
 
 def main(arguments):
-    # Toolkit uses an ephemeral docker run; Flowbite owns a persistent relay.
+    # Toolkit uses an ephemeral docker run; Uxor owns a persistent relay.
     if arguments[:2] != ["docker", "run"]:
         raise ValueError("Usage: network.py docker run [ARGS...]")
     owner = "run:" + uuid.uuid4().hex

@@ -220,7 +220,7 @@ class ProjectFaultTests(unittest.TestCase):
         self.assertNotEqual(self.source.stat().st_ino, donor.stat().st_ino)
 
     def test_profile_dry_run_detects_stale_copies_without_mutating_them(self):
-        contract = load_contract(self.workspace, ROOT / "examples/flowbite-xor")
+        contract = load_contract(self.workspace, ROOT / "examples/uxor")
         command = ["php", "tools/sync-demo", "--dry-run"]
         original = self.copy.read_bytes()
         def execute(argv):
@@ -235,17 +235,17 @@ class ProjectFaultTests(unittest.TestCase):
         (self.workspace / ".xorder").mkdir()
         path = self.workspace / ".xorder/testing.json"
         path.write_text(json.dumps(self.contract))
-        self.assertEqual(load_contract(self.workspace, ROOT / "examples/flowbite-xor")["sync"]["command"], ["sync"])
+        self.assertEqual(load_contract(self.workspace, ROOT / "examples/uxor")["sync"]["command"], ["sync"])
         for unsafe in ("../outside.js", "/outside.js"):
             self.contract["plants"]["disable"]["edits"][0]["path"] = unsafe
             path.write_text(json.dumps(self.contract))
             with self.assertRaisesRegex(ValueError, "inside the workspace"):
-                load_contract(self.workspace, ROOT / "examples/flowbite-xor")
+                load_contract(self.workspace, ROOT / "examples/uxor")
         self.contract["plants"]["disable"]["edits"][0]["path"] = "recipe.js"
         self.contract["plants"]["disable"]["confirm"].pop("contains")
         path.write_text(json.dumps(self.contract))
         with self.assertRaisesRegex(ValueError, "assert served content"):
-            load_contract(self.workspace, ROOT / "examples/flowbite-xor")
+            load_contract(self.workspace, ROOT / "examples/uxor")
 
 
 if __name__ == "__main__":

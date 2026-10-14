@@ -42,6 +42,6 @@ ENTRYPOINT ["bash", "/usr/local/bin/library-entrypoint"]
 CMD ["bash"]
 ARG SOURCE_COMMIT
 ARG IMAGE_VERSION
-LABEL org.opencontainers.image.source="https://github.com/xormania/docker-image-library" \
+LABEL org.opencontainers.image.source="https://github.com/xormania/xorder" \
       org.opencontainers.image.revision="${SOURCE_COMMIT}" \
       org.opencontainers.image.version="${IMAGE_VERSION}"

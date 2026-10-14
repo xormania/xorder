@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Check image-ledger additions against public durable release evidence."""
 import argparse
+import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 import urllib.parse
@@ -15,6 +17,68 @@ from xorder.transport import download
 
 
 LIFECYCLE_FIELDS = {"lifecycle", "reason", "replacement", "lifecycle_date"}
+
+
+def retirement_records(base, root=ROOT):
+    """Authorize explicit removals by exact historical bytes, never rename facts."""
+    retired = {}
+    folder = root / "retired-records"
+    for path in sorted(folder.glob("*.json")):
+        relative = path.relative_to(root).as_posix()
+        manifest = read(path)
+        if (set(manifest) != {"schema_version", "history_commit", "reason", "records"}
+                or manifest["schema_version"] != 1 or not isinstance(manifest["reason"], str)
+                or not manifest["reason"].strip() or not isinstance(manifest["records"], list)
+                or not manifest["records"]):
+            raise RuntimeError(f"Invalid image retirement declaration: {relative}")
+        history = manifest["history_commit"]
+        if not isinstance(history, str) or not re.fullmatch(r"[a-f0-9]{40}", history):
+            raise RuntimeError(f"Invalid image retirement history: {relative}")
+        if subprocess.run(["git", "merge-base", "--is-ancestor", history, base or "HEAD"],
+                          cwd=root, capture_output=True).returncode:
+            raise RuntimeError(f"Image retirement history is not an accepted ancestor: {relative}")
+        previous = subprocess.run(["git", "show", f"{base}:{relative}"], cwd=root,
+                                  capture_output=True) if base else None
+        if previous and previous.returncode == 0 and previous.stdout != path.read_bytes():
+            raise RuntimeError(f"Image retirement declarations are immutable: {relative}")
+        historical_paths = subprocess.check_output(
+            ["git", "ls-tree", "-r", "--name-only", history, "--", "release-records"],
+            cwd=root, text=True).splitlines()
+        historical = {}
+        for old_path in historical_paths:
+            parts = Path(old_path).parts
+            if len(parts) != 4 or parts[1] == "artifacts" or not old_path.endswith(".json"):
+                continue
+            payload = subprocess.check_output(["git", "show", f"{history}:{old_path}"], cwd=root)
+            historical[hashlib.sha256(payload).hexdigest()] = (old_path, payload)
+        seen = set()
+        for entry in manifest["records"]:
+            if (not isinstance(entry, dict) or set(entry) != {"sha256", "source_commit"}
+                    or not isinstance(entry["sha256"], str)
+                    or entry["sha256"] in seen or entry["sha256"] not in historical):
+                raise RuntimeError(f"Image retirement requires unique exact historical record hashes: {relative}")
+            seen.add(entry["sha256"])
+            old_path, payload = historical[entry["sha256"]]
+            record = validate_record(json.loads(payload))
+            if entry["source_commit"] != record["source_commit"]:
+                raise RuntimeError(f"Image retirement source differs from historical evidence: {relative}")
+            if (root / old_path).exists():
+                raise RuntimeError(f"Retired image evidence remains in the live ledger: {old_path}")
+            if old_path in retired:
+                raise RuntimeError(f"Duplicate image retirement declaration: {old_path}")
+            if base and (previous is None or previous.returncode):
+                accepted = subprocess.run(["git", "show", f"{base}:{old_path}"], cwd=root,
+                                          capture_output=True)
+                if accepted.returncode or accepted.stdout != payload:
+                    raise RuntimeError(f"New retirement must remove exact accepted base evidence: {old_path}")
+            retired[old_path] = payload
+    if base:
+        deleted = subprocess.check_output(
+            ["git", "diff", "--name-only", "--diff-filter=D", "--no-renames", base, "HEAD", "--", "retired-records"],
+            cwd=root, text=True).splitlines()
+        if deleted:
+            raise RuntimeError("Image retirement declarations cannot be deleted")
+    return retired
 
 
 def immutable_record(record):
@@ -86,11 +150,15 @@ def changed_image_records(base, root=ROOT):
             cwd=root, text=True).splitlines()
     else:
         paths = [str(path.relative_to(root)) for path in (root / "release-records").rglob("*.json")]
+    retired = retirement_records(base, root)
     for relative in sorted(paths):
         path = Path(relative)
         if path.parts[1] == "artifacts" or path.suffix != ".json":
             continue
         if base and not (root / path).is_file():
+            prior = subprocess.run(["git", "show", f"{base}:{path.as_posix()}"], cwd=root, capture_output=True)
+            if retired.get(path.as_posix()) == prior.stdout and prior.returncode == 0:
+                continue
             raise RuntimeError(f"Published release evidence cannot be deleted or renamed: {path}; use lifecycle fields to withdraw it")
         record = validate_record(read(root / path))
         expected = Path("release-records") / record["line_id"] / (record["version"] + ".json")

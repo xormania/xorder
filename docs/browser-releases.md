@@ -11,6 +11,17 @@ or send its `playwright-bump` repository dispatch with `consumer_ref` in the
 payload. The workflow resolves that ref to an immutable commit and requires
 the manifest and lock to agree. It never upgrades to an unrelated latest version.
 
+The canonical application family starts with authored `uxor-dev` 1.0.0 intent.
+Until its verified release is accepted, the migration fixture names that exact
+resource and revision without claiming a public digest. Source validation builds
+and verifies the declared application and its exact parent locally, binds parity
+to the resulting Docker image ID, and marks the parity receipt
+`local-source-validation`. It still executes the full committed screenshot
+comparison. Publication rejects that override and requires the same exact
+application revision in the accepted public catalog before browser verification
+can authorize a release. Newer application revisions never replace this pin
+implicitly.
+
 Each runtime minor line has its own npm lock, copied and fingerprinted separately.
 Changing one line does not change another line's package inputs. A patch bump
 within a runtime line receives a fresh packaging revision; a new runtime minor

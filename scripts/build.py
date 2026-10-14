@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -41,9 +42,9 @@ def build(line, image, source, parent=None, cache=None, registry_imports=()):
         args.update(INFECTION_URL=tools["infection"]["url"], INFECTION_SHA256=tools["infection"]["sha256"])
     if d["family"] == "php-frankenphp":
         args["APCU_VERSION"] = tools["apcu_version"]
-    if d["family"] in ("flowbite-xor-dev", "php-serena"):
+    if d["family"] in ("uxor-dev", "php-serena"):
         args["NODE_IMAGE"] = pinned(tools["node"])
-    if d["family"] == "flowbite-xor-dev":
+    if d["family"] == "uxor-dev":
         args.update(TAILWIND_VERSION=tools["tailwind"]["version"],
                     TAILWIND_URL=tools["tailwind"]["url"], TAILWIND_SHA256=tools["tailwind"]["sha256"])
     if d["family"] == "python-dev":
@@ -119,8 +120,71 @@ def inspect(line, image, destination):
     Path(destination).write_text(result)
 
 
-def verify(line, image, destination):
-    subprocess.run(["bash", str(ROOT / "scripts/verify-image.sh"), line, image], check=True)
+def prepare_parity_application(fixture, source):
+    """Build a pending authored app for source CI; accepted exact pins need no build."""
+    from playwright_fixture import inputs
+    selected = fixture.get("application_resource")
+    if selected is None:
+        return None
+    if (not isinstance(selected, dict) or not isinstance(selected.get("id"), str)
+            or not selected["id"].startswith("image/uxor-dev/")
+            or not isinstance(selected.get("version"), str)):
+        raise ValueError("Source parity requires an exact canonical application resource")
+    catalog = read(ROOT / "catalog-v2.json")
+    matching = [entry for entry in catalog["resources"]
+                if entry["id"] == selected["id"] and entry["version"] == selected["version"]]
+    accepted = [entry for entry in matching
+                if entry["lifecycle"] == "available" and entry["verification"]["status"] == "passed"
+                and "linux/amd64" in entry["targets"]]
+    if accepted:
+        # The same strict resolver used for publication validates the public pin.
+        inputs(fixture, catalog)
+        return None
+    if matching:
+        raise ValueError("Selected parity application record is not available and verified")
+    defs = definitions()
+    app_line = selected["id"].removeprefix("image/")
+    if (app_line not in defs or defs[app_line]["family"] != "uxor-dev"
+            or defs[app_line]["revision"] != selected["version"]):
+        raise ValueError("Pending parity resource must match the exact authored application revision")
+    if not source:
+        raise ValueError("Source parity needs the validating checkout's source identity")
+    root_line = app_line
+    while defs[root_line]["base"].get("parent"):
+        root_line = defs[root_line]["base"]["parent"]
+    if root_line == app_line:
+        raise ValueError("Canonical parity application needs its declared image prerequisite")
+    folder = ROOT / "out/parity-application" / app_line.replace("/", "-")
+    options = argparse.Namespace(line=root_line, image="image-library-parity:" + root_line.replace("/", "-"),
+                                 source=source, parent=None, cache=None, registry_imports=(),
+                                 inventory=str(folder / (defs[root_line]["family"] + ".json")),
+                                 cache_probe=False, reuse_accepted=True, children=True)
+    # The image matrix owns the app's full runtime fixture. Prepare only its
+    # build inputs here; the browser parity run establishes app readiness.
+    validate_tree(options, defs, set(), prerequisites(root_line, [app_line], defs))
+    app_tag = "image-library-check:" + defs[app_line]["family"]
+    facts = image_facts(app_tag)
+    labels = facts.get("Config", {}).get("Labels") or {}
+    if (labels.get("org.opencontainers.image.revision") != source
+            or labels.get("org.opencontainers.image.version") != selected["version"]
+            or not re.fullmatch(r"sha256:[a-f0-9]{64}", facts.get("Id", ""))):
+        raise ValueError("Local parity application does not match the validating source and revision")
+    inspect(app_line, facts["Id"], folder / (defs[app_line]["family"] + ".json"))
+    return facts["Id"]
+
+
+def verify(line, image, destination, *, source_validation=False, source=None):
+    command = ["bash", str(ROOT / "scripts/verify-image.sh"), line, image]
+    if source_validation and definitions()[line]["family"] == "playwright-browser":
+        fixture = read(ROOT / "tests/fixtures/playwright/consumers" / (line.split("/", 1)[1] + ".json"))
+        local_app = prepare_parity_application(fixture, source)
+        environment = dict(os.environ)
+        environment.pop("XORDER_PARITY_LOCAL_APPLICATION", None)
+        if local_app:
+            environment["XORDER_PARITY_LOCAL_APPLICATION"] = local_app
+        subprocess.run(command, check=True, env=environment)
+    else:
+        subprocess.run(command, check=True)
     inspect(line, image, destination)
 
 
@@ -141,7 +205,10 @@ def validate_tree(a, defs, selected=None, needed=None):
     built = time.monotonic()
     should_verify = selected is None or a.line in selected
     if should_verify:
-        verify(a.line, a.image, a.inventory)
+        if defs[a.line]["family"] == "playwright-browser":
+            verify(a.line, a.image, a.inventory, source_validation=True, source=a.source)
+        else:
+            verify(a.line, a.image, a.inventory)
     verified = time.monotonic()
     metrics = {"line": a.line, **image_measurements(a.image), "cache_source": cache,
                "artifact_reused": bool(reused),

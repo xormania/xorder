@@ -30,7 +30,8 @@
     "The REPL can execute Python with container permissions. The standalone runner does not implement Agentscient role permissions or coordination.",
     "The public runner mounts source read-only by default; pass --write explicitly for trusted editing sessions.",
     "Optional per-worktree indexes are reused only for matching source, dependencies, configuration and image; REPL state persists only in a running session.",
-    "Twig and YAML service identifiers use text search; PHP, JavaScript and TypeScript have semantic navigation."
+    "Twig and YAML service identifiers use text search; PHP, JavaScript and TypeScript have semantic navigation.",
+    "The upstream source and original lock remain identified separately from the xorder dependency-only security patch and effective uv lock."
   ],
   "lines": {
     "8.5-trixie": {
@@ -38,14 +39,15 @@
         "parent": "php-dev/8.5-trixie"
       },
       "changes": [
-        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract.",
+        "Apply the reviewed dependency-only security patch and hashed uv closure: AnyIO 4.14.2 and PyJWT 2.14.0; retain the proven Serena source revision."
       ],
       "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.1",
+      "revision": "1.1.2",
       "runtime_line": "8.5"
     }
   },

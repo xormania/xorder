@@ -25,8 +25,8 @@ Symfony UX and Tailwind alone do not imply a Node requirement. When Node is
 actually declared, the CLI/Panther profiles do not satisfy it. For a FrankenPHP
 worker project, consider `php-frankenphp`; for uxor's Node/Playwright
 workflow, use the [project profile](uxor.md) and
-`tests/requirements/flowbite-xor.json` (PHP 8.5) or
-`tests/requirements/flowbite-xor-8.4.json`. These require cached Tailwind so the
+`tests/requirements/uxor.json` (PHP 8.5) or
+`tests/requirements/uxor-8.4.json`. These require cached Tailwind so the
 selected image supports the current runner. Definitions are candidates until their
 verified available releases enter the catalog.
 

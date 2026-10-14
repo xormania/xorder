@@ -11,7 +11,7 @@ that clone, not rebuilding or replacing an unchanged image.
 
 1. From the xorder checkout, run the bounded `doctor` command described in
    [discovery](architecture.md#read-only-profile-resolution) with your workspace
-   and selected resource, for example `--resource image/flowbite-xor-dev/8.5-trixie`.
+   and selected resource, for example `--resource image/uxor-dev/8.5-trixie`.
    Its fixed Docker probes have deadlines and inspect actual engine availability.
    Follow up with the profile's status command. A Docker CLI does not establish
    that an engine is usable.
@@ -27,7 +27,7 @@ that clone, not rebuilding or replacing an unchanged image.
    prepared installation as described below.
 
 ```sh
-export IMAGE='<accepted flowbite-xor-dev digest_reference>'
+export IMAGE='<accepted uxor-dev digest_reference>'
 export WORKSPACE='/absolute/path/to/uxor-worktree'
 bash examples/uxor/run.sh --slot 2 up
 bash examples/uxor/run.sh --slot 2 status

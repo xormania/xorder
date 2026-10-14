@@ -31,8 +31,8 @@ Symfony applications; FrankenPHP HTTP and workers; native devenv setup.
 
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
-| [image/php-frankenphp/8.4-trixie](../docs/images/php-frankenphp-8.4-trixie.md) | 1.1.1 | linux/amd64 |
-| [image/php-frankenphp/8.5-trixie](../docs/images/php-frankenphp-8.5-trixie.md) | 1.1.1 | linux/amd64 |
+| [image/php-frankenphp/8.4-trixie](../docs/images/php-frankenphp-8.4-trixie.md) | 1.1.2 | linux/amd64 |
+| [image/php-frankenphp/8.5-trixie](../docs/images/php-frankenphp-8.5-trixie.md) | 1.1.2 | linux/amd64 |
 | [environment/php-symfony](../docs/resources/environment-php-symfony.md) | 1.0.0 | linux/amd64 |
 
 Pinned selections: [profile/php-http](../profiles/php-http.json), [profile/php-project](../profiles/php-project.json).
@@ -70,9 +70,7 @@ Serena v2 REPL; PHP language-server navigation.
 
 [Usage](../docs/serena.md).
 
-| Available resource | Current revision | Targets |
-| --- | --- | --- |
-| [image/php-serena/8.5-trixie](../docs/images/php-serena-8.5-trixie.md) | 1.1.0 | linux/amd64 |
+No verified available releases in this group.
 
 ### Isolated Symfony UX Toolkit validation
 
@@ -97,8 +95,8 @@ xormania/uxor; parallel worktrees; FrankenPHP and project-locked Playwright.
 
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
-| [image/flowbite-xor-dev/8.4-trixie](../docs/images/flowbite-xor-dev-8.4-trixie.md) | 1.1.1 | linux/amd64 |
-| [image/flowbite-xor-dev/8.5-trixie](../docs/images/flowbite-xor-dev-8.5-trixie.md) | 1.2.1 | linux/amd64 |
+| [image/uxor-dev/8.4-trixie](../docs/images/uxor-dev-8.4-trixie.md) | 1.0.0 | linux/amd64 |
+| [image/uxor-dev/8.5-trixie](../docs/images/uxor-dev-8.5-trixie.md) | 1.0.0 | linux/amd64 |
 
 Pinned selections: [profile/uxor](../profiles/uxor.json).
 

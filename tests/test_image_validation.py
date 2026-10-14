@@ -40,7 +40,7 @@ class ImageSelectionTests(unittest.TestCase):
         self.assertEqual(self.selected("images/php-dev/Dockerfile"), expected)
         self.assertEqual(self.selected("images/shared/php-tests.py"), sorted(expected + [
             "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie",
-            "flowbite-xor-dev/8.4-trixie", "flowbite-xor-dev/8.5-trixie"]))
+            "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"]))
 
     def test_serena_inputs_check_only_serena_with_php85_as_a_prerequisite(self):
         for path in ("images/php-serena/Dockerfile", "images/php-serena/requirements-build.txt",
@@ -54,22 +54,22 @@ class ImageSelectionTests(unittest.TestCase):
 
     def test_shared_php_behavior_includes_serena(self):
         expected = sorted(line for line, d in self.defs.items()
-                          if d["family"].startswith("php-") or d["family"] == "flowbite-xor-dev")
+                          if d["family"].startswith("php-") or d["family"] == "uxor-dev")
         for path in ("tests/fixtures/php/run.sh", "tests/fixtures/mutation/run.sh"):
             with self.subTest(path=path):
                 self.assertEqual(self.selected(path), expected)
-        self.assertEqual(self.selected("examples/php/compose.yaml"), expected + ["python-dev/3.14-trixie"])
+        self.assertEqual(self.selected("examples/php/compose.yaml"), sorted(expected + ["python-dev/3.14-trixie"]))
 
     def test_behavior_change_does_not_propagate_as_an_artifact_change(self):
         defs = copy.deepcopy(self.defs)
         defs["extra-profile/8.5-trixie"] = {
-            "family": "extra-profile", "base": {"parent": "flowbite-xor-dev/8.5-trixie"}}
+            "family": "extra-profile", "base": {"parent": "uxor-dev/8.5-trixie"}}
         # The added node has no Dockerfile, so inspect COPY consumers only for real families.
         with patch("image_validation.consumes", return_value=False):
-            selected = affected_lines(["tests/fixtures/flowbite-xor/run.sh"], defs, ROOT)
-        self.assertEqual(selected, ["flowbite-xor-dev/8.4-trixie", "flowbite-xor-dev/8.5-trixie"])
+            selected = affected_lines(["tests/fixtures/uxor/run.sh"], defs, ROOT)
+        self.assertEqual(selected, ["uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
         self.assertEqual(descendants(["php-frankenphp/8.5-trixie"], defs), [
-            "extra-profile/8.5-trixie", "flowbite-xor-dev/8.5-trixie", "php-frankenphp/8.5-trixie"])
+            "extra-profile/8.5-trixie", "php-frankenphp/8.5-trixie", "uxor-dev/8.5-trixie"])
 
     def test_one_definition_line_change_and_new_line_are_scoped(self):
         path = "images/php-dev/definition.json"
@@ -88,7 +88,7 @@ class ImageSelectionTests(unittest.TestCase):
         previous = json.loads((ROOT / "images/tools.json").read_text())
         previous["tailwind"]["sha256"] = "0" * 64
         self.assertEqual(self.selected("images/tools.json", previous_tools=previous), [
-            "flowbite-xor-dev/8.4-trixie", "flowbite-xor-dev/8.5-trixie"])
+            "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
         previous = json.loads((ROOT / "images/tools.json").read_text())
         previous["uv"]["digest"] = "sha256:" + "0" * 64
         self.assertEqual(self.selected("images/tools.json", previous_tools=previous), ["python-dev/3.14-trixie"])

@@ -55,7 +55,7 @@
   "limitations": [
     "Project dependencies and Caddy/worker configuration belong to the consuming repository.",
     "Xdebug is off by default; enable explicitly for debugging or coverage.",
-    "Node and Playwright browsers are supplied by the flowbite-xor profile and its official companion, respectively.",
+    "Node and Playwright browsers are supplied by the uxor profile and its official companion, respectively.",
     "PCOV is disabled by default. library-php-coverage pcov isolates Xdebug for each CLI process; library-php-tests uses project-locked PHPUnit and PHPStan, not global test packages."
   ],
   "lines": {
@@ -72,7 +72,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.2",
+      "revision": "1.1.3",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
@@ -88,7 +88,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.2",
+      "revision": "1.1.3",
       "runtime_line": "8.5"
     }
   },
