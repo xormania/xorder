@@ -2,13 +2,13 @@
 
 Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.
 
-Available revision: **1.1.3**. Pin:
+Available revision: **1.1.4**. Pin:
 
 ```text
-ghcr.io/xormania/php-frankenphp@sha256:0f4167f208cea0466fa39f4612706914f8bd4600f9ccdcba42968fe90a84c37a
+ghcr.io/xormania/php-frankenphp@sha256:828f22b953b34b080e3c233a1402b38dc6d7cb242f6bdb1cbaf5a579a111a3ce
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:48:40.338972Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:17:31.548581Z.
 
 ## Measured inventory — linux/amd64
 
@@ -22,7 +22,7 @@ Runtime: 8.4.26; OS: Debian GNU/Linux 13 (trixie).
 | frankenphp | FrankenPHP v1.13.1 PHP 8.4.26 Caddy v2.11.7 h1:yj0Y4fYZGPkSvibBJ1sTWE33xC0fxztVyXEW5iIdUT4= |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
-| infection | Infection - PHP Mutation Testing Framework version 0.35.6 |
+| infection | Infection - PHP Mutation Testing Framework version 0.35.8 |
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
@@ -30,7 +30,7 @@ Runtime: 8.4.26; OS: Debian GNU/Linux 13 (trixie).
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
-| symfony | Symfony CLI version 5.22.0 (c) 2021-2026 Fabien Potencier (2026-10-06T20:55:04Z - stable) |
+| symfony | Symfony CLI version 5.22.2 (c) 2021-2026 Fabien Potencier (2026-10-16T16:25:57Z - stable) |
 
 Extensions: `apcu`, `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filter`, `gd`, `hash`, `iconv`, `intl`, `json`, `libxml`, `mbstring`, `mysqli`, `mysqlnd`, `openssl`, `pcntl`, `pcov`, `pcre`, `pdo`, `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite`, `pgsql`, `phar`, `posix`, `random`, `readline`, `redis`, `reflection`, `session`, `simplexml`, `sockets`, `sodium`, `spl`, `sqlite3`, `standard`, `tokenizer`, `xdebug`, `xml`, `xmlreader`, `xmlwriter`, `zend opcache`, `zip`, `zlib`.
 
@@ -38,19 +38,19 @@ Extensions: `apcu`, `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 963.6 MiB (1,010,384,346 bytes) |
-| Build, cache export and image load | 141.85s |
-| Public-artifact behavior and inventory verification | 24.94s |
+| Local image size | 965.0 MiB (1,011,828,342 bytes) |
+| Build, cache export and image load | 169.42s |
+| Public-artifact behavior and inventory verification | 30.46s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:48:07.706964Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:16:59.132911Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
-External build cache at start: `empty`. This does not assert that every layer was a cache hit.
+External build cache at start: `restored`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.1.2, `ghcr.io/xormania/php-frankenphp@sha256:db129945845787737366fe7e8c65510251f031c2ef36e362e08f3c4f398aba2e`; 963.5 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38321328835); 2026-10-12T23:22:08.272114Z.
+Size baseline: v1.1.3, `ghcr.io/xormania/php-frankenphp@sha256:0f4167f208cea0466fa39f4612706914f8bd4600f9ccdcba42968fe90a84c37a`; 963.6 MiB in the same image store. Change: **+0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:48:07.706964Z.
 
-[Release notes](../releases/php-frankenphp-8.4-trixie-v1.1.3.md).
+[Release notes](../releases/php-frankenphp-8.4-trixie-v1.1.4.md).
 
 Capabilities: `php`, `composer`, `symfony`, `postgresql-client`, `native-build`, `xdebug`, `frankenphp`, `worker-server`, `pcov`, `php-testing`, `phpstan-isolated`, `mutation-testing`.
 
