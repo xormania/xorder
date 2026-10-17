@@ -41,7 +41,7 @@
         "linux/amd64"
       ],
       "playwright_version": "1.58.2",
-      "revision": "1.0.3",
+      "revision": "1.0.4",
       "runtime_line": "1.58"
     }
   },

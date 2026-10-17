@@ -61,7 +61,7 @@
   "lines": {
     "8.4-trixie": {
       "base": {
-        "digest": "sha256:7027c395e4a3b9f0624fd2091989eeaa1a5b7f7bd74677992df31a07a6655312",
+        "digest": "sha256:b32a81ad4db40b528ada04087f47e22833f260266e73b3d88c62fd54e2a29aa6",
         "tag": "docker.io/dunglas/frankenphp:1-php8.4-trixie"
       },
       "changes": [
@@ -72,12 +72,12 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.3",
+      "revision": "1.1.4",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
       "base": {
-        "digest": "sha256:a052ae7cccd4a025eca17767e7acac57a4fc660a4f3dfc790be9b9cd5182d6e6",
+        "digest": "sha256:4a8eebee6b3bed92d01ffa6ec5b1bc2cb9c2ab7eeb546027a3f7e6a52937ebbb",
         "tag": "docker.io/dunglas/frankenphp:1-php8.5-trixie"
       },
       "changes": [
@@ -88,7 +88,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.3",
+      "revision": "1.1.4",
       "runtime_line": "8.5"
     }
   },
