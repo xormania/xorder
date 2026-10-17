@@ -294,7 +294,7 @@ class AssuranceTests(unittest.TestCase):
         self.assertNotIn("id-token", parity)
         self.assertNotIn("login-action", parity)
         self.assertEqual(workflow.count("id-token: write"), 3)
-        self.assertEqual(workflow.count("cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22"), 3)
+        self.assertEqual(workflow.count("cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6"), 3)
 
     def test_admin_proposal_preserves_existing_check_sources_and_guards_changed_structure(self):
         document = (ROOT / "docs/repository-gates.md").read_text()
