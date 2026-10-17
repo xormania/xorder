@@ -16,11 +16,17 @@ for name in ("HTTP_PROXY", "HTTPS_PROXY"):
         continue
     try:
         proxy = urlsplit(value if "://" in value else "http://" + value)
-        credentials = proxy.username is not None or proxy.password is not None
+        credentials = "@" in value or proxy.username is not None or proxy.password is not None
+        valid = (proxy.scheme in ("http", "https") and bool(proxy.hostname)
+                 and proxy.path in ("", "/") and not proxy.query and not proxy.fragment
+                 and not any(character.isspace() for character in value))
+        proxy.port  # Validate an explicit port without including its value in errors.
     except ValueError:
         raise SystemExit(f"{name} must be a valid credential-free proxy URL for anonymous browser parity")
     if credentials:
         raise SystemExit(f"{name} credentials cannot enter anonymous browser parity; use a credential-free proxy endpoint")
+    if not valid:
+        raise SystemExit(f"{name} must be a valid credential-free proxy URL for anonymous browser parity")
 PY
 resolver=(python3 "$root/scripts/playwright_fixture.py" "$root/tests/fixtures/playwright/consumers/${line#*/}.json" "$root/catalog-v2.json")
 application_kind=accepted-publication

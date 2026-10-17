@@ -204,7 +204,10 @@ if sys.argv[1] == "init":
         for name in ("HTTP_PROXY", "HTTPS_PROXY"):
             for proxy in ("http://user:secret-password-canary@reachable.test:3128",
                           "user:secret-password-canary@reachable.test:3128",
-                          "http://user@reachable.test:3128", "http://@reachable.test:3128"):
+                          "http://user@reachable.test:3128", "http://@reachable.test:3128",
+                          "http:/user:secret-password-canary@reachable.test:3128",
+                          "http:///user:secret-password-canary@reachable.test:3128",
+                          "http:////user:secret-password-canary@reachable.test:3128"):
                 with self.subTest(name=name, proxy=proxy):
                     result = self.execute("tests/fixtures/playwright/parity.sh", "browser:test", "playwright-browser/fixture",
                                           **{name: proxy})
@@ -213,6 +216,20 @@ if sys.argv[1] == "init":
                     self.assertNotIn("secret-password-canary", result.stderr)
                     self.assertFalse(self.parity_log.exists())
                     self.assertEqual(self.captured(), [])
+
+    def test_browser_parity_rejects_ambiguous_proxy_structure(self):
+        self.prepare_parity()
+        for proxy in ("http:///reachable.test:3128", "http:/reachable.test:3128",
+                      "http://reachable.test:invalid", "http://reachable.test:3128/path",
+                      "http://reachable.test:3128?query", "http://reachable.test:3128#fragment",
+                      " http://reachable.test:3128"):
+            with self.subTest(proxy=proxy):
+                result = self.execute("tests/fixtures/playwright/parity.sh", "browser:test", "playwright-browser/fixture",
+                                      HTTPS_PROXY=proxy)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("valid credential-free proxy URL", result.stderr)
+                self.assertFalse(self.parity_log.exists())
+                self.assertEqual(self.captured(), [])
 
     def test_serena_installs_through_public_wrapper_and_cleans_its_cache_even_on_failure(self):
         spec = importlib.util.spec_from_file_location("readiness_serena_fixture", ROOT / "tests/fixtures/serena/check.py")
