@@ -3,16 +3,16 @@
   "apt_indexes": {
     "https://deb.debian.org/debian/dists/trixie-updates/Release": "10012cb384dc2613586d7b3d391d92a5637c9faa36017239739f2a6109a0d45f",
     "https://deb.debian.org/debian/dists/trixie/Release": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
-    "https://security.debian.org/debian-security/dists/trixie-security/Release": "729b118ea4d51c48557d1e597bea15d6eebb615d8f84c37af3be8340be7314ff"
+    "https://security.debian.org/debian-security/dists/trixie-security/Release": "ecda93f2685edb274c26b06e354a2ffa9920ebd764225974bc5df506c63a6f61"
   },
   "composer": {
     "digest": "sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac",
     "tag": "docker.io/library/composer:2"
   },
   "infection": {
-    "sha256": "3fd4216875260b8e47c48ec1a92473f500d88bd36d8ffec21cc0d24e18d7f0ea",
-    "url": "https://github.com/infection/infection/releases/download/0.35.6/infection.phar",
-    "version": "0.35.6"
+    "sha256": "b2049ae1bff43d9dc82831c2833005005eb62d5180cd518892af93fc8e23ddc5",
+    "url": "https://github.com/infection/infection/releases/download/0.35.8/infection.phar",
+    "version": "0.35.8"
   },
   "node": {
     "digest": "sha256:def2655045ff1ee91b28a48cb3ec84feafef6d128bda0ff6903e7847ed0b27b4",
@@ -22,9 +22,9 @@
   "redis_version": "6.3.0",
   "schema_version": 1,
   "symfony": {
-    "sha256": "26af8671c2ea0cefd72c3629513e190af7c2e239e81e0ea84842716f4db3a585",
-    "url": "https://github.com/symfony-cli/symfony-cli/releases/download/v5.22.0/symfony-cli_linux_amd64.tar.gz",
-    "version": "5.22.0"
+    "sha256": "9e9cf056087f9e0320f592dce76d491fc21579e6d915b2bb3b32949c2d7a4ef5",
+    "url": "https://github.com/symfony-cli/symfony-cli/releases/download/v5.22.2/symfony-cli_linux_amd64.tar.gz",
+    "version": "5.22.2"
   },
   "tailwind": {
     "sha256": "dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a",
@@ -32,7 +32,7 @@
     "version": "v4.3.3"
   },
   "uv": {
-    "digest": "sha256:cdc6093146eb3ff6a40107b38f008b789e050e77ad87865e381d9917da55a168",
+    "digest": "sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336",
     "tag": "ghcr.io/astral-sh/uv:latest"
   },
   "xdebug_version": "3.5.3"
