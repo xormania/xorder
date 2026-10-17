@@ -1,4 +1,39 @@
-# Claude cloud sessions for uxor
+# Claude cloud sessions
+
+## Docker engine availability
+
+In one Claude cloud root session, `dockerd` was installed but not running.
+The Docker CLI was present, but `doctor` reported `docker_engine_failed`.
+This is an observed recovery case, not a guarantee about every session.
+
+Check the engine with your workspace and selected resource:
+
+```sh
+python3 scripts/xorder_cli.py doctor --workspace /absolute/path/to/project \
+  --resource image/python-dev/3.14-trixie
+```
+
+If this session owns its local Docker daemon, the CLI targets that daemon, and
+you are root, an installed but stopped daemon can be started in the background:
+
+```sh
+if [ "$(id -u)" -eq 0 ] && command -v dockerd >/dev/null 2>&1 \
+  && ! docker info >/dev/null 2>&1 && ! pgrep -x dockerd >/dev/null; then
+  nohup dockerd > /tmp/xorder-dockerd.log 2>&1 < /dev/null &
+fi
+```
+
+Inspect `/tmp/xorder-dockerd.log` if startup fails. Once the daemon has started,
+rerun the same `doctor` command; starting a process does not establish readiness.
+Use the host's existing recovery method for a managed or remote engine.
+
+`dockerd` inherits `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` from the environment
+it starts in unless explicit daemon proxy configuration takes precedence.
+That startup environment allowed registry pulls in the observed session.
+Registry access and host/daemon CA trust are separate from proxy and CA settings
+inside containers; follow [network access](usage.md#network-access) for the latter.
+
+## uxor stacks
 
 Start each session from the current [xorder README](../README.md), select an
 accepted image digest from the compact [current index](../discovery.json), and
