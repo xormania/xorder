@@ -92,6 +92,9 @@ class ReadinessNetworkTests(unittest.TestCase):
                 self.assertTrue(any("down" in call["args"] for call in compose))
                 for call in compose:
                     self.assertEqual(len(call["files"]), 2, call["args"])
+                    # Containers can write the workspace, and Compose rereads overrides on each call.
+                    override_path = Path(call["files"][1]["path"])
+                    self.assertFalse(override_path.is_relative_to(call["env"]["WORKSPACE"]), override_path)
                     override = json.loads(call["files"][1]["contents"])["services"]["dev"]
                     self.assertEqual(override["environment"]["LIBRARY_CA_FILE"], "/run/library-proxy.pem")
                     mounts = [mount for mount in override["volumes"]
@@ -105,6 +108,7 @@ class ReadinessNetworkTests(unittest.TestCase):
                     self.assertEqual(mount["type"], "bind")
                     self.assertTrue(mount["read_only"])
                     self.assertFalse(mount["bind"]["create_host_path"])
+                self.assertFalse(override_path.parent.exists())
                 direct = [call for call in self.captured() if call["args"][0] == "run"]
                 self.assertEqual(len(direct), 1)
                 self.assertIn("type=bind,src=" + str(self.ca) + ",dst=/run/library-proxy.pem,readonly",

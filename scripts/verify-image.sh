@@ -33,10 +33,13 @@ fi
 export IMAGE="$image" WORKSPACE="$work" PUID PGID
 PUID=$(id -u); PGID=$(id -g)
 compose=(docker compose -p "$project" -f "$root/examples/php/compose.yaml")
+overrides=
 if [[ -n "${CA_CERTIFICATE:-}" ]]; then
   # A conditional override avoids an empty/default bind mount when no CA is
   # supplied. JSON also preserves spaces and Compose punctuation in host paths.
-  python3 - "$CA_CERTIFICATE" "$work/ca.compose.json" <<'PY'
+  # Compose rereads it on every call, so keep it outside the writable workspace.
+  overrides=$(mktemp -d)
+  python3 - "$CA_CERTIFICATE" "$overrides/ca.compose.json" <<'PY'
 import json, sys
 from pathlib import Path
 override = {"services": {"dev": {
@@ -46,9 +49,9 @@ override = {"services": {"dev": {
 }}}
 Path(sys.argv[2]).write_text(json.dumps(override))
 PY
-  compose+=(-f "$work/ca.compose.json")
+  compose+=(-f "$overrides/ca.compose.json")
 fi
-cleanup() { "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true; docker volume rm "$project-cache" >/dev/null 2>&1 || true; rm -rf "$work"; }
+cleanup() { "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true; docker volume rm "$project-cache" >/dev/null 2>&1 || true; rm -rf "$work" ${overrides:+"$overrides"}; }
 trap cleanup EXIT
 start=$SECONDS
 if [[ "$kind" = php || "$kind" = python ]]; then
