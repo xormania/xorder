@@ -82,6 +82,19 @@ def run(*args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
 
+def install_consumer(image, checkout):
+    """Use the public proxy/CA contract with a fixture-owned disposable cache."""
+    cache = "xorder-serena-fixture-" + checkout.parent.name
+    try:
+        run("bash", str(ROOT / "scripts/run-image.sh"), image,
+            "composer", "install", "--working-dir=/workspace/demo", "--no-interaction", "--prefer-dist",
+            "--no-progress", "--no-scripts", "--no-plugins",
+            env=dict(os.environ, WORKSPACE=str(checkout), CACHE_VOLUME=cache))
+    finally:
+        subprocess.run(["docker", "volume", "rm", cache], check=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def main():
     image = sys.argv[1]
     packages = tomllib.loads((ROOT / "images/php-serena/security-uv.lock").read_text())["package"]
@@ -100,10 +113,7 @@ def main():
         run("git", "-C", str(checkout), "checkout", "--detach", "FETCH_HEAD")
         # Install the application's own lock, separately from the image's LSP.
         # No asset downloads, application scripts, browser, or server are needed.
-        run("docker", "run", "--rm", "--mount", f"type=bind,src={checkout},dst=/workspace",
-            "-e", f"PUID={os.getuid()}", "-e", f"PGID={os.getgid()}",
-            "-w", "/workspace/demo", image, "composer", "install", "--no-interaction", "--prefer-dist",
-            "--no-progress", "--no-scripts", "--no-plugins")
+        install_consumer(image, checkout)
         command = [sys.executable, str(ROOT / "examples/serena/run.py"), str(checkout),
                    "--image", image, "--project", fixture["project"], "--request-timeout", "180",
                    "--cache-dir", str(Path(directory) / "index-cache")]

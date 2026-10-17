@@ -41,7 +41,9 @@ RUN curl --fail --location --silent --show-error \
     && echo '53bbe9625cd9b5e9b394bc2f595fbad13dbbe6dfc96950c56dea3b5d9a246cc3  /opt/xorder/serena/phpactor.phar' | sha256sum --check
 COPY --chmod=755 images/php-serena/launch.py /usr/local/bin/library-serena
 COPY images/php-serena/integration.py /usr/local/bin/integration.py
+COPY images/shared/uv-entrypoint.sh /usr/local/bin/library-uv-entrypoint
 ENV PYTHONDONTWRITEBYTECODE=1
+ENTRYPOINT ["bash", "/usr/local/bin/library-uv-entrypoint"]
 CMD ["library-serena"]
 
 ARG SOURCE_COMMIT
