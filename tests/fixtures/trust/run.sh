@@ -28,6 +28,7 @@ for name in first second; do
   git clone --bare -q "$directory/source" "$directory/repo.git"
   git -C "$directory/repo.git" update-server-info
   printf 'trusted\n' > "$directory/proof.txt"
+  python3 "$root/uv-packages.py" "$directory" "$name"
   python3 "$root/server.py" "$directory" > "$directory/server.log" 2>&1 & servers+=("$!")
   for attempt in {1..50}; do [ ! -f "$directory/port" ] || break; sleep .1; done
   port=$(cat "$directory/port")
@@ -43,20 +44,40 @@ PY
 done
 first_port=$(cat "$work/first/port")
 second_port=$(cat "$work/second/port")
-docker run --rm --network host "$image" bash -c '! curl --fail --silent "https://localhost:$1/proof.txt"' -- "$first_port"
+docker run --rm --network host \
+  --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" \
+  "$image" bash -c '
+  set -euo pipefail
+  if curl --fail --silent "https://localhost:$1/proof.txt"; then
+    echo "An HTTPS origin was trusted without its CA" >&2; exit 1
+  fi
+  bash /run/trust-uv-clients.sh untrusted "https://localhost:$1" "https://localhost:$2"
+  ' -- "$first_port" "$second_port"
 # A single root still works, and cannot trust the independently signed server.
 docker run --rm --network host -e LIBRARY_CA_FILE=/run/ca.pem \
-  --mount "type=bind,src=$work/first/ca.crt,dst=/run/ca.pem,readonly" "$image" bash -c '
+  --mount "type=bind,src=$work/first/ca.crt,dst=/run/ca.pem,readonly" \
+  --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" "$image" bash -c '
+  set -euo pipefail
   test "$(id -u)" = 1000
   curl --fail --silent "https://localhost:$1/proof.txt" | rg "^trusted$"
-  ! curl --fail --silent "https://localhost:$2/proof.txt"
+  if curl --fail --silent "https://localhost:$2/proof.txt"; then
+    echo "An independently signed HTTPS origin was trusted with the wrong CA" >&2; exit 1
+  fi
+  bash /run/trust-uv-clients.sh single "https://localhost:$1" "https://localhost:$2"
   ' -- "$first_port" "$second_port"
 cat "$work/first/ca.crt" "$work/second/ca.crt" > "$work/bundle.pem"
 # Both independently signed origins must work for every advertised TLS client.
 docker run --rm --network host -e LIBRARY_CA_FILE=/run/ca.pem \
   --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" \
   --mount "type=bind,src=$root/clients.sh,dst=/run/trust-clients.sh,readonly" \
+  --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" \
   "$image" bash /run/trust-clients.sh "https://localhost:$first_port" "https://localhost:$second_port"
+# Exercise uv's isolated build after the same root entrypoint retains UID 0.
+docker run --rm --network host -e PUID=0 -e PGID=0 -e LIBRARY_CA_FILE=/run/ca.pem \
+  --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" \
+  --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" \
+  "$image" bash -c 'set -euo pipefail; test "$(id -u)" = 0; exec bash /run/trust-uv-clients.sh trusted "$@"' \
+  -- "https://localhost:$first_port" "https://localhost:$second_port"
 # Repeating setup in the same root container removes roots omitted from the new
 # bundle, including the old image's single-file layout, without stale trust.
 docker run --rm --network host -e PUID=0 -e PGID=0 -e LIBRARY_CA_FILE=/run/ca.pem \

@@ -30,7 +30,8 @@ root to adjust home/cache ownership and then drops privileges. It never changes
 the project's entire bind mount ownership. A cache belongs to one project/user;
 avoid sharing it with concurrent processes that use different UIDs.
 
-A root-owned checkout can use `PUID=0 PGID=0` explicitly. This keeps the
+A root-owned checkout, including one in a Claude cloud session, can use
+`PUID=0 PGID=0` explicitly. This keeps the
 entrypoint's CA setup and home/cache handling while running the command as root;
 there is no need to bypass the entrypoint or recursively change project ownership.
 The wrapper honors these overrides:
@@ -147,6 +148,18 @@ bash scripts/verify-image.sh 'rust-dev/1.99-trixie' "$IMAGE"
 ```
 
 Select the matching IMAGE for each line, not a single image for all commands.
+Behind a proxy that signs HTTPS with a private CA, supply its PEM certificate
+or bundle using the same wrapper option as project commands:
+
+```sh
+CA_CERTIFICATE='/absolute/path/to/proxy-ca.pem' \
+  bash scripts/verify-image.sh 'python-dev/3.14-trixie' "$IMAGE"
+```
+
+The readiness wrapper forwards that file read-only to containers that need it;
+see [network access](#network-access). Without `CA_CERTIFICATE`, the recipe keeps
+its normal trust configuration.
+
 The script copies a locked mock consuming project to a disposable bind mount,
 starts real services where needed, installs dependencies, runs behavior checks,
 checks host ownership, exercises cache persistence and cleans up its own data.
@@ -181,10 +194,16 @@ fail startup before existing trust changes. The private staging directory is
 removed on success or failure.
 Composer, curl and git use the trusted bundle; Node gets `NODE_EXTRA_CA_CERTS`.
 Explicit existing Composer/Node CA settings take precedence.
+In `python-dev` and `php-serena`, supplying `LIBRARY_CA_FILE` also enables uv's
+system certificate store with `UV_SYSTEM_CERTS=true`, unless an explicit uv TLS
+setting is already supplied. With no `LIBRARY_CA_FILE`, uv's trust selection is
+unchanged. Tool command-line TLS options retain their own precedence.
 
 ```sh
 export CA_CERTIFICATE='/absolute/path/to/proxy-ca.pem'
 bash scripts/run-image.sh "$IMAGE" composer install --no-interaction
+# Python dependency resolution uses the installed proxy CA too:
+bash scripts/run-image.sh "$IMAGE" uv sync --locked
 # Equivalent direct invocation:
 docker run --rm -e LIBRARY_CA_FILE=/run/proxy.pem \
   --mount "type=bind,src=$CA_CERTIFICATE,dst=/run/proxy.pem,readonly" \

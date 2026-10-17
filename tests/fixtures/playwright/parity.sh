@@ -19,11 +19,16 @@ export IMAGE="${consumer[3]}"
 evidence="$root/out/playwright/${line//\//-}"
 mkdir -p "$evidence" "$work/home" "$work/docker"
 source_validation_env=()
+network_env=()
+for name in HTTP_PROXY HTTPS_PROXY NO_PROXY CA_CERTIFICATE; do
+  if [[ -v "$name" ]]; then network_env+=("$name=${!name}"); fi
+done
 parity_runner() {
   env -i PATH="$PATH" HOME="$work/home" DOCKER_CONFIG="$work/docker" \
     WORKSPACE="$WORKSPACE" IMAGE="$IMAGE" BROWSER_IMAGE="$BROWSER_IMAGE" \
     UXOR_PROJECT="$UXOR_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
     XORDER_PARITY_FIXTURE=1 XORDER_SHARED_CACHE=0 \
+    "${network_env[@]}" \
     "${source_validation_env[@]}" \
     bash "$root/examples/uxor/run.sh" "$@"
 }
