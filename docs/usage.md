@@ -183,6 +183,11 @@ host. Include service names, localhost and 127.0.0.1 in NO_PROXY for local HTTP
 connections. Host networking policy is not automatically inherited by a Docker
 container. Run the readiness recipe to verify downloads inside the selected image.
 
+Browser parity executes a pinned external consumer checkout in an isolated
+environment. That anonymous verifier accepts credential-free proxy URLs and
+the supplied CA, and rejects proxy URLs containing a username or password before
+consumer execution. Use a credential-free proxy endpoint for browser parity.
+
 For a proxy that signs HTTPS with private CAs, mount **a PEM CA certificate or
 multi-certificate PEM bundle** read-only and set `LIBRARY_CA_FILE` to its absolute
 container path. `CA_CERTIFICATE` accepts either format in the wrappers. The root

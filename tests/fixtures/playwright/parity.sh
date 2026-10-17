@@ -4,6 +4,24 @@ set -euo pipefail
 browser=${1:?Supply browser image}
 line=${2:?Supply browser line}
 root=$(cd "$(dirname "$0")/../../.." && pwd)
+# The pinned consumer is external code. Proxy credentials must not cross the
+# anonymous verifier's environment boundary, even when GitHub auth is absent.
+python3 - <<'PY'
+import os
+from urllib.parse import urlsplit
+
+for name in ("HTTP_PROXY", "HTTPS_PROXY"):
+    value = os.environ.get(name, "")
+    if not value:
+        continue
+    try:
+        proxy = urlsplit(value if "://" in value else "http://" + value)
+        credentials = proxy.username is not None or proxy.password is not None
+    except ValueError:
+        raise SystemExit(f"{name} must be a valid credential-free proxy URL for anonymous browser parity")
+    if credentials:
+        raise SystemExit(f"{name} credentials cannot enter anonymous browser parity; use a credential-free proxy endpoint")
+PY
 resolver=(python3 "$root/scripts/playwright_fixture.py" "$root/tests/fixtures/playwright/consumers/${line#*/}.json" "$root/catalog-v2.json")
 application_kind=accepted-publication
 if [[ -n "${XORDER_PARITY_LOCAL_APPLICATION:-}" ]]; then

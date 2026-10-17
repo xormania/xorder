@@ -199,6 +199,21 @@ if sys.argv[1] == "init":
             for name in ("HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "CA_CERTIFICATE"):
                 self.assertNotIn(name, environment)
 
+    def test_browser_parity_rejects_proxy_credentials_before_consumer_execution(self):
+        self.prepare_parity()
+        for name in ("HTTP_PROXY", "HTTPS_PROXY"):
+            for proxy in ("http://user:secret-password-canary@reachable.test:3128",
+                          "user:secret-password-canary@reachable.test:3128",
+                          "http://user@reachable.test:3128", "http://@reachable.test:3128"):
+                with self.subTest(name=name, proxy=proxy):
+                    result = self.execute("tests/fixtures/playwright/parity.sh", "browser:test", "playwright-browser/fixture",
+                                          **{name: proxy})
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(name + " credentials cannot enter anonymous browser parity", result.stderr)
+                    self.assertNotIn("secret-password-canary", result.stderr)
+                    self.assertFalse(self.parity_log.exists())
+                    self.assertEqual(self.captured(), [])
+
     def test_serena_installs_through_public_wrapper_and_cleans_its_cache_even_on_failure(self):
         spec = importlib.util.spec_from_file_location("readiness_serena_fixture", ROOT / "tests/fixtures/serena/check.py")
         fixture = importlib.util.module_from_spec(spec)
