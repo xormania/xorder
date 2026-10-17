@@ -136,8 +136,8 @@ and verifies them again. It does not replace the scan date or database facts.
 A retry interrupted before the receipt may create new observations and upload
 new content-named assets. No existing asset is overwritten.
 
-Cosign's installer is pinned to the official v4.1.0 commit
-`ba7bc0a3fef59531c69a25acd34668d6d3fe6f22`, with cosign 3.1.3 explicitly
+Cosign's installer is pinned to the official v4.1.2 commit
+`6f9f17788090df1f26f669e9d70d6ae9567deba6`, with cosign 3.1.3 explicitly
 selected. The installer verifies its bootstrap hash and the requested release's
 signatures. Trivy 0.75.0 is fetched from its exact official Linux amd64 asset and
 verified against the published SHA-256 in `scripts/image_assurance.py`. No
@@ -149,7 +149,7 @@ command tests cannot prove those services work together.
 
 Primary references inspected for this integration:
 
-- [Pinned cosign installer](https://github.com/sigstore/cosign-installer/blob/ba7bc0a3fef59531c69a25acd34668d6d3fe6f22/action.yml)
+- [Pinned cosign installer](https://github.com/sigstore/cosign-installer/blob/6f9f17788090df1f26f669e9d70d6ae9567deba6/action.yml)
 - [Cosign 3.1.3](https://github.com/sigstore/cosign/releases/tag/v3.1.3)
 - [Sigstore container signing](https://docs.sigstore.dev/cosign/signing/signing_with_containers/)
 - [Sigstore signature and attestation verification](https://docs.sigstore.dev/cosign/verifying/verify/)

@@ -4,6 +4,30 @@ set -euo pipefail
 browser=${1:?Supply browser image}
 line=${2:?Supply browser line}
 root=$(cd "$(dirname "$0")/../../.." && pwd)
+# The pinned consumer is external code. Proxy credentials must not cross the
+# anonymous verifier's environment boundary, even when GitHub auth is absent.
+python3 - <<'PY'
+import os
+from urllib.parse import urlsplit
+
+for name in ("HTTP_PROXY", "HTTPS_PROXY"):
+    value = os.environ.get(name, "")
+    if not value:
+        continue
+    try:
+        proxy = urlsplit(value if "://" in value else "http://" + value)
+        credentials = "@" in value or proxy.username is not None or proxy.password is not None
+        valid = (proxy.scheme in ("http", "https") and bool(proxy.hostname)
+                 and proxy.path in ("", "/") and not proxy.query and not proxy.fragment
+                 and not any(character.isspace() for character in value))
+        proxy.port  # Validate an explicit port without including its value in errors.
+    except ValueError:
+        raise SystemExit(f"{name} must be a valid credential-free proxy URL for anonymous browser parity")
+    if credentials:
+        raise SystemExit(f"{name} credentials cannot enter anonymous browser parity; use a credential-free proxy endpoint")
+    if not valid:
+        raise SystemExit(f"{name} must be a valid credential-free proxy URL for anonymous browser parity")
+PY
 resolver=(python3 "$root/scripts/playwright_fixture.py" "$root/tests/fixtures/playwright/consumers/${line#*/}.json" "$root/catalog-v2.json")
 application_kind=accepted-publication
 if [[ -n "${XORDER_PARITY_LOCAL_APPLICATION:-}" ]]; then
@@ -19,11 +43,16 @@ export IMAGE="${consumer[3]}"
 evidence="$root/out/playwright/${line//\//-}"
 mkdir -p "$evidence" "$work/home" "$work/docker"
 source_validation_env=()
+network_env=()
+for name in HTTP_PROXY HTTPS_PROXY NO_PROXY CA_CERTIFICATE; do
+  if [[ -v "$name" ]]; then network_env+=("$name=${!name}"); fi
+done
 parity_runner() {
   env -i PATH="$PATH" HOME="$work/home" DOCKER_CONFIG="$work/docker" \
     WORKSPACE="$WORKSPACE" IMAGE="$IMAGE" BROWSER_IMAGE="$BROWSER_IMAGE" \
     UXOR_PROJECT="$UXOR_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
     XORDER_PARITY_FIXTURE=1 XORDER_SHARED_CACHE=0 \
+    "${network_env[@]}" \
     "${source_validation_env[@]}" \
     bash "$root/examples/uxor/run.sh" "$@"
 }

@@ -9,6 +9,7 @@ for certificate in "${certificates[@]}"; do
   test "$(grep -c -- '-----BEGIN CERTIFICATE-----' "$certificate")" = 1
   openssl x509 -in "$certificate" -noout
 done
+bash /run/trust-uv-clients.sh trusted "$first" "$second"
 curl --fail --silent "$first/proof.txt" | rg '^trusted$'
 curl --fail --silent "$second/proof.txt" | rg '^trusted$'
 git clone -q "$first/repo.git" "$HOME/proof-repo-first"

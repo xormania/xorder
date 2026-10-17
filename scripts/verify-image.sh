@@ -4,6 +4,9 @@ set -euo pipefail
 line=${1:?Usage: verify-image.sh LINE_ID IMAGE}
 image=${2:?Supply image reference}
 root=$(cd "$(dirname "$0")/.." && pwd)
+if [[ -n "${CA_CERTIFICATE:-}" ]]; then
+  [[ "$CA_CERTIFICATE" = /* && -f "$CA_CERTIFICATE" && -r "$CA_CERTIFICATE" ]] || { echo 'CA_CERTIFICATE must be a readable absolute PEM file' >&2; exit 64; }
+fi
 family=${line%%/*}
 if [[ "$family" = playwright-browser ]]; then
   work=$(mktemp -d)
@@ -30,7 +33,25 @@ fi
 export IMAGE="$image" WORKSPACE="$work" PUID PGID
 PUID=$(id -u); PGID=$(id -g)
 compose=(docker compose -p "$project" -f "$root/examples/php/compose.yaml")
-cleanup() { "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true; docker volume rm "$project-cache" >/dev/null 2>&1 || true; rm -rf "$work"; }
+overrides=
+if [[ -n "${CA_CERTIFICATE:-}" ]]; then
+  # A conditional override avoids an empty/default bind mount when no CA is
+  # supplied. JSON also preserves spaces and Compose punctuation in host paths.
+  # Compose rereads it on every call, so keep it outside the writable workspace.
+  overrides=$(mktemp -d)
+  python3 - "$CA_CERTIFICATE" "$overrides/ca.compose.json" <<'PY'
+import json, sys
+from pathlib import Path
+override = {"services": {"dev": {
+    "environment": {"LIBRARY_CA_FILE": "/run/library-proxy.pem"},
+    "volumes": [{"type": "bind", "source": sys.argv[1].replace("$", "$$"), "target": "/run/library-proxy.pem",
+                 "read_only": True, "bind": {"create_host_path": False}}],
+}}}
+Path(sys.argv[2]).write_text(json.dumps(override))
+PY
+  compose+=(-f "$overrides/ca.compose.json")
+fi
+cleanup() { "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true; docker volume rm "$project-cache" >/dev/null 2>&1 || true; rm -rf "$work" ${overrides:+"$overrides"}; }
 trap cleanup EXIT
 start=$SECONDS
 if [[ "$kind" = php || "$kind" = python ]]; then
