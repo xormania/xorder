@@ -39,10 +39,11 @@
         "parent": "php-dev/8.5-trixie"
       },
       "changes": [
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract.",
         "Use system certificates for uv when LIBRARY_CA_FILE supplies a private CA, while preserving explicit uv and OpenSSL trust settings.",
         "Retain the proven Serena source revision and its reviewed dependency-only security patch."
       ],
-      "migration": "Compatible trust fix. Supply CA_CERTIFICATE through the public runners for intercepted HTTPS; explicit UV_SYSTEM_CERTS, UV_NATIVE_TLS, SSL_CERT_FILE and SSL_CERT_DIR settings retain precedence. Validate the new digest in the consuming project before upgrading.",
+      "migration": "Compatible refresh and trust fix. Supply CA_CERTIFICATE through the public runners for intercepted HTTPS; explicit UV_SYSTEM_CERTS, UV_NATIVE_TLS, SSL_CERT_FILE and SSL_CERT_DIR settings retain precedence. Validate the new digest in the consuming project before upgrading; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
