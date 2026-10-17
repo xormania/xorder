@@ -2,13 +2,13 @@
 
 Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.
 
-Available revision: **1.1.2**. Pin:
+Available revision: **1.1.3**. Pin:
 
 ```text
-ghcr.io/xormania/php-serena@sha256:9aa4981b585e76a812cc3070381e55488ffb86a850effa600779919c48b2d132
+ghcr.io/xormania/php-serena@sha256:a21a6d18ae9be3d528fb01f19446769904ca4898fdf19b6bd4176769de809e04
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:56:19.202029Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:25:55.892206Z.
 
 ## Measured inventory — linux/amd64
 
@@ -21,7 +21,7 @@ Runtime: 8.5.11; OS: Debian GNU/Linux 13 (trixie).
 | curl | curl 8.14.1 (x86_64-pc-linux-gnu) libcurl/8.14.1 OpenSSL/3.5.7 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10 |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
-| infection | Infection - PHP Mutation Testing Framework version 0.35.6 |
+| infection | Infection - PHP Mutation Testing Framework version 0.35.8 |
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
@@ -32,7 +32,7 @@ Runtime: 8.5.11; OS: Debian GNU/Linux 13 (trixie).
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
-| symfony | Symfony CLI version 5.22.0 (c) 2021-2026 Fabien Potencier (2026-10-06T20:55:04Z - stable) |
+| symfony | Symfony CLI version 5.22.2 (c) 2021-2026 Fabien Potencier (2026-10-16T16:25:57Z - stable) |
 | typescript-language-server | 5.1.3 |
 | uv | uv 0.12.19 (x86_64-unknown-linux-musl) |
 
@@ -42,17 +42,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,243.7 MiB (1,304,119,166 bytes) |
-| Build, cache export and image load | 35.07s |
-| Public-artifact behavior and inventory verification | 84.77s |
+| Local image size | 1,245.1 MiB (1,305,562,766 bytes) |
+| Build, cache export and image load | 39.42s |
+| Public-artifact behavior and inventory verification | 91.34s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:55:34.549911Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:25:11.078823Z.
 
 Plan about **3 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `restored`. This does not assert that every layer was a cache hit.
 
-[Release notes](../releases/php-serena-8.5-trixie-v1.1.2.md).
+Size baseline: v1.1.2, `ghcr.io/xormania/php-serena@sha256:9aa4981b585e76a812cc3070381e55488ffb86a850effa600779919c48b2d132`; 1,243.7 MiB in the same image store. Change: **+0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:55:34.549911Z.
+
+[Release notes](../releases/php-serena-8.5-trixie-v1.1.3.md).
 
 Capabilities: `composer`, `javascript-semantic-tools`, `mutation-testing`, `native-build`, `node`, `offline-php-semantic-tools`, `pcov`, `php`, `php-testing`, `phpactor`, `phpstan-isolated`, `postgresql-client`, `serena-shell`, `serena-v2-repl`, `symfony`, `typescript-semantic-tools`, `xdebug`.
 
