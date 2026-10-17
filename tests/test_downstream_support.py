@@ -357,17 +357,21 @@ class EnforcementTests(unittest.TestCase):
 
     def test_missing_xorder_service_lock_fails_before_workload(self):
         (self.workspace / support.LOCK_NAME).write_text(json.dumps(lock()))
-        for family in ("playwright-browser", "php-toolkit"):
-            configuration = {"services": {"php": {"image": IDENTITY}, "extra": {"image": "ghcr.io/xormania/" + family + ":latest"}}}
-            with self.subTest(family=family), self.assertRaisesRegex(ValueError, "missing from support lock: extra"):
-                support.runner_check(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration=configuration)
-            with self.subTest(family=family), self.assertRaisesRegex(ValueError, "missing from support lock: extra"):
-                support.runner_precheck(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration)
+        with patch.object(support, "utc_now", return_value=NOW), \
+                patch("release_groups.clock", side_effect=lambda value=None: support.timestamp(value) if isinstance(value, str) else value or NOW):
+            for family in ("playwright-browser", "php-toolkit"):
+                configuration = {"services": {"php": {"image": IDENTITY}, "extra": {"image": "ghcr.io/xormania/" + family + ":latest"}}}
+                with self.subTest(family=family), self.assertRaisesRegex(ValueError, "missing from support lock: extra"):
+                    support.runner_check(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration=configuration)
+                with self.subTest(family=family), self.assertRaisesRegex(ValueError, "missing from support lock: extra"):
+                    support.runner_precheck(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration)
 
     def test_unrelated_same_owner_app_is_outside_both_release_group_gates(self):
         (self.workspace / support.LOCK_NAME).write_text(json.dumps(lock()))
         configuration = {"services": {"php": {"image": IDENTITY}, "worker": {"image": "ghcr.io/xormania/my-project-worker:latest"}}}
-        with patch.object(support, "observe_images", return_value=self.actual):
+        with patch.object(support, "utc_now", return_value=NOW), \
+                patch("release_groups.clock", side_effect=lambda value=None: support.timestamp(value) if isinstance(value, str) else value or NOW), \
+                patch.object(support, "observe_images", return_value=self.actual):
             prepared = support.runner_precheck(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)}, configuration)
             result = support.runner_check(self.workspace, {"XORDER_SUPPORT_POLICY_FILE": str(self.path)},
                                           configuration=configuration, prepared=prepared)
