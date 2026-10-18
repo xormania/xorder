@@ -21,3 +21,11 @@ independent catalog. Optional context payloads activate only when selected.
 Use feature branches and PRs against master. Run `python3 scripts/library.py check`
 and `python3 -m unittest discover -s tests`. Container behavior is checked by
 `scripts/verify-image.sh`, also used by the public usage instructions.
+
+Use an accountable person or the repository's neutral automation identity for
+Git authorship. Do not add Claude, Codex, Grok, Anthropic, OpenAI, or xAI as an
+author, committer, co-author, or other commit/PR attribution. Omit
+generated-with footers, model session links, and equivalent signatures from
+these tools. Technical prose about them and factual dependency or compatibility
+records remain valid. Dependabot and the established neutral repository
+automation identities remain valid.

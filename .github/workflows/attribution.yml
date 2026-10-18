@@ -1,0 +1,106 @@
+name: Attribution Policy
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 7 * * *'
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  trusted-attribution-audit:
+    name: trusted-attribution-audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out trusted policy code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Audit pull request metadata and history
+        if: github.event_name == 'pull_request_target'
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_id=''
+
+          finalize_check() {
+            result=$?
+            trap - EXIT
+            set +e
+            if [[ -n "$check_id" ]]; then
+              conclusion=failure
+              if [[ $result -eq 0 ]]; then
+                conclusion=success
+              fi
+              gh api --method PATCH \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'X-GitHub-Api-Version: 2022-11-28' \
+                "repos/${GITHUB_REPOSITORY}/check-runs/${check_id}" \
+                -f status=completed \
+                -f conclusion="$conclusion"
+              if [[ $? -ne 0 ]]; then
+                echo "Could not finalize the attribution-policy check run" >&2
+                result=1
+              fi
+            fi
+            exit "$result"
+          }
+          trap finalize_check EXIT
+
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid pull request number" >&2
+            exit 2
+          fi
+          if [[ ! "$EXPECTED_HEAD_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "Invalid pull request head SHA" >&2
+            exit 2
+          fi
+
+          created_id=$(gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${GITHUB_REPOSITORY}/check-runs" \
+            -f name=attribution-policy \
+            -f head_sha="$EXPECTED_HEAD_SHA" \
+            -f status=in_progress \
+            -f details_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --jq '.id')
+          if [[ ! "$created_id" =~ ^[1-9][0-9]*$ ]]; then
+            echo "GitHub did not return a valid check run ID" >&2
+            exit 2
+          fi
+          check_id=$created_id
+
+          git fetch --no-tags --no-recurse-submodules origin \
+            "refs/pull/${PR_NUMBER}/head"
+          fetched_head=$(git rev-parse --verify 'FETCH_HEAD^{commit}')
+          if [[ "$fetched_head" != "${EXPECTED_HEAD_SHA,,}" ]]; then
+            echo "Fetched pull request head does not match the event" >&2
+            exit 2
+          fi
+
+          python3 scripts/check_attribution.py \
+            --audit \
+            --head "$fetched_head" \
+            --event-path "$GITHUB_EVENT_PATH"
+
+      - name: Audit the trusted default branch
+        if: github.event_name != 'pull_request_target'
+        shell: bash
+        run: |
+          python3 scripts/check_attribution.py \
+            --audit \
+            --head HEAD \
+            --event-path "$GITHUB_EVENT_PATH"

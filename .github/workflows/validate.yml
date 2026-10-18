@@ -1,6 +1,7 @@
 name: Validate
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
   schedule:
     - cron: '23 6 * * 2'
@@ -11,6 +12,20 @@ concurrency:
   group: validate-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  attribution:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Reject AI attribution metadata
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 scripts/check_attribution.py \
+            --audit \
+            --head "$HEAD_SHA" \
+            --event-path "$GITHUB_EVENT_PATH"
   metadata:
     runs-on: ubuntu-24.04
     outputs:
@@ -232,16 +247,18 @@ jobs:
           if-no-files-found: ignore
   checks:
     if: always()
-    needs: [metadata, images, resources, environments, application]
+    needs: [attribution, metadata, images, resources, environments, application]
     runs-on: ubuntu-24.04
     steps:
       - env:
+          ATTRIBUTION: ${{ needs.attribution.result }}
           METADATA: ${{ needs.metadata.result }}
           IMAGES: ${{ needs.images.result }}
           RESOURCES: ${{ needs.resources.result }}
           ENVIRONMENTS: ${{ needs.environments.result }}
           APPLICATION: ${{ needs.application.result }}
         run: |
+          test "$ATTRIBUTION" = success
           test "$METADATA" = success
           [[ "$IMAGES" == success || "$IMAGES" == skipped ]]
           [[ "$RESOURCES" == success || "$RESOURCES" == skipped ]]
