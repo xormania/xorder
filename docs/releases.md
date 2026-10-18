@@ -109,9 +109,9 @@ contains all the exact incoming records. Conflicting source, digest, or
 verification observations cannot be treated as the same content.
 
 The [repository gate audit](repository-gates.md) records the external ruleset
-settings and a reviewable administrator update for stable `checks` and
-`catalog-evidence` contexts. A green workflow alone does not prove those contexts
-are required by the live ruleset.
+settings and a reviewable administrator update for stable `checks`,
+`catalog-evidence`, and `attribution-policy` contexts. A green workflow alone
+does not prove those contexts are required by the live ruleset.
 
 Generated catalog PRs summarize every proposed record on the branch, including
 records retained during recovery. The table shows previous and proposed

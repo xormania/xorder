@@ -38,6 +38,37 @@ python3 scripts/library.py check
 python3 -m unittest discover -s tests -v
 ```
 
+## Commit and pull request attribution
+
+Use an accountable person's Git identity or the repository's existing neutral
+automation identity. Do not attribute a commit or pull request to Claude,
+Codex, Grok, Anthropic, OpenAI, or xAI: omit their author/committer identities,
+attribution trailers, generated-with signatures, and model session links. This
+is a metadata policy, not a ban on using or discussing development tools;
+ordinary technical references to those tools and providers remain allowed.
+Dependabot and the repository's `xorder automation` and `image-library
+automation` identities are also allowed.
+
+Validation checks the full history reachable from a proposed head plus the pull
+request title and body. A branch based on superseded history must be rebased;
+there is no grandfathered range for prohibited attribution.
+
+The `Attribution Policy` workflow runs the default branch's trusted checker and
+publishes an `attribution-policy` check on the proposed head. It queries each
+proposed commit's author, committer, message, and parent metadata through
+GitHub's authenticated Git commits API, stopping at the fully audited local
+default-branch history. No proposed objects enter the local Git database, and
+the workflow never downloads proposed trees or blobs or checks out or executes
+proposed code.
+Repository administrators must keep that context required by the master ruleset
+after its first successful run, and explicitly allow this workflow's
+`pull_request_target` event in the repository Actions execution policy.
+
+The shared `.claude/settings.json` suppresses Claude Code's default commit and
+pull-request footer for the normal project configuration. It is a convenience,
+not an enforcement boundary: higher-precedence local, command-line, or managed
+settings can override it. The history audit remains the repository policy gate.
+
 For a downloadable resource, pin an exact upstream URL and SHA-256 or declare
 every authored payload file. Set its prerequisites, owned destination paths,
 limitations, usage page, and behavior verifier in the definition. Allocate a new
