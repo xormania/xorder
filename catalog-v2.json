@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-17T23:28:11.920972Z",
+  "generated_at": "2026-10-18T06:33:07.667568Z",
   "resources": [
     {
       "capabilities": [
@@ -3516,6 +3516,54 @@
       "version": "1.0.3"
     },
     {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "1a1ac43c56062e9943fbb86a5f76d5e055b1434d07e17f42d32711d26b85cfcc",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/playwright-browser%2F1.58-trixie%2Fv1.0.4/assurance.json"
+      },
+      "capabilities": [
+        "playwright",
+        "chromium",
+        "firefox",
+        "webkit",
+        "browser-server",
+        "node"
+      ],
+      "created_at": "2026-10-18T06:33:07.667568Z",
+      "details": {
+        "exact_reference": "ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.4",
+        "extensions": [],
+        "family": "playwright-browser",
+        "runtime_line": "1.58",
+        "tools": [
+          "node",
+          "playwright"
+        ]
+      },
+      "documentation": "docs/images/playwright-browser-1.58-trixie.md",
+      "id": "image/playwright-browser/1.58-trixie",
+      "identity": "ghcr.io/xormania/playwright-browser@sha256:b932c432efe06cb33cdd5e7cf859f73e68ef65dcee3e4a7baaaa60ae3be6534b",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Version-matched Chromium, Firefox and WebKit browser server without PHP or development build tools.",
+      "release_record": "release-records/playwright-browser/1.58-trixie/1.0.4.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "verification": {
+        "completed_at": "2026-10-18T06:30:59.241065Z",
+        "evidence": "https://github.com/xormania/xorder/actions/runs/39103252258",
+        "status": "passed",
+        "surface": "github-actions-linux-amd64"
+      },
+      "version": "1.0.4"
+    },
+    {
       "capabilities": [
         "python",
         "uv",
@@ -4474,6 +4522,97 @@
         "surface": "github-actions-linux-amd64"
       },
       "version": "1.0.1"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "b4b5ad51c5bb9c260cf60426cda1fe6c2a6af0380ab5f50258998bc7b620c558",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.5-trixie%2Fv1.0.2/assurance.json"
+      },
+      "capabilities": [
+        "composer",
+        "frankenphp",
+        "mutation-testing",
+        "native-build",
+        "node",
+        "npm",
+        "pcov",
+        "php",
+        "php-testing",
+        "phpstan-isolated",
+        "playwright-client",
+        "postgresql-client",
+        "symfony",
+        "tailwind-cli",
+        "worker-server",
+        "xdebug"
+      ],
+      "created_at": "2026-10-18T06:27:12.834114Z",
+      "details": {
+        "exact_reference": "ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.2",
+        "extensions": [
+          "apcu",
+          "bcmath",
+          "curl",
+          "dom",
+          "gd",
+          "intl",
+          "mbstring",
+          "mysqli",
+          "pcntl",
+          "pcov",
+          "pdo_mysql",
+          "pdo_pgsql",
+          "pdo_sqlite",
+          "pgsql",
+          "redis",
+          "sockets",
+          "xdebug",
+          "xml",
+          "zend opcache",
+          "zip"
+        ],
+        "family": "uxor-dev",
+        "runtime_line": "8.5",
+        "tools": [
+          "bash",
+          "curl",
+          "frankenphp",
+          "gh",
+          "git",
+          "infection",
+          "jq",
+          "library-php-coverage",
+          "library-php-tests",
+          "node",
+          "npm",
+          "psql",
+          "rg",
+          "tailwindcss"
+        ]
+      },
+      "documentation": "docs/images/uxor-dev-8.5-trixie.md",
+      "id": "image/uxor-dev/8.5-trixie",
+      "identity": "ghcr.io/xormania/uxor-dev@sha256:050d3c3d693ed46cd8912c70fba8c7378c520deff81bb51f3ba96dd82d9154e2",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
+      "release_record": "release-records/uxor-dev/8.5-trixie/1.0.2.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "verification": {
+        "completed_at": "2026-10-18T06:27:12.834114Z",
+        "evidence": "https://github.com/xormania/xorder/actions/runs/39103252258",
+        "status": "passed",
+        "surface": "github-actions-linux-amd64"
+      },
+      "version": "1.0.2"
     }
   ],
   "schema_version": 2
