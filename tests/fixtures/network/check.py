@@ -97,6 +97,7 @@ def verify(image=None):
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         with http.server.ThreadingHTTPServer(("127.0.0.1", 0), Origin) as origin, Server(("127.0.0.1", 0), Proxy) as proxy:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
             context.load_cert_chain(path / "ca.pem", path / "key.pem")
             origin.socket = context.wrap_socket(origin.socket, server_side=True)
             proxy.origin = origin.server_address
