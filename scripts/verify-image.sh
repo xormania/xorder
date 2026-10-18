@@ -68,9 +68,11 @@ if [[ "$kind" = php || "$kind" = python ]]; then
   fi
   test "$(stat -c %u "$work/workspace-proof.txt")" = "$PUID"
   # Cache persists between invocations, independently of service process lifetime.
-  "${compose[@]}" run --rm dev bash -c 'test -d "$HOME/.cache"; touch "$HOME/.cache/reuse-proof"'
+  # A root host runs with PUID=0, where HOME is /root but the image's cache path
+  # still points into the /home/dev cache volume, so check that path.
+  "${compose[@]}" run --rm dev bash -c 'cache=${XDG_CACHE_HOME:-$HOME/.cache}; test -d "$cache" && touch "$cache/reuse-proof"'
   if [[ "$kind" = php ]]; then
-    "${compose[@]}" run --rm dev bash -c 'test -f "$HOME/.cache/cache-proof"; test -f "$HOME/.cache/reuse-proof"'
+    "${compose[@]}" run --rm dev bash -c 'cache=${XDG_CACHE_HOME:-$HOME/.cache}; test -f "$cache/cache-proof" && test -f "$cache/reuse-proof"'
   fi
 else
   WORKSPACE="$work" CACHE_VOLUME="$project-cache" bash "$root/scripts/run-image.sh" "$image" bash run.sh

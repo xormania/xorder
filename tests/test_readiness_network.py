@@ -128,6 +128,31 @@ class ReadinessNetworkTests(unittest.TestCase):
                     self.assertFalse(any("LIBRARY_CA_FILE" in arg for arg in call["args"]))
                     self.assertFalse(any("library-proxy.pem" in arg for arg in call["args"]))
 
+    def test_cache_checks_use_the_image_cache_path_when_home_is_root(self):
+        # With PUID=0 the entrypoint keeps HOME=/root, while the cache volume and
+        # the image's XDG_CACHE_HOME stay at /home/dev/.cache.
+        container_home = self.area / "container-root"
+        cache = self.area / "home-dev-cache"
+        container_home.mkdir()
+        cache.mkdir()
+        for family in ("python-dev", "php-dev"):
+            with self.subTest(family=family):
+                self.log.unlink(missing_ok=True)
+                for proof in cache.iterdir():
+                    proof.unlink()
+                self.assert_success(self.execute("scripts/verify-image.sh", family + "/fixture", "candidate:test"))
+                checks = [call["args"][-1] for call in self.captured()
+                          if call["args"][0] == "compose" and call["args"][-2] == "-c"]
+                self.assertEqual(len(checks), 2 if family == "php-dev" else 1)
+                # The PHP fixture's check.php writes this proof into the same cache path.
+                (cache / "cache-proof").write_text("cache writable\n")
+                for check in checks:
+                    self.assert_success(subprocess.run(
+                        ["bash", "-c", check], capture_output=True, text=True, timeout=20,
+                        env={"PATH": os.environ["PATH"], "HOME": str(container_home), "XDG_CACHE_HOME": str(cache)}))
+                self.assertTrue((cache / "reuse-proof").exists())
+                self.assertFalse((container_home / ".cache").exists())
+
     def test_invalid_ca_paths_stop_both_wrappers_before_docker(self):
         for script, arguments in (
             ("scripts/verify-image.sh", ["python-dev/fixture", "candidate:test"]),
