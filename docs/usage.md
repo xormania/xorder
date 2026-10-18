@@ -32,8 +32,10 @@ avoid sharing it with concurrent processes that use different UIDs.
 
 A root-owned checkout, including one in a Claude cloud session, can use
 `PUID=0 PGID=0` explicitly. This keeps the
-entrypoint's CA setup and home/cache handling while running the command as root;
+entrypoint's CA setup and cache handling while running the command as root;
 there is no need to bypass the entrypoint or recursively change project ownership.
+As root, `HOME` is `/root`, while the image's cache variables such as
+`XDG_CACHE_HOME` still point into the `/home/dev` cache volume.
 The wrapper honors these overrides:
 
 ```sh

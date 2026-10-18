@@ -14,7 +14,8 @@ $db->exec('CREATE TABLE IF NOT EXISTS image_checks (id integer primary key, valu
 $db->exec("INSERT INTO image_checks VALUES (1, 'ready') ON CONFLICT (id) DO UPDATE SET value=EXCLUDED.value");
 check($db->query('SELECT value FROM image_checks WHERE id=1')->fetchColumn() === 'ready', 'PostgreSQL round trip');
 file_put_contents(__DIR__.'/workspace-proof.txt', "written by container\n");
-file_put_contents(getenv('HOME').'/.cache/cache-proof', "cache writable\n");
+$cache = getenv('XDG_CACHE_HOME') ?: getenv('HOME').'/.cache';
+check(file_put_contents($cache.'/cache-proof', "cache writable\n") !== false, 'Cache writable');
 check(!in_array('coverage', xdebug_info('mode'), true), 'Xdebug coverage is off by default');
 check(extension_loaded('pcov') && !ini_get('pcov.enabled'), 'PCOV is present and disabled by default');
 echo "PHP extensions, PostgreSQL, Redis and workspace passed\n";
