@@ -49,7 +49,7 @@ Panther with Chromium; Playwright browser tasks matching the consuming project l
 | --- | --- | --- |
 | [image/php-browser/8.4-trixie](../docs/images/php-browser-8.4-trixie.md) | 1.2.3 | linux/amd64 |
 | [image/php-browser/8.5-trixie](../docs/images/php-browser-8.5-trixie.md) | 1.2.3 | linux/amd64 |
-| [image/playwright-browser/1.58-trixie](../docs/images/playwright-browser-1.58-trixie.md) | 1.0.3 | linux/amd64 |
+| [image/playwright-browser/1.58-trixie](../docs/images/playwright-browser-1.58-trixie.md) | 1.0.4 | linux/amd64 |
 
 ### PHP coverage and analysis
 
@@ -98,7 +98,7 @@ xormania/uxor; parallel worktrees; FrankenPHP and project-locked Playwright.
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
 | [image/uxor-dev/8.4-trixie](../docs/images/uxor-dev-8.4-trixie.md) | 1.0.2 | linux/amd64 |
-| [image/uxor-dev/8.5-trixie](../docs/images/uxor-dev-8.5-trixie.md) | 1.0.1 | linux/amd64 |
+| [image/uxor-dev/8.5-trixie](../docs/images/uxor-dev-8.5-trixie.md) | 1.0.2 | linux/amd64 |
 
 Pinned selections: [profile/uxor](../profiles/uxor.json).
 
