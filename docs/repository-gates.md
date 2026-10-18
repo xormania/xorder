@@ -11,10 +11,14 @@ The stable checks to require are `checks` (Validate's aggregate metadata/runtime
 result), `catalog-evidence` (public release facts, immutable historical records,
 and signatures for new assured records), and `attribution-policy` (the full
 reachable-history and pull-request metadata audit). The attribution workflow is
-base-controlled: it treats a proposed head as Git data and never checks out or
-executes pull-request code, then publishes its explicit check on that exact
-head. All three checks run on every PR, and their names do not depend on image
-matrix size. Keep these contexts stable when changing individual job structure.
+base-controlled: it traverses author, committer, message, and parent metadata for
+the exact proposed head through GitHub's authenticated Git commits API, stopping
+at the fully audited local default-branch history. It never fetches proposed Git
+objects into the local repository, downloads proposed trees or blobs, or checks
+out or executes pull-request code, then publishes its explicit check on that
+exact head. All three checks run on every PR, and their names do not depend on
+image matrix size. Keep these contexts stable when changing individual job
+structure.
 Select GitHub Actions as the expected source in the settings UI after each has
 produced a real run.
 
@@ -22,9 +26,11 @@ This public repository must also explicitly allow
 `.github/workflows/attribution.yml` to use the `pull_request_target` event in its
 Actions execution policy before GitHub's default block becomes enforced on
 2 November 2026. The workflow grants only read access to contents and permission
-to report its explicit head check; proposed Git objects are parsed as data and
-never checked out or executed. Do not require `attribution-policy` until both
-the event policy and a real pull-request check have been verified.
+to report its explicit head check; only proposed commit metadata is read through
+the base repository API. Proposed objects never enter the local Git database,
+and proposed trees and blobs are never downloaded, checked out, or executed. Do
+not require `attribution-policy` until both the event policy and a real pull-request
+check have been verified.
 The live check-run audit observed GitHub Actions app ID `15368`; the REST
 proposal binds newly added contexts to that source rather than accepting any
 non-Actions status publisher. Existing contexts and their source IDs remain

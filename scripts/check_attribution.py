@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Reject AI-persona attribution in commits and pull-request metadata.
 
-The full-history audit inspects every commit reachable from HEAD.  A range mode
-is also available for local diagnostics.  Ordinary discussion of AI tools is
-allowed; message checks are limited to identity trailers, session metadata/URLs,
-and attribution-shaped signatures.
+The full-history audit inspects every commit reachable from HEAD.  The trusted
+pull-request mode combines an audited local default branch with commit metadata
+traversed through GitHub's API; proposed trees are never downloaded.  A range
+mode is also available for local diagnostics.  Ordinary discussion of AI tools
+is allowed; message checks are limited to identity trailers, session
+metadata/URLs, and attribution-shaped signatures.
 """
 import argparse
 import json
@@ -12,27 +14,53 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
 
-AI_IDENTITY_NAME = re.compile(
-    r"^\s*(?:"
-    r"(?:anthropic[\s-]+)?claude"
-    r"(?:[\s-]+(?:\(?ai\)?|code|assistant|agent|opus|sonnet|haiku|bot|automation|"
-    r"action|app|review|v?[0-9][a-z0-9._-]*))*"
-    r"(?:\s*\[bot\])?"
-    r"|(?:openai[\s-]+)?(?:gpt[\s-]*[0-9]+(?:\.[0-9]+)?[\s-]+)?codex"
-    r"(?:[\s-]+(?:\(?ai\)?|cli|assistant|agent|bot|automation|action|app|review|"
-    r"v?[0-9][a-z0-9._-]*))*(?:\s*\[bot\])?"
-    r"|(?:x[.\s-]?ai[\s-]+)?grok"
-    r"(?:[\s-]+(?:\(?ai\)?|code|assistant|agent|bot|automation|action|app|review|"
-    r"[0-9][a-z0-9._-]*))*(?:\s*\[bot\])?"
-    r"|(?:anthropic(?:[\s-]+ai)?|openai|x[.\s-]?ai)"
-    r"(?:[\s-]+(?:assistant|agent|bot|automation|action|app))?(?:\s*\[bot\])?"
-    r"|openai[\s-]+gpt[\s-]*[0-9]+(?:\.[0-9]+)?(?:\s*\[bot\])?"
-    r")\s*$",
+AI_PROVIDER_IDENTITY_NAME = re.compile(
+    r"(?:anthropic(?:[\s-]+ai)?|openai|x[.\s-]?ai)"
+    r"(?:[\s-]+(?:assistant|agent|bot|automation|action|app))?",
     re.IGNORECASE,
+)
+OPENAI_GPT_IDENTITY_NAME = re.compile(
+    r"openai[\s-]+gpt[\s-]*[0-9]+(?:\.[0-9]+)?",
+    re.IGNORECASE,
+)
+AI_BOT_SUFFIX = re.compile(r"\[bot\]$", re.IGNORECASE)
+IDENTITY_SUFFIX_SEPARATOR = re.compile(r"[\s-]+")
+AI_MODEL_IDENTITIES = (
+    (
+        re.compile(r"(?:anthropic[\s-]+)?claude", re.IGNORECASE),
+        re.compile(
+            r"(?:\(ai\)|ai|code|assistant|agent|opus|sonnet|haiku|bot|automation|"
+            r"action|app|review)",
+            re.IGNORECASE,
+        ),
+        re.compile(r"v?[0-9][a-z0-9._-]*", re.IGNORECASE),
+    ),
+    (
+        re.compile(
+            r"(?:openai[\s-]+)?(?:gpt[\s-]*[0-9]+(?:\.[0-9]+)?[\s-]+)?codex",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"(?:\(ai\)|ai|cli|assistant|agent|bot|automation|action|app|review)",
+            re.IGNORECASE,
+        ),
+        re.compile(r"v?[0-9][a-z0-9._-]*", re.IGNORECASE),
+    ),
+    (
+        re.compile(r"(?:x[.\s-]?ai[\s-]+)?grok", re.IGNORECASE),
+        re.compile(
+            r"(?:\(ai\)|ai|code|assistant|agent|bot|automation|action|app|review)",
+            re.IGNORECASE,
+        ),
+        re.compile(r"[0-9][a-z0-9._-]*", re.IGNORECASE),
+    ),
 )
 AI_BOT_IDENTITY_NAME = re.compile(
     r"^\s*(?:anthropic|claude|openai|codex|x[.-]?ai|grok)"
@@ -94,10 +122,22 @@ OPAQUE_METADATA_ID = re.compile(
     r"[a-z0-9._:/-]*[0-9][a-z0-9._:/-]*)$",
     re.IGNORECASE,
 )
+GITHUB_SHA = re.compile(r"[0-9a-f]{40}", re.IGNORECASE)
+GITHUB_REPOSITORY_COMPONENT = re.compile(r"[a-z0-9_.-]+", re.IGNORECASE)
+MAX_GITHUB_COMMIT_BYTES = 2 * 1024 * 1024
+MAX_REMOTE_COMMITS = 500
+GITHUB_API_TIMEOUT = 20
 
 
 class AttributionCheckError(RuntimeError):
     """A malformed invocation or repository prevented a trustworthy check."""
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Keep the workflow token on the one configured GitHub API origin."""
+
+    def redirect_request(self, request, response, code, message, headers, new_url):
+        return None
 
 
 @dataclass(frozen=True)
@@ -139,6 +179,155 @@ def _resolve_commit(repository, revision, label):
     return result.stdout.strip()
 
 
+def _github_sha(value, label):
+    if not isinstance(value, str) or not GITHUB_SHA.fullmatch(value):
+        raise AttributionCheckError(f"{label} must be one full 40-character hexadecimal SHA")
+    return value.lower()
+
+
+def _github_repository(value):
+    if not isinstance(value, str):
+        raise AttributionCheckError("GitHub API repository must be OWNER/REPOSITORY")
+    parts = value.split("/")
+    if (
+        len(parts) != 2
+        or any(not 1 <= len(part) <= 100 for part in parts)
+        or any(part in (".", "..") for part in parts)
+        or any(not GITHUB_REPOSITORY_COMPONENT.fullmatch(part) for part in parts)
+    ):
+        raise AttributionCheckError("GitHub API repository must be OWNER/REPOSITORY")
+    return value
+
+
+def _github_api_base(value):
+    if not isinstance(value, str) or not value:
+        raise AttributionCheckError("GITHUB_API_URL is required for a GitHub history audit")
+    try:
+        parsed = urllib.parse.urlsplit(value)
+        port = parsed.port
+    except ValueError as error:
+        raise AttributionCheckError("GITHUB_API_URL must be one HTTPS API origin") from error
+    if (
+        parsed.scheme.lower() != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise AttributionCheckError("GITHUB_API_URL must be one HTTPS API origin")
+    hostname = parsed.hostname.lower()
+    if ":" in hostname and not hostname.startswith("["):
+        hostname = f"[{hostname}]"
+    authority = hostname if port in (None, 443) else f"{hostname}:{port}"
+    path = parsed.path.rstrip("/")
+    return urllib.parse.urlunsplit(("https", authority, path, "", ""))
+
+
+def _github_commit_url(api_base, repository, sha):
+    owner, name = repository.split("/", 1)
+    return (
+        f"{api_base}/repos/{urllib.parse.quote(owner, safe='')}"
+        f"/{urllib.parse.quote(name, safe='')}/git/commits/{sha}"
+    )
+
+
+def _fetch_github_commit(repository, sha, api_url, token):
+    """Fetch one commit object without following credential-bearing redirects."""
+    repository = _github_repository(repository)
+    sha = _github_sha(sha, "GitHub commit SHA")
+    api_base = _github_api_base(api_url)
+    if not isinstance(token, str) or not token:
+        raise AttributionCheckError("GH_TOKEN or GITHUB_TOKEN is required for a GitHub history audit")
+    url = _github_commit_url(api_base, repository, sha)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "xorder-attribution-policy",
+        },
+    )
+    request.add_unredirected_header("Authorization", f"Bearer {token}")
+    opener = urllib.request.build_opener(_NoRedirect())
+    try:
+        with opener.open(request, timeout=GITHUB_API_TIMEOUT) as response:
+            if response.geturl() != url:
+                raise AttributionCheckError("GitHub commit metadata redirected away from its API URL")
+            raw = response.read(MAX_GITHUB_COMMIT_BYTES + 1)
+    except AttributionCheckError:
+        raise
+    except urllib.error.HTTPError as error:
+        error.close()
+        raise AttributionCheckError(
+            f"GitHub commit metadata request for {sha} failed with HTTP {error.code}"
+        ) from error
+    except (OSError, urllib.error.URLError) as error:
+        raise AttributionCheckError(
+            f"GitHub commit metadata request for {sha} failed"
+        ) from error
+    if len(raw) > MAX_GITHUB_COMMIT_BYTES:
+        raise AttributionCheckError(f"GitHub commit metadata for {sha} exceeds the size limit")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise AttributionCheckError(f"GitHub commit metadata for {sha} is not valid JSON") from error
+    if not isinstance(payload, dict):
+        raise AttributionCheckError(f"GitHub commit metadata for {sha} must be an object")
+    return payload
+
+
+def _parse_github_commit(payload, requested_sha):
+    """Return only attribution metadata and parents from an untrusted API object."""
+    if not isinstance(payload, dict):
+        raise AttributionCheckError("GitHub commit metadata must be an object")
+    requested_sha = _github_sha(requested_sha, "requested GitHub commit SHA")
+    actual_sha = _github_sha(payload.get("sha"), "GitHub response commit SHA")
+    if actual_sha != requested_sha:
+        raise AttributionCheckError(
+            f"GitHub response commit SHA {actual_sha} does not match requested {requested_sha}"
+        )
+
+    identities = []
+    for role in ("author", "committer"):
+        identity = payload.get(role)
+        if not isinstance(identity, dict):
+            raise AttributionCheckError(f"GitHub commit {actual_sha} has no valid {role} object")
+        name = identity.get("name")
+        email = identity.get("email")
+        if not isinstance(name, str) or not isinstance(email, str):
+            raise AttributionCheckError(
+                f"GitHub commit {actual_sha} has invalid {role} name or email"
+            )
+        identities.extend((name, email))
+
+    message = payload.get("message")
+    if not isinstance(message, str):
+        raise AttributionCheckError(f"GitHub commit {actual_sha} has no valid message")
+    parents_value = payload.get("parents")
+    if not isinstance(parents_value, list):
+        raise AttributionCheckError(f"GitHub commit {actual_sha} has no valid parent list")
+    parents = []
+    for index, parent in enumerate(parents_value):
+        if not isinstance(parent, dict):
+            raise AttributionCheckError(
+                f"GitHub commit {actual_sha} parent {index} must be an object"
+            )
+        parents.append(_github_sha(
+            parent.get("sha"),
+            f"GitHub commit {actual_sha} parent {index} SHA",
+        ))
+    return (
+        actual_sha,
+        identities[0],
+        identities[1],
+        identities[2],
+        identities[3],
+        message,
+        tuple(parents),
+    )
+
+
 def _without_markup(value):
     """Return a compact attribution target without common Markdown wrappers."""
     candidate = value.strip()
@@ -171,17 +360,68 @@ def _name_candidates(name):
         yield candidate
 
 
+def _model_suffix_matches(candidate, offset, label_pattern, version_pattern):
+    """Match a model-name suffix in one forward pass without regex backtracking."""
+    while offset < len(candidate):
+        separator = IDENTITY_SUFFIX_SEPARATOR.match(candidate, offset)
+        if not separator:
+            return False
+        offset = separator.end()
+
+        version = version_pattern.match(candidate, offset)
+        if version:
+            end = version.end()
+            # A version may contain hyphens, but a trailing hyphen can instead be
+            # the separator before a following label such as ``(AI)``.  Give only
+            # those trailing hyphens back; every other character remains consumed
+            # exactly once by this deterministic scan.
+            if end < len(candidate):
+                while end > offset and candidate[end - 1] == "-":
+                    end -= 1
+            offset = end
+            continue
+
+        label = label_pattern.match(candidate, offset)
+        if not label:
+            return False
+        offset = label.end()
+    return True
+
+
+def _is_ai_identity_name(value):
+    """Return whether a complete name identifies an AI model or provider."""
+    candidate = value.strip()
+    if AI_BOT_IDENTITY_NAME.fullmatch(candidate):
+        return True
+
+    bot_suffix = AI_BOT_SUFFIX.search(candidate)
+    if bot_suffix:
+        candidate = candidate[:bot_suffix.start()].rstrip()
+
+    if (
+        AI_PROVIDER_IDENTITY_NAME.fullmatch(candidate)
+        or OPENAI_GPT_IDENTITY_NAME.fullmatch(candidate)
+    ):
+        return True
+
+    for prefix_pattern, label_pattern, version_pattern in AI_MODEL_IDENTITIES:
+        prefix = prefix_pattern.match(candidate)
+        if prefix and _model_suffix_matches(
+            candidate,
+            prefix.end(),
+            label_pattern,
+            version_pattern,
+        ):
+            return True
+    return False
+
+
 def _identity_label(name, email):
-    name_match = next(
-        (match for candidate in _name_candidates(name)
-         if (match := (
-             AI_IDENTITY_NAME.fullmatch(candidate)
-             or AI_BOT_IDENTITY_NAME.fullmatch(candidate)
-         ))),
-        None,
-    )
+    for candidate in _name_candidates(name):
+        if _is_ai_identity_name(candidate):
+            return candidate
     email_match = AI_IDENTITY_EMAIL.fullmatch(email.strip())
-    return name_match.group(0) if name_match else email_match.group(0) if email_match else None
+    return email_match.group(0) if email_match else None
 
 
 def _trailer_ai_label(value):
@@ -356,6 +596,17 @@ def _inspect_commits(repository, commits):
     return findings, len(commits)
 
 
+def _history_commits(repository, head):
+    head_commit = _resolve_commit(repository, head, "head")
+    return _git(
+        repository,
+        "rev-list",
+        "--reverse",
+        "--topo-order",
+        head_commit,
+    ).stdout.splitlines()
+
+
 def inspect_range(repository, base, head="HEAD"):
     """Return (findings, commit_count) for the diagnostic ``base..head`` range."""
     repository = Path(repository)
@@ -374,15 +625,68 @@ def inspect_range(repository, base, head="HEAD"):
 def inspect_history(repository, head="HEAD"):
     """Return (findings, commit_count) for every commit reachable from ``head``."""
     repository = Path(repository)
-    head_commit = _resolve_commit(repository, head, "head")
-    commits = _git(
-        repository,
-        "rev-list",
-        "--reverse",
-        "--topo-order",
-        head_commit,
-    ).stdout.splitlines()
+    commits = _history_commits(repository, head)
     return _inspect_commits(repository, commits)
+
+
+def inspect_github_history(
+    repository,
+    trusted_head,
+    github_head,
+    github_repository,
+    api_url,
+    token,
+):
+    """Audit trusted local history plus proposed commit metadata from GitHub.
+
+    Proposed commits are read only as API metadata: no proposed objects enter the
+    local Git database and no trees or blobs are downloaded.  Traversal follows
+    every parent reported by the Git commits API and stops only at a commit
+    already in the fully audited local default-branch history.
+    """
+    repository = Path(repository)
+    github_head = _github_sha(github_head, "GitHub head SHA")
+    github_repository = _github_repository(github_repository)
+    api_url = _github_api_base(api_url)
+    if not isinstance(token, str) or not token:
+        raise AttributionCheckError("GH_TOKEN or GITHUB_TOKEN is required for a GitHub history audit")
+
+    trusted_commits = _history_commits(repository, trusted_head)
+    trusted_set = {commit.lower() for commit in trusted_commits}
+    findings, trusted_count = _inspect_commits(repository, trusted_commits)
+
+    pending = [github_head]
+    scheduled = {github_head}
+    inspected = set()
+    while pending:
+        commit = pending.pop()
+        if commit in trusted_set:
+            continue
+        if len(inspected) >= MAX_REMOTE_COMMITS:
+            raise AttributionCheckError(
+                f"proposed history exceeds the {MAX_REMOTE_COMMITS}-commit remote audit limit; "
+                "rebase it onto the current default branch"
+            )
+        payload = _fetch_github_commit(github_repository, commit, api_url, token)
+        (
+            sha,
+            author_name,
+            author_email,
+            committer_name,
+            committer_email,
+            message,
+            parents,
+        ) = _parse_github_commit(payload, commit)
+        inspected.add(sha)
+        source = f"commit {sha[:12]}"
+        findings.extend(inspect_identity(source, "author", author_name, author_email))
+        findings.extend(inspect_identity(source, "committer", committer_name, committer_email))
+        findings.extend(inspect_text(message, f"{source} message"))
+        for parent in parents:
+            if parent not in trusted_set and parent not in scheduled:
+                pending.append(parent)
+                scheduled.add(parent)
+    return findings, trusted_count + len(inspected)
 
 
 def inspect_event(path):
@@ -440,6 +744,14 @@ def build_parser():
         "--event-path",
         help="GitHub event JSON; defaults to GITHUB_EVENT_PATH when set",
     )
+    parser.add_argument(
+        "--github-head",
+        help="exact proposed GitHub head SHA to traverse as commit metadata",
+    )
+    parser.add_argument(
+        "--github-repository",
+        help="base OWNER/REPOSITORY whose open pull request exposes --github-head",
+    )
     return parser
 
 
@@ -447,7 +759,26 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     event_path = args.event_path or os.environ.get("GITHUB_EVENT_PATH")
     try:
-        if args.audit:
+        if args.github_head is not None or args.github_repository is not None:
+            if (
+                not args.audit
+                or args.github_head is None
+                or args.github_repository is None
+            ):
+                raise AttributionCheckError(
+                    "--github-head and --github-repository must be used together with --audit"
+                )
+            token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+            findings, commit_count = inspect_github_history(
+                args.repository,
+                args.head,
+                args.github_head,
+                args.github_repository,
+                os.environ.get("GITHUB_API_URL"),
+                token,
+            )
+            scope = "reachable"
+        elif args.audit:
             findings, commit_count = inspect_history(args.repository, args.head)
             scope = "reachable"
         else:

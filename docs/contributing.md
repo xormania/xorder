@@ -54,8 +54,12 @@ request title and body. A branch based on superseded history must be rebased;
 there is no grandfathered range for prohibited attribution.
 
 The `Attribution Policy` workflow runs the default branch's trusted checker and
-publishes an `attribution-policy` check on the proposed head. It fetches a pull
-request only as Git data; it never checks out or executes proposed code.
+publishes an `attribution-policy` check on the proposed head. It queries each
+proposed commit's author, committer, message, and parent metadata through
+GitHub's authenticated Git commits API, stopping at the fully audited local
+default-branch history. No proposed objects enter the local Git database, and
+the workflow never downloads proposed trees or blobs or checks out or executes
+proposed code.
 Repository administrators must keep that context required by the master ruleset
 after its first successful run, and explicitly allow this workflow's
 `pull_request_target` event in the repository Actions execution policy.

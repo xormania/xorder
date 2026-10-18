@@ -29,7 +29,6 @@ jobs:
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
           set -euo pipefail
@@ -59,10 +58,6 @@ jobs:
           }
           trap finalize_check EXIT
 
-          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
-            echo "Invalid pull request number" >&2
-            exit 2
-          fi
           if [[ ! "$EXPECTED_HEAD_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
             echo "Invalid pull request head SHA" >&2
             exit 2
@@ -83,17 +78,11 @@ jobs:
           fi
           check_id=$created_id
 
-          git fetch --no-tags --no-recurse-submodules origin \
-            "refs/pull/${PR_NUMBER}/head"
-          fetched_head=$(git rev-parse --verify 'FETCH_HEAD^{commit}')
-          if [[ "$fetched_head" != "${EXPECTED_HEAD_SHA,,}" ]]; then
-            echo "Fetched pull request head does not match the event" >&2
-            exit 2
-          fi
-
           python3 scripts/check_attribution.py \
             --audit \
-            --head "$fetched_head" \
+            --head HEAD \
+            --github-head "$EXPECTED_HEAD_SHA" \
+            --github-repository "$GITHUB_REPOSITORY" \
             --event-path "$GITHUB_EVENT_PATH"
 
       - name: Audit the trusted default branch
