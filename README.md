@@ -69,11 +69,11 @@ prerequisites, release records, and evidence as new resources become available.
 | [php-serena/8.5-trixie](docs/images/php-serena-8.5-trixie.md) | 1.1.3 | linux/amd64 | `ghcr.io/xormania/php-serena:8.5-trixie-v1.1.3` |
 | [php-toolkit/8.4-trixie](docs/images/php-toolkit-8.4-trixie.md) | 1.0.3 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.4-trixie-v1.0.3` |
 | [php-toolkit/8.5-trixie](docs/images/php-toolkit-8.5-trixie.md) | 1.0.3 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.5-trixie-v1.0.3` |
-| [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.3 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.3` |
+| [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.4 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.4` |
 | [python-dev/3.14-trixie](docs/images/python-dev-3.14-trixie.md) | 1.1.4 | linux/amd64 | `ghcr.io/xormania/python-dev:3.14-trixie-v1.1.4` |
 | [rust-dev/1.99-trixie](docs/images/rust-dev-1.99-trixie.md) | 1.1.4 | linux/amd64 | `ghcr.io/xormania/rust-dev:1.99-trixie-v1.1.4` |
 | [uxor-dev/8.4-trixie](docs/images/uxor-dev-8.4-trixie.md) | 1.0.2 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.4-trixie-v1.0.2` |
-| [uxor-dev/8.5-trixie](docs/images/uxor-dev-8.5-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.1` |
+| [uxor-dev/8.5-trixie](docs/images/uxor-dev-8.5-trixie.md) | 1.0.2 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.2` |
 <!-- catalog:end -->
 
 Use catalog entries marked `available`, check their verified architecture and

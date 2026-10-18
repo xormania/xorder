@@ -13,10 +13,10 @@ Generated from the verified release ledger. Sizes describe local Docker images, 
 | [php-serena/8.5-trixie](images/php-serena-8.5-trixie.md) | 1.1.3 | linux/amd64 | 1,245.1 | 1,243.7 (v1.1.2) | +0.1% | 39.42 | 91.34 |
 | [php-toolkit/8.4-trixie](images/php-toolkit-8.4-trixie.md) | 1.0.3 | linux/amd64 | 938.2 | 936.8 (v1.0.2) | +0.1% | 12.00 | 38.79 |
 | [php-toolkit/8.5-trixie](images/php-toolkit-8.5-trixie.md) | 1.0.3 | linux/amd64 | 968.0 | 966.6 (v1.0.2) | +0.1% | 13.12 | 32.11 |
-| [playwright-browser/1.58-trixie](images/playwright-browser-1.58-trixie.md) | 1.0.3 | linux/amd64 | 2,213.9 | 2,213.9 (v1.0.2) | -0.0% | 153.03 | 174.23 |
+| [playwright-browser/1.58-trixie](images/playwright-browser-1.58-trixie.md) | 1.0.4 | linux/amd64 | 2,213.9 | 2,213.9 (v1.0.3) | +0.0% | Not measured | 165.35 |
 | [python-dev/3.14-trixie](images/python-dev-3.14-trixie.md) | 1.1.4 | linux/amd64 | 583.7 | 585.5 (v1.1.3) | -0.3% | 46.35 | 23.57 |
 | [rust-dev/1.99-trixie](images/rust-dev-1.99-trixie.md) | 1.1.4 | linux/amd64 | 1,274.9 | 1,274.9 (v1.1.3) | +0.0% | 52.51 | 11.68 |
 | [uxor-dev/8.4-trixie](images/uxor-dev-8.4-trixie.md) | 1.0.2 | linux/amd64 | 1,201.6 | 1,200.2 (v1.0.1) | +0.1% | 28.81 | 261.46 |
-| [uxor-dev/8.5-trixie](images/uxor-dev-8.5-trixie.md) | 1.0.1 | linux/amd64 | 1,229.9 | 1,229.9 (v1.0.0) | +0.0% | 30.58 | 341.84 |
+| [uxor-dev/8.5-trixie](images/uxor-dev-8.5-trixie.md) | 1.0.2 | linux/amd64 | 1,231.3 | 1,229.9 (v1.0.1) | +0.1% | Not measured | 348.61 |
 
 Image/release pages retain exact bytes, artifact identities, measurement methods, cache inputs and evidence links. Older records without measurements remain valid and are omitted from this table.

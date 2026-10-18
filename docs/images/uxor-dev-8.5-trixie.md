@@ -2,13 +2,13 @@
 
 FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.
 
-Available revision: **1.0.1**. Pin:
+Available revision: **1.0.2**. Pin:
 
 ```text
-ghcr.io/xormania/uxor-dev@sha256:76f4ed34ff037df2fbbeb6015ba5e8787011d3e3352f5ef4af631002c7616c1f
+ghcr.io/xormania/uxor-dev@sha256:050d3c3d693ed46cd8912c70fba8c7378c520deff81bb51f3ba96dd82d9154e2
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T06:02:33.416977Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/39103252258); 2026-10-18T06:27:12.834114Z.
 
 ## Measured inventory — linux/amd64
 
@@ -22,7 +22,7 @@ Runtime: 8.5.11; OS: Debian GNU/Linux 13 (trixie).
 | frankenphp | FrankenPHP v1.13.1 PHP 8.5.11 Caddy v2.11.7 h1:yj0Y4fYZGPkSvibBJ1sTWE33xC0fxztVyXEW5iIdUT4= |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
-| infection | Infection - PHP Mutation Testing Framework version 0.35.6 |
+| infection | Infection - PHP Mutation Testing Framework version 0.35.8 |
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
@@ -32,7 +32,7 @@ Runtime: 8.5.11; OS: Debian GNU/Linux 13 (trixie).
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
-| symfony | Symfony CLI version 5.22.0 (c) 2021-2026 Fabien Potencier (2026-10-06T20:55:04Z - stable) |
+| symfony | Symfony CLI version 5.22.2 (c) 2021-2026 Fabien Potencier (2026-10-16T16:25:57Z - stable) |
 | tailwindcss | ≈ tailwindcss v4.3.3 |
 
 Extensions: `apcu`, `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filter`, `gd`, `hash`, `iconv`, `intl`, `json`, `lexbor`, `libxml`, `mbstring`, `mysqli`, `mysqlnd`, `openssl`, `pcntl`, `pcov`, `pcre`, `pdo`, `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite`, `pgsql`, `phar`, `posix`, `random`, `readline`, `redis`, `reflection`, `session`, `simplexml`, `sockets`, `sodium`, `spl`, `sqlite3`, `standard`, `tokenizer`, `uri`, `xdebug`, `xml`, `xmlreader`, `xmlwriter`, `zend opcache`, `zip`, `zlib`.
@@ -41,19 +41,17 @@ Extensions: `apcu`, `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,229.9 MiB (1,289,633,425 bytes) |
-| Build, cache export and image load | 30.58s |
-| Public-artifact behavior and inventory verification | 341.84s |
+| Local image size | 1,231.3 MiB (1,291,077,421 bytes) |
+| Build, cache export and image load | Not measured; artifact resumed |
+| Public-artifact behavior and inventory verification | 348.61s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T06:02:03.103125Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39103252258); 2026-10-18T06:26:22.728945Z.
 
 Plan about **3 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
-External build cache at start: `empty`. This does not assert that every layer was a cache hit.
+Size baseline: v1.0.1, `ghcr.io/xormania/uxor-dev@sha256:76f4ed34ff037df2fbbeb6015ba5e8787011d3e3352f5ef4af631002c7616c1f`; 1,229.9 MiB in the same image store. Change: **+0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T06:02:03.103125Z.
 
-Size baseline: v1.0.0, `ghcr.io/xormania/uxor-dev@sha256:c271b1f78c7bccaf5a0c3e962c2ac09707d3088705fc8ff8f1bae83c70c0cdfd`; 1,229.9 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38321328835); 2026-10-12T23:41:32.011996Z.
-
-[Release notes](../releases/uxor-dev-8.5-trixie-v1.0.1.md).
+[Release notes](../releases/uxor-dev-8.5-trixie-v1.0.2.md).
 
 Capabilities: `composer`, `frankenphp`, `mutation-testing`, `native-build`, `node`, `npm`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `playwright-client`, `postgresql-client`, `symfony`, `tailwind-cli`, `worker-server`, `xdebug`.
 
