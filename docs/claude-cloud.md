@@ -33,6 +33,53 @@ That startup environment allowed registry pulls in the observed session.
 Registry access and host/daemon CA trust are separate from proxy and CA settings
 inside containers; follow [network access](usage.md#network-access) for the latter.
 
+## Bridge containers and host loopback proxies
+
+One 2026-10-20 session reached package registries directly from bridge containers
+with its private CA, while forwarding the host's `127.0.0.1` proxy failed. This
+observation does not establish direct egress for every cloud session.
+
+`scripts/run-image.sh`, the PHP/Python Compose readiness recipe, and harness-live
+initialization now omit inherited loopback proxies with a warning. This covers
+`127.0.0.0/8`, `::1`, IPv4-mapped loopback addresses, and `localhost`. Reachable
+non-loopback proxies are preserved. Both upper- and lowercase variables and
+`ALL_PROXY` are handled; host Git and Docker daemon configuration stay unchanged.
+
+Use `CONTAINER_HTTP_PROXY`, `CONTAINER_HTTPS_PROXY`, or `CONTAINER_ALL_PROXY` for a
+container-reachable endpoint when required. An explicitly empty value selects
+direct egress for that protocol. `CA_CERTIFICATE` still supplies runtime trust:
+
+```sh
+CA_CERTIFICATE=/absolute/session-ca.pem \
+  bash scripts/verify-image.sh harness-live/trixie "$IMAGE"
+
+CA_CERTIFICATE=/absolute/session-ca.pem \
+  bash scripts/run-image.sh "$IMAGE" harnesses status
+```
+
+The uxor/Toolkit relay runner retains its documented relay behavior; these
+simple bridge recipes do not start a relay or assume one is available.
+
+## Local Python matrix builds with a private CA
+
+The Python matrix recipe from revision 1.0.1 accepts `CA_CERTIFICATE` through
+`scripts/build.py`. BuildKit mounts it as a secret only for the interpreter
+download step. That step combines public trust with the supplied PEM in a tmpfs
+and scopes `UV_SYSTEM_CERTS`/`SSL_CERT_FILE` to its subprocesses. The CA and combined
+trust store are not copied into image layers or persisted as image environment.
+This support covers the Python matrix interpreter downloads; it does not configure
+the Docker daemon's registry trust or other image families' download steps.
+
+```sh
+CA_CERTIFICATE=/absolute/session-ca.pem \
+  python3 scripts/build.py python-matrix/trixie local/python-matrix:check \
+    --parent '<accepted python-dev/3.14-trixie digest_reference>'
+```
+
+The same CA is passed to the subsequent readiness recipe. Derived-line builds
+require `--parent`; omitting it now names the parent line and gives the correct
+invocation instead of a `KeyError`. Existing published runtime pins remain valid.
+
 ## uxor stacks
 
 Start each session from the current [xorder README](../README.md), select an

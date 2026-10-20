@@ -33,14 +33,14 @@
         "parent": "python-dev/3.14-trixie"
       },
       "changes": [
-        "Add preinstalled Python 3.10, 3.12 and 3.14 compatibility interpreters, SQLite behavior validation, and tmux."
+        "Support optional build-time private CA trust for Python downloads through a BuildKit secret and temporary trust store."
       ],
-      "migration": "New opt-in matrix line. Keep existing Python development pins unless the additional interpreters and tmux are needed; adopt its verified digest after publication.",
+      "migration": "Compatible build fix. Local builds may supply CA_CERTIFICATE without persisting that CA in image layers; existing runtime pins remain valid.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.0",
+      "revision": "1.0.1",
       "runtime_line": "3.14"
     }
   },

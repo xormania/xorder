@@ -8,9 +8,14 @@ services:
       DATABASE_DSN: pgsql:host=postgres;dbname=fixture
       DATABASE_URL: postgresql://fixture:fixture@postgres:5432/fixture
       REDIS_URL: redis://redis:6379
-      HTTP_PROXY: ${HTTP_PROXY:-}
-      HTTPS_PROXY: ${HTTPS_PROXY:-}
-      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,postgres,redis}
+      HTTP_PROXY: ${CONTAINER_HTTP_PROXY:-}
+      HTTPS_PROXY: ${CONTAINER_HTTPS_PROXY:-}
+      ALL_PROXY: ${CONTAINER_ALL_PROXY:-}
+      NO_PROXY: ${CONTAINER_NO_PROXY:-localhost,127.0.0.1,postgres,redis}
+      http_proxy: ${CONTAINER_http_proxy-${CONTAINER_HTTP_PROXY:-}}
+      https_proxy: ${CONTAINER_https_proxy-${CONTAINER_HTTPS_PROXY:-}}
+      all_proxy: ${CONTAINER_all_proxy-${CONTAINER_ALL_PROXY:-}}
+      no_proxy: ${CONTAINER_no_proxy:-${CONTAINER_NO_PROXY:-localhost,127.0.0.1,postgres,redis}}
     volumes:
       - ${WORKSPACE:?Set WORKSPACE to the project directory}:/workspace
       - cache:/home/dev

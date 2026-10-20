@@ -7,8 +7,9 @@ reuse across worktrees.
 
 Choose an available digest from [the catalog](../catalog.json). The placeholders
 below are instructions to substitute that value, not published image names.
-The host needs Linux Docker container execution, Compose v2 for services, a
-mountable project workspace and registry/dependency network access.
+The host needs Linux Docker container execution, Bash and Python 3 for the
+repository wrappers, Compose v2 for services, a mountable project workspace and
+registry/dependency network access.
 
 ## Workspace and caches
 
@@ -67,9 +68,9 @@ development. Adapt existing project Compose rather than changing its database.
 export IMAGE='<catalog digest_reference>'
 export WORKSPACE='/absolute/path/to/project'
 export PUID="$(id -u)" PGID="$(id -g)"
-docker compose -p my-project -f examples/php/compose.yaml run --rm dev composer install
-docker compose -p my-project -f examples/php/compose.yaml run --rm dev php bin/phpunit
-docker compose -p my-project -f examples/php/compose.yaml down
+python3 scripts/container_network.py docker compose -p my-project -f examples/php/compose.yaml run --rm dev composer install
+python3 scripts/container_network.py docker compose -p my-project -f examples/php/compose.yaml run --rm dev php bin/phpunit
+python3 scripts/container_network.py docker compose -p my-project -f examples/php/compose.yaml down
 ```
 
 The container reaches PostgreSQL at `postgres:5432`, Redis at `redis:6379`.
@@ -78,6 +79,14 @@ project's configuration may use different variable names. No host port is
 required for container-to-container access. `down` stops processes but preserves
 data and cache volumes. Add `--volumes` only when deliberately discarding this
 project's disposable data. Cache reuse does not keep service processes alive.
+
+The wrapper preserves reachable host proxies, omits host loopback proxies with a
+warning, and supports explicit `CONTAINER_HTTP_PROXY`, `CONTAINER_HTTPS_PROXY`,
+`CONTAINER_ALL_PROXY` and `CONTAINER_NO_PROXY` values. An explicitly empty proxy
+value selects direct egress. Upper- and lowercase proxy variables are handled.
+Direct invocation of the Compose file uses only explicit `CONTAINER_*` values;
+use the wrapper to derive them safely from the host environment. Host Git commands
+and Docker daemon proxy configuration are unchanged.
 
 PostgreSQL is `postgres:17-trixie`; Redis is `redis:7.4`. These explicit service
 lines may receive upstream patches. Release records measure the development
@@ -184,8 +193,10 @@ Project dependencies need their own hosts, including GitHub, Composer repositori
 importmap/CDN resources and npm as appropriate. The Playwright companion is pulled
 from `mcr.microsoft.com`; use the registry's redirects as required by your network.
 
-The wrappers forward `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` when set on the
-host. Include service names, localhost and 127.0.0.1 in NO_PROXY for local HTTP
+The simple run/Compose wrappers forward reachable `HTTP_PROXY`, `HTTPS_PROXY`,
+`ALL_PROXY` and `NO_PROXY` values, handle lowercase equivalents, and omit inherited
+loopback proxies with a warning. `CONTAINER_*` overrides select a reachable proxy
+or, when explicitly empty, direct egress. Include service names, localhost and 127.0.0.1 in NO_PROXY for local HTTP
 connections. Host networking policy is not automatically inherited by a Docker
 container. Run the readiness recipe to verify downloads inside the selected image.
 

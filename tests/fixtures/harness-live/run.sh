@@ -33,10 +33,9 @@ mkdir -p "$root/out/harness-live"
 for uid in 1000 0; do
   # Each UID owns its private HOME; replacement containers reuse only that UID.
   volume="$volume_prefix-$uid"
-  docker run --rm --init \
+  python3 "$root/scripts/container_network.py" docker run --rm --init \
     --mount "type=volume,src=$volume,dst=/home/dev" \
     -e PUID="$uid" -e PGID="$uid" \
-    -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
     "${trust[@]}" \
     "$image" bash -c 'exec harnesses status' > "$root/out/harness-live/online-$uid.json"
   docker run --rm --init --network=none \
