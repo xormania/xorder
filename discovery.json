@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T06:33:07.667568Z",
+  "generated_at": "2026-10-20T05:39:50.473143Z",
   "groups": [
     {
       "applies_to": [
@@ -499,6 +499,29 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "72591b6d06272a186733bbc6343c0c3fccd0c926d83fe1a14e46283019b6a81d",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/harness-live%2Ftrixie%2Fv1.0.0/assurance.json"
+      },
+      "documentation": "docs/images/harness-live-trixie.md",
+      "id": "image/harness-live/trixie",
+      "identity": "ghcr.io/xormania/harness-live@sha256:247e7bd01adcfc0d6ee321906ada6ac182b72905a5deee3b20b952dd5af746d5",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Opt-in live harness environment with persistent installation, explicit updates and private operator authentication.",
+      "release_record": "release-records/harness-live/trixie/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
         "receipt_sha256": "cba5a9502dfcb5a30b9981851ea78c542ed6c3d19f597e3c7c1c7294c506bc3c",
         "receipt_url": "https://github.com/xormania/xorder/releases/download/php-browser%2F8.4-trixie%2Fv1.2.3/assurance.json"
       },
@@ -748,6 +771,29 @@
         "linux/amd64"
       ],
       "version": "1.1.4"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "09dd1e23eedd08b156e7482be01d305c75d66fb0bb6211b42e352706599160e7",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-matrix%2Ftrixie%2Fv1.0.0/assurance.json"
+      },
+      "documentation": "docs/images/python-matrix-trixie.md",
+      "id": "image/python-matrix/trixie",
+      "identity": "ghcr.io/xormania/python-matrix@sha256:082cc0f69976211e661ca4c844b61eae78040be1d64e419cf227419a02a1854c",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Python 3.10, 3.12 and 3.14 compatibility testing with tmux and the Python development toolchain.",
+      "release_record": "release-records/python-matrix/trixie/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.0"
     },
     {
       "assurance": {
