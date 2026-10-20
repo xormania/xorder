@@ -680,7 +680,9 @@ class AttributionTests(unittest.TestCase):
         self.assertNotIn("ref: ${{ github.event.pull_request.head.sha }}", trusted)
 
         validate = (ROOT / ".github/workflows/validate.yml").read_text()
-        self.assertIn("needs: [attribution, metadata, images, resources, environments, application]", validate)
+        aggregate = validate.split("\n  checks:\n", 1)[1]
+        dependencies = aggregate.split("needs: [", 1)[1].split("]", 1)[0].split(", ")
+        self.assertIn("attribution", dependencies)
         self.assertIn('test "$ATTRIBUTION" = success', validate)
 
 
