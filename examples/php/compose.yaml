@@ -15,7 +15,7 @@ services:
       http_proxy: ${CONTAINER_http_proxy-${CONTAINER_HTTP_PROXY:-}}
       https_proxy: ${CONTAINER_https_proxy-${CONTAINER_HTTPS_PROXY:-}}
       all_proxy: ${CONTAINER_all_proxy-${CONTAINER_ALL_PROXY:-}}
-      no_proxy: ${CONTAINER_no_proxy-${CONTAINER_NO_PROXY:-localhost,127.0.0.1,postgres,redis}}
+      no_proxy: ${CONTAINER_no_proxy:-${CONTAINER_NO_PROXY:-localhost,127.0.0.1,postgres,redis}}
     volumes:
       - ${WORKSPACE:?Set WORKSPACE to the project directory}:/workspace
       - cache:/home/dev
