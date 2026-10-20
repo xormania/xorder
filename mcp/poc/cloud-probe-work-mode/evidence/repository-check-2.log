@@ -1,0 +1,260 @@
+.....................usage: python3 -m unittest [-h] [--project PROJECT] [--cache CACHE]
+                           [--image IMAGE] [--output OUTPUT] [--input INPUT]
+                           [--sha256 SHA256] [--apply | --dry-run]
+                           {restore,store,export,import,usage,prune}
+python3 -m unittest: error: import needs --sha256 from a trusted producer or CI artifact channel
+..............................................................................................................................s...........usage: catalog_checks.py [-h] (--base BASE | --audit)
+                         [--repository REPOSITORY]
+catalog_checks.py: error: one of the arguments --base --audit is required
+.usage: catalog_checks.py [-h] (--base BASE | --audit)
+                         [--repository REPOSITORY]
+catalog_checks.py: error: PR additions require --base; --audit cannot serve as their acceptance gate
+usage: catalog_checks.py [-h] (--base BASE | --audit)
+                         [--repository REPOSITORY]
+catalog_checks.py: error: Hosted full-ledger audits require master; feature-ref audits cannot satisfy catalog-evidence
+................................................................................................................................................s......sssss...sss..........Exported dependency snapshots to /tmp/tmpf_7rtqo5/dependencies.zip
+SHA-256: f7c0cb55908901c54f3df52fcc190ac1bb6c94273cc25af023d531831107656c
+Restored verified vendor snapshot
+{
+  "dry_run": true,
+  "stopped_containers": [
+    "stopped"
+  ],
+  "unused_images": [
+    "image3"
+  ],
+  "kept_images": [],
+  "protected_images": [
+    "image1",
+    "image2",
+    "image4"
+  ],
+  "unverified_images": {},
+  "unresolved_image_references": [],
+  "old_runner_state": [],
+  "old_runner_copies": []
+}
+{
+  "dry_run": false,
+  "stopped_containers": [
+    "stopped"
+  ],
+  "unused_images": [
+    "image3"
+  ],
+  "kept_images": [],
+  "protected_images": [
+    "image1",
+    "image2",
+    "image4"
+  ],
+  "unverified_images": {},
+  "unresolved_image_references": [],
+  "old_runner_state": [],
+  "old_runner_copies": []
+}
+Full-ledger audit verifies local records under their original public-facts contract; it does not establish acceptance or historical status of those records.
+Verified public release evidence: php-dev/8.4-trixie v1.0.0
+Verified 1 image release records; no image builds requested.
+Full-ledger audit verifies local records under their original public-facts contract; it does not establish acceptance or historical status of those records.
+Verified public release evidence: php-dev/8.4-trixie v1.0.0
+Verified 1 image release records; no image builds requested.
+Verified 0 image release records; no image builds requested.
+Release group weekly-2026-10-19 is already accepted; no proposal needed.
+................................usage: python3 -m unittest [-h] [--source SOURCE] [--parent PARENT]
+                           [--cache CACHE] [--registry-cache REGISTRY_CACHE]
+                           [--cache-branch CACHE_BRANCH]
+                           [--cache-default-branch CACHE_DEFAULT_BRANCH]
+                           [--cache-scope CACHE_SCOPE] [--inventory INVENTORY]
+                           [--cache-probe] [--reuse-accepted] [--children]
+                           [--verify-lines VERIFY_LINES]
+                           [--verify-suites VERIFY_SUITES]
+                           line image
+python3 -m unittest: error: --verify-lines must be a nonempty JSON array of image lines
+usage: python3 -m unittest [-h] [--source SOURCE] [--parent PARENT]
+                           [--cache CACHE] [--registry-cache REGISTRY_CACHE]
+                           [--cache-branch CACHE_BRANCH]
+                           [--cache-default-branch CACHE_DEFAULT_BRANCH]
+                           [--cache-scope CACHE_SCOPE] [--inventory INVENTORY]
+                           [--cache-probe] [--reuse-accepted] [--children]
+                           [--verify-lines VERIFY_LINES]
+                           [--verify-suites VERIFY_SUITES]
+                           line image
+python3 -m unittest: error: Unknown image line: missing/line
+usage: python3 -m unittest [-h] [--source SOURCE] [--parent PARENT]
+                           [--cache CACHE] [--registry-cache REGISTRY_CACHE]
+                           [--cache-branch CACHE_BRANCH]
+                           [--cache-default-branch CACHE_DEFAULT_BRANCH]
+                           [--cache-scope CACHE_SCOPE] [--inventory INVENTORY]
+                           [--cache-probe] [--reuse-accepted] [--children]
+                           [--verify-lines VERIFY_LINES]
+                           [--verify-suites VERIFY_SUITES]
+                           line image
+python3 -m unittest: error: Selected image is outside the php-dev/8.5-trixie build tree
+usage: python3 -m unittest [-h] [--source SOURCE] [--parent PARENT]
+                           [--cache CACHE] [--registry-cache REGISTRY_CACHE]
+                           [--cache-branch CACHE_BRANCH]
+                           [--cache-default-branch CACHE_DEFAULT_BRANCH]
+                           [--cache-scope CACHE_SCOPE] [--inventory INVENTORY]
+                           [--cache-probe] [--reuse-accepted] [--children]
+                           [--verify-lines VERIFY_LINES]
+                           [--verify-suites VERIFY_SUITES]
+                           line image
+python3 -m unittest: error: --verify-lines must be a nonempty JSON array of image lines
+usage: python3 -m unittest [-h] [--source SOURCE] [--parent PARENT]
+                           [--cache CACHE] [--registry-cache REGISTRY_CACHE]
+                           [--cache-branch CACHE_BRANCH]
+                           [--cache-default-branch CACHE_DEFAULT_BRANCH]
+                           [--cache-scope CACHE_SCOPE] [--inventory INVENTORY]
+                           [--cache-probe] [--reuse-accepted] [--children]
+                           [--verify-lines VERIFY_LINES]
+                           [--verify-suites VERIFY_SUITES]
+                           line image
+python3 -m unittest: error: --verify-lines must be a nonempty JSON array of image lines
+...............................................................................{"line": "php-dev/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": true, "verification_status": "prerequisite", "verification_suites": [], "pull_seconds": 0.0}
+{"line": "php-toolkit/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-dev/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "prerequisite", "verification_suites": [], "build_seconds": 0.0}
+{"line": "php-toolkit/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "prerequisite", "verification_suites": [], "build_seconds": 0.0}
+{"line": "extra-profile/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-dev/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-browser/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-serena/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-toolkit/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-dev/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "prerequisite", "verification_suites": [], "build_seconds": 0.0}
+{"line": "php-toolkit/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "passed", "verification_suites": ["full"], "requested_verification_suites": ["full"], "verify_seconds": 0.0, "build_seconds": 0.0}
+{"line": "php-dev/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "prerequisite", "verification_suites": [], "build_seconds": 0.0}
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | pending | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `—` | No available replacement for existing alias |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | failed | `—` | No available replacement for existing alias |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | failed | `—` | No available replacement for existing alias |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | pending | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` | Accepted exact tag changed or is unavailable: ghcr.io/xormania/php-dev:8.5-trixie-v1.0.0 |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | pending | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `—` | No available replacement for existing alias |
+| `ghcr.io/xormania/python-dev:3.14-trixie-v1` | pending | `sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` |  |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | pending | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `—` | Registry lookup failed &#124; retry later |
+| `ghcr.io/xormania/python-dev:3.14-trixie-v1` | pending | `sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` |  |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | unchanged | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` | Accepted exact tag changed or is unavailable: ghcr.io/xormania/php-dev:8.5-trixie-v1.0.0 |
+| `ghcr.io/xormania/python-dev:3.14-trixie-v1` | pending | `sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` |  |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | unchanged | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` | Accepted exact tag changed or is unavailable: ghcr.io/xormania/php-dev:8.5-trixie-v1.0.0 |
+| `ghcr.io/xormania/python-dev:3.14-trixie-v1` | pending | `sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` |  |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | unchanged | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` | Registry lookup failed &#124; retry later |
+| `ghcr.io/xormania/python-dev:3.14-trixie-v1` | pending | `sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` |  |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | unchanged | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+| `ghcr.io/xormania/php-dev:8.5-trixie-v1` | failed | `sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee` | Registry lookup failed &#124; retry later |
+| `ghcr.io/xormania/python-dev:3.14-trixie-v1` | pending | `sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` |  |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | unchanged | `—` | Retired alias is already absent |
+
+## Alias promotion
+
+| Alias | Result | Target digest | Details |
+| --- | --- | --- | --- |
+| `ghcr.io/xormania/php-dev:8.4-trixie-v1` | updated | `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |  |
+
+{"line": "php-frankenphp/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": true, "verification_status": "prerequisite", "verification_suites": [], "pull_seconds": 0.0}
+{"line": "uxor-dev/8.5-trixie", "image_size_bytes": 100, "cache_source": "disabled", "artifact_reused": false, "verification_status": "prerequisite", "verification_suites": [], "build_seconds": 0.0}
+coverage: phpunit 13.4.0 from /tmp/tmpt84xc1c6/composer.lock
+phpstan: phpstan 2.3.0 from /tmp/tmpt84xc1c6/composer.lock
+.phpstan: phpstan 2.3.0 from /tmp/tmppz0p3fa7/composer.lock
+..coverage: phpunit 13.4.0 from /tmp/tmp5wbsr5f0/composer.lock
+phpstan: phpstan 2.3.0 from /tmp/tmp5wbsr5f0/composer.lock
+...................................................................................................................HTTPS trusted; upstream allow/deny preserved; unrelated clients rejected
+Worker request 6 capped to host worker budget 2
+Worker request 6 capped to host worker budget 2
+Worker request 6 capped to host worker budget 2
+Worker request 6 capped to host worker budget 2
+Worker request 6 capped to host worker budget 2
+Worker request 100% capped to host worker budget 2
+.Run receipt unavailable: finalization failed; original test exit retained
+Run receipt unavailable: finalization failed; original test exit retained
+..s.original test output
+Run receipt: /tmp/tmptadqypeg/cache/xorder/test-attempts/603ada85c77645b2b3d204373455d03c/receipt.json
+Full test output: /tmp/tmptadqypeg/cache/xorder/test-attempts/603ada85c77645b2b3d204373455d03c/test-output.log
+original test output
+Run receipt: /tmp/tmptadqypeg/cache/xorder/test-attempts/a6fee946ad3a421098f64c006564768f/receipt.json
+Full test output: /tmp/tmptadqypeg/cache/xorder/test-attempts/a6fee946ad3a421098f64c006564768f/test-output.log
+.....................Ignoring repository-provided activation_command in the prepared profile
+Ignoring repository-provided ls_specific_settings in the prepared profile
+.................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 748 tests in 117.841s
+
+OK (skipped=11)
+Seeded demo/custom-assets, demo/vendor, node_modules using private reflinks/copies
+No install or setup hooks ran; up still verifies Composer, npm and importmap readiness.
+Seeded demo/assets/vendor, demo/vendor, node_modules using private reflinks/copies
+No install or setup hooks ran; up still verifies Composer, npm and importmap readiness.
+Seeded demo/assets/vendor, demo/vendor, node_modules using protected hardlinks; both checkouts now require read-only reuse
+No install or setup hooks ran; up still verifies Composer, npm and importmap readiness.
+Seeded demo/assets/vendor, demo/vendor, node_modules using protected hardlinks; both checkouts now require read-only reuse
+No install or setup hooks ran; up still verifies Composer, npm and importmap readiness.
+Forgot sharing guard after confirming absent dependency trees and stopped containers
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 0 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 2 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.
+Resolved upstream inputs; 16 changed image lines receive fresh patch revisions. Unchanged inputs allocate no rebuild. Apt package versions remain measured from each artifact.

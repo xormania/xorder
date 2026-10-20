@@ -1,0 +1,9 @@
+test_hook_uses_native_event_and_does_not_copy_private_input (test_probe.FixtureTests.test_hook_uses_native_event_and_does_not_copy_private_input) ... ok
+test_marker_read_does_not_recreate_missing_state (test_probe.FixtureTests.test_marker_read_does_not_recreate_missing_state) ... ok
+test_packet_tampering_is_an_error (test_probe.FixtureTests.test_packet_tampering_is_an_error) ... ok
+test_unsupported_hook_is_rejected (test_probe.FixtureTests.test_unsupported_hook_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK

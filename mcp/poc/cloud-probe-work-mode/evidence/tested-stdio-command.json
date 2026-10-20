@@ -1,0 +1,10 @@
+{
+  "transport": "stdio",
+  "command": "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/.venv/bin/python",
+  "args": [
+    "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/probe.py",
+    "serve"
+  ],
+  "registration": "not registered with the outer conversation",
+  "tunnel_status": "not provisioned; no tunnel_id/runtime key or registration interface supplied"
+}
