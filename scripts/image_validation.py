@@ -33,6 +33,25 @@ METADATA_SCHEMAS = {
     "schemas/release-groups.schema.json",
 }
 
+# These are the independent fixtures invoked by the public readiness recipe.
+# A new family must declare support before fixture-only changes can use partial
+# checks; otherwise it conservatively receives the full recipe.
+NATIVE_FAMILIES = {
+    "php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp",
+    "uxor-dev", "python-dev", "rust-dev",
+}
+TRUST_FAMILIES = NATIVE_FAMILIES | {"harness-live", "python-matrix"}
+KNOWN_FAMILIES = TRUST_FAMILIES | {"playwright-browser"}
+
+
+def supported_suites(family):
+    suites = {"full"}
+    if family in TRUST_FAMILIES:
+        suites.add("trust")
+    if family in NATIVE_FAMILIES:
+        suites.add("native")
+    return suites
+
 
 def descendants(selected, defs):
     """Include consumers whose exact parent artifact may change."""
@@ -58,7 +77,7 @@ def prerequisites(root, selected, defs):
     return needed
 
 
-def affected_lines(changed, defs, root, previous_tools=None, previous_definitions=None):
+def _full_affected_lines(changed, defs, root, previous_tools=None, previous_definitions=None):
     """Propagate changed artifact inputs; keep fixture-only checks on their consumers."""
     selected, inputs = set(), set()
     for path in changed:
@@ -141,7 +160,47 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
     return sorted(selected | set(descendants(inputs, defs)))
 
 
-def matrix(selected, defs):
+def affected_suites(changed, defs, root, previous_tools=None, previous_definitions=None):
+    """Select independent fixtures, retaining full checks for changed inputs."""
+    partial, ordinary = [], []
+    for path in changed:
+        if path.startswith("tests/fixtures/trust/"):
+            partial.append((path, "trust"))
+        elif path == "tests/fixtures/native-check.c":
+            partial.append((path, "native"))
+        else:
+            ordinary.append(path)
+    suites = {line: {"full"} for line in _full_affected_lines(
+        ordinary, defs, root, previous_tools, previous_definitions)}
+    copied_inputs = set()
+    for path, suite in partial:
+        for line, definition in defs.items():
+            family = definition["family"]
+            if family not in KNOWN_FAMILIES:
+                suites[line] = {"full"}
+                continue
+            if suite == "native" and family == "python-matrix":
+                # Its own readiness fixture mounts and compiles the shared C
+                # source, but it has no independent native-only entry point.
+                suites[line] = {"full"}
+            elif suite in supported_suites(family):
+                suites.setdefault(line, set()).add(suite)
+            # A fixture may also be a real COPY input. In that case the normal
+            # input/descendant contract takes precedence over partial checks.
+            if consumes(family, path, root, definition.get("line")):
+                copied_inputs.add(line)
+    for line in descendants(copied_inputs, defs):
+        suites[line] = {"full"}
+    return {line: ["full"] if "full" in selected else sorted(selected)
+            for line, selected in sorted(suites.items())}
+
+
+def affected_lines(changed, defs, root, previous_tools=None, previous_definitions=None):
+    """Preserve the existing exact-line interface for callers without suites."""
+    return list(affected_suites(changed, defs, root, previous_tools, previous_definitions))
+
+
+def matrix(selected, defs, verify_suites=None):
     """Group checks by root to share local parents, retaining exact test targets."""
     groups = {}
     for line in sorted(set(selected)):
@@ -149,4 +208,10 @@ def matrix(selected, defs):
         while defs[root]["base"].get("parent"):
             root = defs[root]["base"]["parent"]
         groups.setdefault(root, []).append(line)
-    return {"include": [{"line": root, "verify_lines": lines} for root, lines in sorted(groups.items())]}
+    rows = []
+    for root, lines in sorted(groups.items()):
+        row = {"line": root, "verify_lines": lines}
+        if verify_suites is not None:
+            row["verify_suites"] = {line: verify_suites.get(line, ["full"]) for line in lines}
+        rows.append(row)
+    return {"include": rows}

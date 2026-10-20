@@ -1,6 +1,8 @@
 """Image CI selection and orchestration against independent dependency scenarios."""
 import copy
 import hashlib
+import importlib.util
+import io
 import json
 import subprocess
 import tempfile
@@ -10,8 +12,9 @@ from unittest.mock import patch
 
 from test_library import record
 import build
+import library
 from library import ROOT, definitions, fingerprint
-from image_validation import affected_lines, descendants, matrix
+from image_validation import affected_lines, affected_suites, descendants, matrix, supported_suites
 
 
 class ImageSelectionTests(unittest.TestCase):
@@ -144,11 +147,138 @@ class ImageSelectionTests(unittest.TestCase):
                                        "schemas/definition.schema.json"), [])
         for path in ("scripts/build.py", "scripts/image_validation.py", "scripts/inventory.py",
                      "scripts/verify-image.sh", ".github/workflows/validate.yml",
-                     "tests/fixtures/trust/run.sh", "tests/fixtures/native-check.c",
                      "scripts/unknown-runtime-helper.py"):
             with self.subTest(path=path):
                 self.assertEqual(self.selected(path), sorted(self.defs))
         self.assertEqual(matrix([], self.defs), {"include": []})
+
+    def test_trust_fixture_selects_only_families_that_run_it(self):
+        suites = affected_suites(["tests/fixtures/trust/clients.sh"], self.defs, ROOT)
+        expected = set(self.defs) - {"playwright-browser/1.58-trixie"}
+        self.assertEqual(set(suites), expected)
+        self.assertTrue(all(selected == ["trust"] for selected in suites.values()))
+
+    def test_native_fixture_selects_direct_and_matrix_consumers(self):
+        suites = affected_suites(["tests/fixtures/native-check.c"], self.defs, ROOT)
+        expected = set(self.defs) - {"playwright-browser/1.58-trixie", "harness-live/trixie"}
+        self.assertEqual(set(suites), expected)
+        self.assertEqual(suites.pop("python-matrix/trixie"), ["full"])
+        self.assertTrue(all(selected == ["native"] for selected in suites.values()))
+
+    def test_native_matrix_plan_covers_the_mounted_fixture_consumer(self):
+        fixture = ROOT / "tests/fixtures/python-matrix/check.py"
+        spec = importlib.util.spec_from_file_location("matrix_native_consumer", fixture)
+        checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(checker)
+        consumer = json.loads((fixture.parent / "consumer.json").read_text())
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(checker, "ROOT", Path(directory)), \
+                patch.object(checker, "run") as run, \
+                patch.object(checker.subprocess, "run"), \
+                patch.object(checker.subprocess, "check_output", return_value=consumer["commit"]), \
+                patch("sys.argv", [str(fixture), "matrix-test-image"]), \
+                patch("sys.stdout", new_callable=io.StringIO):
+            checker.main()
+        docker = next(call.args for call in run.call_args_list if call.args[:2] == ("docker", "run"))
+        self.assertIn(f"type=bind,src={directory}/tests/fixtures/native-check.c,dst=/native-check.c,readonly", docker)
+        self.assertEqual(docker[-3:], ("matrix-test-image", "python3.14", "/proof/run.py"))
+        suites = affected_suites(["tests/fixtures/native-check.c"], self.defs, ROOT)
+        row = next(row for row in matrix(suites, self.defs, suites)["include"]
+                   if row["line"] == "python-dev/3.14-trixie")
+        self.assertEqual(row, {
+            "line": "python-dev/3.14-trixie",
+            "verify_lines": ["python-dev/3.14-trixie", "python-matrix/trixie"],
+            "verify_suites": {"python-dev/3.14-trixie": ["native"], "python-matrix/trixie": ["full"]},
+        })
+        self.assertNotIn("native", supported_suites("python-matrix"))
+
+    def test_independent_fixture_suites_are_combined_per_line(self):
+        suites = affected_suites(["tests/fixtures/native-check.c", "tests/fixtures/trust/run.sh"],
+                                 self.defs, ROOT)
+        self.assertEqual(suites["uxor-dev/8.5-trixie"], ["native", "trust"])
+        self.assertEqual(suites["harness-live/trixie"], ["trust"])
+        self.assertEqual(suites["python-matrix/trixie"], ["full"])
+        self.assertNotIn("playwright-browser/1.58-trixie", suites)
+        self.assertEqual(self.selected("tests/fixtures/native-check.c", "tests/fixtures/trust/run.sh"),
+                         sorted(suites))
+
+    def test_actual_recipe_changes_override_partial_checks_for_descendants(self):
+        paths = ["tests/fixtures/trust/run.sh", "images/php-dev/Dockerfile"]
+        suites = affected_suites(paths, self.defs, ROOT)
+        full = {"php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-browser/8.4-trixie",
+                "php-browser/8.5-trixie", "php-toolkit/8.4-trixie", "php-toolkit/8.5-trixie",
+                "php-serena/8.5-trixie"}
+        self.assertEqual({line for line, selected in suites.items() if selected == ["full"]}, full)
+        self.assertEqual(suites["uxor-dev/8.5-trixie"], ["trust"])
+        for order in (paths, list(reversed(paths))):
+            self.assertEqual(affected_suites(order, self.defs, ROOT), suites)
+
+    def test_copied_fixture_changes_also_require_full_descendant_checks(self):
+        with patch("image_validation.consumes", side_effect=lambda family, *_: family == "php-frankenphp"):
+            suites = affected_suites(["tests/fixtures/trust/clients.sh"], self.defs, ROOT)
+        self.assertEqual({line for line, selected in suites.items() if selected == ["full"]}, {
+            "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie",
+            "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"})
+        self.assertEqual(suites["php-dev/8.5-trixie"], ["trust"])
+
+    def test_definition_and_tool_pin_changes_upgrade_only_their_consumers(self):
+        definition_path = "images/php-dev/definition.json"
+        previous = json.loads((ROOT / definition_path).read_text())
+        previous["lines"]["8.5-trixie"]["revision"] = "0.9.0"
+        suites = affected_suites(["tests/fixtures/trust/run.sh", definition_path], self.defs, ROOT,
+                                 previous_definitions={definition_path: previous})
+        self.assertEqual({line for line, selected in suites.items() if selected == ["full"]}, {
+            "php-dev/8.5-trixie", "php-browser/8.5-trixie", "php-toolkit/8.5-trixie",
+            "php-serena/8.5-trixie"})
+        self.assertEqual(suites["php-dev/8.4-trixie"], ["trust"])
+        tools = json.loads((ROOT / "images/tools.json").read_text())
+        tools["uv"]["digest"] = "sha256:" + "0" * 64
+        suites = affected_suites(["tests/fixtures/trust/run.sh", "images/tools.json"],
+                                 self.defs, ROOT, previous_tools=tools)
+        self.assertEqual({line for line, selected in suites.items() if selected == ["full"]}, {
+            "python-dev/3.14-trixie", "python-matrix/trixie"})
+        self.assertEqual(suites["uxor-dev/8.5-trixie"], ["trust"])
+
+    def test_unknown_helpers_override_all_partial_checks(self):
+        suites = affected_suites(["tests/fixtures/trust/run.sh", "scripts/unknown-runtime-helper.py"],
+                                 self.defs, ROOT)
+        self.assertEqual(suites, {line: ["full"] for line in sorted(self.defs)})
+
+    def test_unknown_families_receive_full_checks_for_partial_fixture_changes(self):
+        defs = copy.deepcopy(self.defs)
+        defs["future-family/1"] = {"family": "future-family", "base": {"parent": "python-dev/3.14-trixie"}}
+        self.assertEqual(supported_suites("future-family"), {"full"})
+        for path in ("tests/fixtures/trust/run.sh", "tests/fixtures/native-check.c"):
+            with self.subTest(path=path):
+                suites = affected_suites([path], defs, ROOT)
+                self.assertEqual(suites["future-family/1"], ["full"])
+
+    def test_suite_matrix_retains_exact_grouping_and_legacy_matrix_shape(self):
+        suites = {"php-toolkit/8.5-trixie": ["trust"], "uxor-dev/8.5-trixie": ["native", "trust"]}
+        self.assertEqual(matrix(suites, self.defs, suites), {"include": [
+            {"line": "php-dev/8.5-trixie", "verify_lines": ["php-toolkit/8.5-trixie"],
+             "verify_suites": {"php-toolkit/8.5-trixie": ["trust"]}},
+            {"line": "php-frankenphp/8.5-trixie", "verify_lines": ["uxor-dev/8.5-trixie"],
+             "verify_suites": {"uxor-dev/8.5-trixie": ["native", "trust"]}},
+        ]})
+        self.assertEqual(affected_suites(["README.md", "docs/usage.md"], self.defs, ROOT), {})
+        self.assertEqual(matrix([], self.defs, {}), {"include": []})
+
+    def test_validation_matrix_all_explicitly_requests_full_verification(self):
+        result = json.loads(subprocess.check_output(
+            ["python3", "scripts/library.py", "validation-matrix", "--all"], cwd=ROOT, text=True))
+        actual = {line: suites for row in result["include"] for line, suites in row["verify_suites"].items()}
+        self.assertEqual(actual, {line: ["full"] for line in self.defs})
+
+    def test_explicit_comparison_head_is_used_for_selection(self):
+        tools = (ROOT / "images/tools.json").read_text()
+        with patch("sys.argv", ["library.py", "validation-matrix", "--base", "previous", "--head", "current-source"]), \
+                patch("library.subprocess.check_output", side_effect=["", tools]) as git, \
+                patch("sys.stdout", new_callable=io.StringIO) as output:
+            library.main()
+        self.assertEqual(git.call_args_list[0].args[0],
+                         ["git", "diff", "--name-only", "--no-renames", "previous", "current-source"])
+        self.assertEqual(json.loads(output.getvalue()), {"include": []})
 
     def test_full_matrix_tests_each_line_once(self):
         plan = matrix(self.defs, self.defs)["include"]

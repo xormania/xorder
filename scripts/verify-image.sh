@@ -1,16 +1,50 @@
 #!/usr/bin/env bash
 # Runs the public readiness recipe on a disposable real consuming project.
 set -euo pipefail
-line=${1:?Usage: verify-image.sh LINE_ID IMAGE}
+line=${1:?Usage: verify-image.sh LINE_ID IMAGE [SUITE...]}
 image=${2:?Supply image reference}
+shift 2
 root=$(cd "$(dirname "$0")/.." && pwd)
 if [[ -n "${CA_CERTIFICATE:-}" ]]; then
   [[ "$CA_CERTIFICATE" = /* && -f "$CA_CERTIFICATE" && -r "$CA_CERTIFICATE" ]] || { echo 'CA_CERTIFICATE must be a readable absolute PEM file' >&2; exit 64; }
 fi
 family=${line%%/*}
+verify_trust() {
+  bash "$root/tests/fixtures/trust/run.sh" "$image"
+}
+verify_native() (
+  native_work=${1:-}
+  native_cache=${2:-}
+  if [[ -z "$native_work" ]]; then
+    native_work=$(mktemp -d)
+    native_cache="image-native-${RANDOM}-${RANDOM}"
+    trap 'docker volume rm "$native_cache" >/dev/null 2>&1 || true; rm -rf "$native_work"' EXIT
+    cp "$root/tests/fixtures/native-check.c" "$native_work/"
+  fi
+  WORKSPACE="$native_work" CACHE_VOLUME="$native_cache" PUID="$(id -u)" PGID="$(id -g)" \
+    bash "$root/scripts/run-image.sh" "$image" bash -c 'cc native-check.c -o native-proof && ./native-proof'
+)
+suites=("$@")
+if [[ "${#suites[@]}" = 0 ]]; then suites=(full); fi
+# Validate the entire request before launching any fixture.
+for suite in "${suites[@]}"; do
+  case "$suite:$family" in
+    full:*) [[ "${#suites[@]}" = 1 ]] || { echo 'Full verification cannot be combined with partial suites' >&2; exit 64; } ;;
+    trust:php-dev|trust:php-browser|trust:php-toolkit|trust:php-serena|trust:php-frankenphp|trust:uxor-dev|trust:python-dev|trust:rust-dev|trust:harness-live|trust:python-matrix) ;;
+    native:php-dev|native:php-browser|native:php-toolkit|native:php-serena|native:php-frankenphp|native:uxor-dev|native:python-dev|native:rust-dev) ;;
+    *) echo "Unsupported verification suite for $family: $suite" >&2; exit 64 ;;
+  esac
+done
+if [[ "${suites[0]}" != full ]]; then
+  for suite in "${suites[@]}"; do
+    case "$suite" in trust) verify_trust ;; native) verify_native ;; esac
+  done
+  printf 'Selected fixture checks completed for %s: %s\n' "$line" "${suites[*]}"
+  exit 0
+fi
 if [[ "$family" = python-matrix ]]; then
   python3 "$root/tests/fixtures/python-matrix/check.py" "$image"
-  bash "$root/tests/fixtures/trust/run.sh" "$image"
+  verify_trust
   exit 0
 fi
 if [[ "$family" = playwright-browser ]]; then
@@ -27,7 +61,7 @@ if [[ "$family" = playwright-browser ]]; then
 fi
 if [[ "$family" = harness-live ]]; then
   bash "$root/tests/fixtures/harness-live/run.sh" "$image"
-  bash "$root/tests/fixtures/trust/run.sh" "$image"
+  verify_trust
   exit 0
 fi
 kind=${family%-dev}
@@ -88,8 +122,8 @@ else
   WORKSPACE="$work" CACHE_VOLUME="$project-cache" bash "$root/scripts/run-image.sh" "$image" bash run.sh
   test "$(stat -c %u "$work/workspace-proof.txt")" = "$PUID"
 fi
-WORKSPACE="$work" CACHE_VOLUME="$project-cache" bash "$root/scripts/run-image.sh" "$image" bash -c 'cc native-check.c -o native-proof && ./native-proof'
-bash "$root/tests/fixtures/trust/run.sh" "$image"
+verify_native "$work" "$project-cache"
+verify_trust
 if [[ "$family" = uxor-dev ]]; then
   bash "$root/tests/fixtures/uxor/run.sh" "$image"
 fi
