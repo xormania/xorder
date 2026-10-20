@@ -7,8 +7,9 @@ reuse across worktrees.
 
 Choose an available digest from [the catalog](../catalog.json). The placeholders
 below are instructions to substitute that value, not published image names.
-The host needs Linux Docker container execution, Compose v2 for services, a
-mountable project workspace and registry/dependency network access.
+The host needs Linux Docker container execution, Bash and Python 3 for the
+repository wrappers, Compose v2 for services, a mountable project workspace and
+registry/dependency network access.
 
 ## Workspace and caches
 
