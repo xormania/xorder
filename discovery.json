@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T05:39:50.473143Z",
+  "generated_at": "2026-10-20T09:12:50.011506Z",
   "groups": [
     {
       "applies_to": [
@@ -775,12 +775,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "09dd1e23eedd08b156e7482be01d305c75d66fb0bb6211b42e352706599160e7",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-matrix%2Ftrixie%2Fv1.0.0/assurance.json"
+        "receipt_sha256": "7c43abc198da8afeea9fe9e84b248eae8cd62731c594ab95f7c1a7f0a2b70113",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-matrix%2Ftrixie%2Fv1.0.1/assurance.json"
       },
       "documentation": "docs/images/python-matrix-trixie.md",
       "id": "image/python-matrix/trixie",
-      "identity": "ghcr.io/xormania/python-matrix@sha256:082cc0f69976211e661ca4c844b61eae78040be1d64e419cf227419a02a1854c",
+      "identity": "ghcr.io/xormania/python-matrix@sha256:dc0da00ee10740bb20406e4a0544ed4672e6ed0fc82169c34a246ccd20f93662",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -789,11 +789,11 @@
         ]
       },
       "purpose": "Python 3.10, 3.12 and 3.14 compatibility testing with tmux and the Python development toolchain.",
-      "release_record": "release-records/python-matrix/trixie/1.0.0.json",
+      "release_record": "release-records/python-matrix/trixie/1.0.1.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "assurance": {

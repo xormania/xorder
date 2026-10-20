@@ -2,13 +2,13 @@
 
 Python 3.10, 3.12 and 3.14 compatibility testing with tmux and the Python development toolchain.
 
-Available revision: **1.0.0**. Pin:
+Available revision: **1.0.1**. Pin:
 
 ```text
-ghcr.io/xormania/python-matrix@sha256:082cc0f69976211e661ca4c844b61eae78040be1d64e419cf227419a02a1854c
+ghcr.io/xormania/python-matrix@sha256:dc0da00ee10740bb20406e4a0544ed4672e6ed0fc82169c34a246ccd20f93662
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/39375517777); 2026-10-20T05:39:50.473143Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/39398360633); 2026-10-20T09:12:50.011506Z.
 
 ## Measured inventory — linux/amd64
 
@@ -41,17 +41,19 @@ Runtime: 3.14.8; OS: Debian GNU/Linux 13 (trixie).
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 852.4 MiB (893,823,329 bytes) |
-| Build, cache export and image load | 43.85s |
-| Public-artifact behavior and inventory verification | 112.93s |
+| Local image size | 852.4 MiB (893,824,088 bytes) |
+| Build, cache export and image load | 44.12s |
+| Public-artifact behavior and inventory verification | 93.79s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39375517777); 2026-10-20T05:39:00.526114Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39398360633); 2026-10-20T09:12:06.453467Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
-External build cache at start: `empty`. This does not assert that every layer was a cache hit.
+External build cache at start: `restored`. This does not assert that every layer was a cache hit.
 
-[Release notes](../releases/python-matrix-trixie-v1.0.0.md).
+Size baseline: v1.0.0, `ghcr.io/xormania/python-matrix@sha256:082cc0f69976211e661ca4c844b61eae78040be1d64e419cf227419a02a1854c`; 852.4 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39375517777); 2026-10-20T05:39:00.526114Z.
+
+[Release notes](../releases/python-matrix-trixie-v1.0.1.md).
 
 Capabilities: `native-build`, `pip`, `postgresql-client`, `python`, `python-matrix`, `sqlite-readonly-uri`, `sqlite-wal`, `tmux`, `uv`, `venv`.
 
