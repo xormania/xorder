@@ -58,14 +58,18 @@ def definitions(root=ROOT):
     result = {}
     for path in sorted((root / "images").glob("*/definition.json")):
         definition = read(path)
-        assert definition["schema_version"] == 1
+        if not (definition["schema_version"] == 1):
+            raise AssertionError()
         family = definition["family"]
-        assert family == path.parent.name
+        if not (family == path.parent.name):
+            raise AssertionError()
         for line, inputs in definition["lines"].items():
             version(inputs["revision"])
-            assert inputs["platforms"] == ["linux/amd64"], "Add platform build/test support before advertising it"
+            if not (inputs["platforms"] == ["linux/amd64"]):
+                raise AssertionError("Add platform build/test support before advertising it")
             base = inputs["base"]
-            assert "parent" in base or DIGEST.fullmatch(base["digest"])
+            if not ("parent" in base or DIGEST.fullmatch(base["digest"])):
+                raise AssertionError()
             item = copy.deepcopy(definition)
             del item["lines"]
             item.update(inputs)
@@ -74,13 +78,15 @@ def definitions(root=ROOT):
             result[item["line_id"]] = item
     completed = set()
     def inherit(line, visiting):
-        assert line not in visiting, "Cyclic image parent"
+        if not (line not in visiting):
+            raise AssertionError("Cyclic image parent")
         if line in completed:
             return
         item = result[line]
         parent = item["base"].get("parent")
         if parent:
-            assert parent in result
+            if not (parent in result):
+                raise AssertionError()
             inherit(parent, visiting | {line})
             for key in ("capabilities", "extensions", "tools", "limitations"):
                 item[key] = sorted(set(item[key] + result[parent][key]))
@@ -101,97 +107,149 @@ def children(line, defs):
 
 
 def validate_inventory(definition, inventory):
-    assert inventory["platform"] in definition["platforms"]
-    assert inventory["os"]["VERSION_CODENAME"] == "trixie"
-    assert set(definition["extensions"]) <= set(inventory["extensions"])
-    assert set(definition["tools"]) <= set(inventory["tools"])
-    assert inventory["runtime_version"].startswith(definition["runtime_line"] + ".")
+    if not (inventory["platform"] in definition["platforms"]):
+        raise AssertionError()
+    if not (inventory["os"]["VERSION_CODENAME"] == "trixie"):
+        raise AssertionError()
+    if not (set(definition["extensions"]) <= set(inventory["extensions"])):
+        raise AssertionError()
+    if not (set(definition["tools"]) <= set(inventory["tools"])):
+        raise AssertionError()
+    if not (inventory["runtime_version"].startswith(definition["runtime_line"] + ".")):
+        raise AssertionError()
     if definition["family"] == "python-matrix":
-        assert set(inventory["interpreters"]) == {"3.10", "3.12", "3.14"}
+        if not (set(inventory["interpreters"]) == {"3.10", "3.12", "3.14"}):
+            raise AssertionError()
         for minor, interpreter in inventory["interpreters"].items():
-            assert SEMVER.fullmatch(interpreter["version"]) and interpreter["version"].startswith(minor + ".")
-            assert interpreter["executable"].startswith("/"), "Interpreter path must be measured"
-            assert SEMVER.fullmatch(interpreter["sqlite_version"]), "SQLite version must be measured"
-        assert re.fullmatch(r"tmux 3\.[0-9]+[a-z]?", inventory["tools"]["tmux"])
+            if not (SEMVER.fullmatch(interpreter["version"]) and interpreter["version"].startswith(minor + ".")):
+                raise AssertionError()
+            if not (interpreter["executable"].startswith("/")):
+                raise AssertionError("Interpreter path must be measured")
+            if not (SEMVER.fullmatch(interpreter["sqlite_version"])):
+                raise AssertionError("SQLite version must be measured")
+        if not (re.fullmatch(r"tmux 3\.[0-9]+[a-z]?", inventory["tools"]["tmux"])):
+            raise AssertionError()
     if definition["family"] == "php-browser":
         browser = re.search(r"\d+", inventory["tools"]["chromium"])[0]
         driver = re.search(r"\d+", inventory["tools"]["chromedriver"])[0]
-        assert browser == driver, "Chromium and driver major versions differ"
+        if not (browser == driver):
+            raise AssertionError("Chromium and driver major versions differ")
     if definition["family"] == "php-toolkit":
         projects = inventory["prepared_projects"]
-        assert set(projects) == {"validator", "symfony-7.4"}
+        if not (set(projects) == {"validator", "symfony-7.4"}):
+            raise AssertionError()
         for project in projects.values():
-            assert project["packages"]["symfony/ux-toolkit"] == "v3.5.1"
-            assert re.fullmatch(r"[a-f0-9]{64}", project["composer_lock_sha256"])
-        assert projects["symfony-7.4"]["packages"]["symfony/framework-bundle"].startswith("v7.4.")
+            if not (project["packages"]["symfony/ux-toolkit"] == "v3.5.1"):
+                raise AssertionError()
+            if not (re.fullmatch(r"[a-f0-9]{64}", project["composer_lock_sha256"])):
+                raise AssertionError()
+        if not (projects["symfony-7.4"]["packages"]["symfony/framework-bundle"].startswith("v7.4.")):
+            raise AssertionError()
     if definition["family"] == "playwright-browser" and definition.get("playwright_version"):
-        assert inventory["runtime_version"] == definition["playwright_version"], "Browser version does not match its authored line"
+        if not (inventory["runtime_version"] == definition["playwright_version"]):
+            raise AssertionError("Browser version does not match its authored line")
     if "node" in definition["capabilities"]:
-        assert inventory["tools"]["node"].startswith("v22."), "The uxor Node line must match CI"
+        if not (inventory["tools"]["node"].startswith("v22.")):
+            raise AssertionError("The uxor Node line must match CI")
     if "wasm32-unknown-unknown" in definition["capabilities"]:
-        assert "wasm32-unknown-unknown" in inventory["rust_targets"]
+        if not ("wasm32-unknown-unknown" in inventory["rust_targets"]):
+            raise AssertionError()
 
 
 def validate_size_measurement(measurement):
-    assert type(measurement["image_size_bytes"]) is int and measurement["image_size_bytes"] > 0
-    assert measurement["size_method"] == "docker-image-inspect-size"
-    assert re.fullmatch(r"[A-Za-z0-9._/-]+", measurement["image_store"])
-    assert datetime.fromisoformat(measurement["measured_at"].replace("Z", "+00:00")).tzinfo is not None
-    assert measurement["evidence"]
+    if not (type(measurement["image_size_bytes"]) is int and measurement["image_size_bytes"] > 0):
+        raise AssertionError()
+    if not (measurement["size_method"] == "docker-image-inspect-size"):
+        raise AssertionError()
+    if not (re.fullmatch(r"[A-Za-z0-9._/-]+", measurement["image_store"])):
+        raise AssertionError()
+    if not (datetime.fromisoformat(measurement["measured_at"].replace("Z", "+00:00")).tzinfo is not None):
+        raise AssertionError()
+    if not (measurement["evidence"]):
+        raise AssertionError()
 
 
 def validate_record(record):
-    assert record["schema_version"] == 1
+    if not (record["schema_version"] == 1):
+        raise AssertionError()
     if 'build_key' in record or 'build_key_version' in record:
-        assert record.get('build_key_version') == 1
-        assert re.fullmatch(r'[a-f0-9]{64}', str(record.get('build_key', '')))
+        if not (record.get('build_key_version') == 1):
+            raise AssertionError()
+        if not (re.fullmatch(r'[a-f0-9]{64}', str(record.get('build_key', '')))):
+            raise AssertionError()
     version(record["version"])
-    assert re.fullmatch(r"[a-f0-9]{40}", record["source_commit"])
-    assert record["lifecycle"] in ("available", "deprecated", "withdrawn")
+    if not (re.fullmatch(r"[a-f0-9]{40}", record["source_commit"])):
+        raise AssertionError()
+    if not (record["lifecycle"] in ("available", "deprecated", "withdrawn")):
+        raise AssertionError()
     if record["lifecycle"] != "available":
-        assert record.get("reason") and record.get("replacement") and record.get("lifecycle_date")
+        if not (record.get("reason") and record.get("replacement") and record.get("lifecycle_date")):
+            raise AssertionError()
     pub = record["publication"]
-    assert DIGEST.fullmatch(pub["digest"])
-    assert pub["public_pull_verified_at"] and pub["evidence"]
-    assert record["verification"]["status"] == "passed"
-    assert record["verification"]["surface"] == "github-actions-linux-amd64"
-    assert record["definition"]["line_id"] == record["line_id"]
-    assert record["definition"]["revision"] == record["version"]
+    if not (DIGEST.fullmatch(pub["digest"])):
+        raise AssertionError()
+    if not (pub["public_pull_verified_at"] and pub["evidence"]):
+        raise AssertionError()
+    if not (record["verification"]["status"] == "passed"):
+        raise AssertionError()
+    if not (record["verification"]["surface"] == "github-actions-linux-amd64"):
+        raise AssertionError()
+    if not (record["definition"]["line_id"] == record["line_id"]):
+        raise AssertionError()
+    if not (record["definition"]["revision"] == record["version"]):
+        raise AssertionError()
     expected = f"{record['definition']['line']}-v{record['version']}"
-    assert pub["exact_tag"] == expected
-    assert record["source_tag"] == f"{record['line_id']}/v{record['version']}"
-    assert record["platforms"], "No tested platforms"
-    assert [p["platform"] for p in record["platforms"]] == record["definition"]["platforms"]
+    if not (pub["exact_tag"] == expected):
+        raise AssertionError()
+    if not (record["source_tag"] == f"{record['line_id']}/v{record['version']}"):
+        raise AssertionError()
+    if not (record["platforms"]):
+        raise AssertionError("No tested platforms")
+    if not ([p["platform"] for p in record["platforms"]] == record["definition"]["platforms"]):
+        raise AssertionError()
     for platform in record["platforms"]:
-        assert DIGEST.fullmatch(platform["digest"])
+        if not (DIGEST.fullmatch(platform["digest"])):
+            raise AssertionError()
         inventory = platform["inventory"]
-        assert inventory["platform"] == platform["platform"]
+        if not (inventory["platform"] == platform["platform"]):
+            raise AssertionError()
         validate_inventory(record["definition"], inventory)
         if "metrics" in platform:
             metrics = platform["metrics"]
             validate_size_measurement(metrics)
-            assert metrics["evidence"] == record["verification"]["evidence"]
-            assert ("build_seconds" in metrics) == ("cache_source" in metrics)
+            if not (metrics["evidence"] == record["verification"]["evidence"]):
+                raise AssertionError()
+            if not (("build_seconds" in metrics) == ("cache_source" in metrics)):
+                raise AssertionError()
             for key in ("verification_seconds", "build_seconds"):
                 if key == "verification_seconds" or key in metrics:
-                    assert type(metrics[key]) in (int, float) and math.isfinite(metrics[key]) and metrics[key] >= 0
+                    if not (type(metrics[key]) in (int, float) and math.isfinite(metrics[key]) and metrics[key] >= 0):
+                        raise AssertionError()
             if "cache_source" in metrics:
-                assert metrics["cache_source"] in ("disabled", "empty", "restored")
+                if not (metrics["cache_source"] in ("disabled", "empty", "restored")):
+                    raise AssertionError()
             if "baseline" in metrics:
                 baseline = metrics["baseline"]
                 validate_size_measurement(baseline)
-                assert version(baseline["version"]) < version(record["version"])
-                assert baseline["digest_reference"].startswith(pub["repository"] + "@")
-                assert DIGEST.fullmatch(baseline["digest_reference"].split("@")[-1])
-                assert baseline["size_method"] == metrics["size_method"] and baseline["image_store"] == metrics["image_store"]
+                if not (version(baseline["version"]) < version(record["version"])):
+                    raise AssertionError()
+                if not (baseline["digest_reference"].startswith(pub["repository"] + "@")):
+                    raise AssertionError()
+                if not (DIGEST.fullmatch(baseline["digest_reference"].split("@")[-1])):
+                    raise AssertionError()
+                if not (baseline["size_method"] == metrics["size_method"] and baseline["image_store"] == metrics["image_store"]):
+                    raise AssertionError()
     if "assurance" in record:
         from image_assurance import PREDICATE
         import urllib.parse
         summary = record["assurance"]
         expected_url = f"https://github.com/xormania/xorder/releases/download/{urllib.parse.quote(record['source_tag'], safe='')}/assurance.json"
-        assert summary["receipt_url"] == expected_url
-        assert re.fullmatch(r"[a-f0-9]{64}", summary["receipt_sha256"])
-        assert summary["predicate_type"] == PREDICATE
+        if not (summary["receipt_url"] == expected_url):
+            raise AssertionError()
+        if not (re.fullmatch(r"[a-f0-9]{64}", summary["receipt_sha256"])):
+            raise AssertionError()
+        if not (summary["predicate_type"] == PREDICATE):
+            raise AssertionError()
     return record
 
 
@@ -202,18 +260,22 @@ def records(root=ROOT):
             continue
         result.append(validate_record(read(path)))
     identities = [(r["line_id"], r["version"]) for r in result]
-    assert len(identities) == len(set(identities)), "Duplicate release identity"
+    if not (len(identities) == len(set(identities))):
+        raise AssertionError("Duplicate release identity")
     by_identity = {(r["line_id"], r["version"]): r for r in result}
     for record in result:
         for platform in record["platforms"]:
             baseline = platform.get("metrics", {}).get("baseline")
             if baseline:
                 prior = by_identity.get((record["line_id"], baseline["version"]))
-                assert prior, "Measurement baseline is absent from the accepted ledger"
-                assert baseline["digest_reference"] == prior["publication"]["repository"] + "@" + prior["publication"]["digest"]
+                if not (prior):
+                    raise AssertionError("Measurement baseline is absent from the accepted ledger")
+                if not (baseline["digest_reference"] == prior["publication"]["repository"] + "@" + prior["publication"]["digest"]):
+                    raise AssertionError()
                 if baseline["evidence"] != record["verification"]["evidence"]:
                     prior_metrics = next(p for p in prior["platforms"] if p["platform"] == platform["platform"]).get("metrics", {})
-                    assert all(baseline[key] == prior_metrics.get(key) for key in ("image_size_bytes", "size_method", "image_store", "measured_at", "evidence")), "Reused baseline differs from its verified measurement"
+                    if not (all(baseline[key] == prior_metrics.get(key) for key in ("image_size_bytes", "size_method", "image_store", "measured_at", "evidence"))):
+                        raise AssertionError("Reused baseline differs from its verified measurement")
     return result
 
 

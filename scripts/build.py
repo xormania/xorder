@@ -113,8 +113,10 @@ def cache_probe(line, image, source, parent=None):
     start = time.monotonic()
     build(line, probe, source + "-cache-probe", parent)
     after = image_facts(probe)
-    assert before["RootFS"]["Layers"] == after["RootFS"]["Layers"], "Source labels invalidated filesystem layers"
-    assert after["Config"]["Labels"]["org.opencontainers.image.revision"] == source + "-cache-probe"
+    if not (before["RootFS"]["Layers"] == after["RootFS"]["Layers"]):
+        raise AssertionError("Source labels invalidated filesystem layers")
+    if not (after["Config"]["Labels"]["org.opencontainers.image.revision"] == source + "-cache-probe"):
+        raise AssertionError()
     subprocess.run(["docker", "image", "rm", probe], check=True)
     return round(time.monotonic() - start, 2)
 

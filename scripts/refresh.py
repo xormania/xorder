@@ -50,11 +50,13 @@ def refresh(base_ref=None):
             tools[name + "_version"] = response.read().decode().strip()
     release = fetch_json("https://api.github.com/repos/symfony-cli/symfony-cli/releases/latest")
     asset = next(a for a in release["assets"] if a["name"] == "symfony-cli_linux_amd64.tar.gz")
-    assert asset.get("digest", "").startswith("sha256:"), "No upstream artifact checksum"
+    if not (isinstance(asset.get("digest"), str) and re.fullmatch(r"sha256:[a-f0-9]{64}", asset["digest"])):
+        raise AssertionError("No upstream artifact checksum")
     tools["symfony"] = {"version": release["tag_name"].removeprefix("v"), "url": asset["browser_download_url"], "sha256": asset["digest"].removeprefix("sha256:")}
     release = fetch_json("https://api.github.com/repos/infection/infection/releases/latest")
     asset = next(a for a in release["assets"] if a["name"] == "infection.phar")
-    assert asset.get("digest", "").startswith("sha256:"), "No upstream Infection artifact checksum"
+    if not (isinstance(asset.get("digest"), str) and re.fullmatch(r"sha256:[a-f0-9]{64}", asset["digest"])):
+        raise AssertionError("No upstream Infection artifact checksum")
     tools["infection"] = {"version": release["tag_name"].removeprefix("v"), "url": asset["browser_download_url"], "sha256": asset["digest"].removeprefix("sha256:")}
     tools["apt_indexes"] = apt_indexes()
     if tools != previous_tools:
