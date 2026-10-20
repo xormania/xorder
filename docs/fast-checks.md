@@ -3,7 +3,7 @@
 `Validate` calls `Fast static checks / fast-checks` on every PR and includes its
 result in the existing required `checks` aggregate. No ruleset update is needed
 to prevent merging when a fast check fails. It also runs on pushes to master,
-weekly, and manually. It replaces the separate Bandit workflow and requires no
+weekly, and manually. It requires no
 Codacy account, project token or paid scanner Action. Its job has read-only
 repository access and does not retain checkout credentials.
 
@@ -32,6 +32,35 @@ secret detection. All scanner reports and timings are retained in
 failure. Gitleaks reports redact secret values completely. Bandit advisory
 findings remain in `bandit.json`. Missing tools, timeouts, malformed reports,
 Bandit parse/plugin errors and stale exceptions fail the check.
+
+The CI gate and the Security dashboard serve different purposes. The gate keeps
+its existing severity/confidence threshold and exact reviewed exceptions. Its
+`bandit.json` and `bandit.sarif` retain every finding actually produced by that
+configured scan, including advisory and reviewed findings. Reviewed findings
+carry their recorded rationale in the SARIF message and properties; they are
+never omitted or marked suppressed. `bandit-reviewed.json` retains their full
+exception records, including source hashes and reasons.
+
+The dedicated dashboard workflow runs `python scripts/checks.py
+--bandit-dashboard`. It scans the same complete Python input set with
+`--ignore-nosec` and without the CI configuration, preserving test assertions
+and annotated calls as well as low-severity/low-confidence findings. Its raw JSON,
+complete SARIF, review audit and summary live in `out/bandit-dashboard/`.
+Recorded CI exceptions annotate findings; they do not close dashboard alerts.
+Stale review metadata produces a warning while the complete raw scan remains
+publishable. Scanner failures and malformed results prohibit SARIF publication
+and cannot reuse an earlier report. Dashboard workflow success means that the
+scanner completed; it does not mean findings were resolved.
+
+The reporting workflow retains the original workflow/job identity so fresh
+results update the existing Bandit configuration. The PR fast-check job keeps
+read-only permissions; the reporting workflow owns the separate code-scanning
+upload permission. `--only bandit` remains available for running the existing
+CI gate alone; its configured report is not uploaded as the full dashboard scan.
+
+Dashboard publishing runs only for trusted master pushes, scheduled scans or
+manual master runs. PR workflows do not export the repository's privileged
+alert inventory.
 
 zizmor uses offline analysis with strict input collection. This keeps PR scans
 deterministic and fast; online vulnerable-action/stale-reference audits are not
@@ -104,4 +133,5 @@ Upstream references:
 - [Hadolint](https://github.com/hadolint/hadolint)
 - [zizmor audit rules](https://docs.zizmor.sh/audits/)
 - [Bandit command reference](https://bandit.readthedocs.io/en/latest/man/bandit.html)
+- [GitHub's supported SARIF properties](https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support)
 - [Gitleaks CLI and configuration](https://github.com/gitleaks/gitleaks)

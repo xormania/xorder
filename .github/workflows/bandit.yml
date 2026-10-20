@@ -1,0 +1,51 @@
+# Preserve the original workflow path/job so new results update existing alerts.
+name: Bandit
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  schedule:
+    - cron: '26 9 * * 4'
+permissions:
+  contents: read
+concurrency:
+  group: bandit-code-scanning-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  bandit:
+    # Only trusted master code receives the code-scanning upload permission.
+    # PRs retain their existing policy gate in read-only required fast checks.
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-checks.txt
+      - name: Install pinned Bandit and check dependencies
+        run: python -m pip install -r requirements-checks.txt
+      - name: Scan maintained Python and preserve every dashboard finding
+        run: python scripts/checks.py --bandit-dashboard
+      - name: Update existing Bandit code-scanning results
+        if: ${{ !cancelled() && hashFiles('out/bandit-dashboard/bandit.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
+        with:
+          sarif_file: out/bandit-dashboard/bandit.sarif
+          category: .github/workflows/bandit.yml:bandit/
+          wait-for-processing: true
+      - name: Retain findings, reviewed reasons and timings
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bandit-code-scanning
+          path: out/bandit-dashboard/
+          retention-days: 14
+          if-no-files-found: error
