@@ -6,6 +6,7 @@ import os
 import signal
 import subprocess
 import sys
+import tempfile
 import uuid
 from urllib.parse import urlsplit, urlunsplit
 
@@ -59,6 +60,9 @@ def loopback_proxy(value, key):
 
 
 def container_environment(env, owner, *, reconfigure=False, services=()):
+    for key in (*PROXIES, "NO_PROXY", "no_proxy"):
+        if "\n" in env.get(key, "") or "\r" in env.get(key, ""):
+            raise ValueError(f"{key} must be a single line (value redacted)")
     mode = env.get("PROXY_PASSTHROUGH", "auto")
     if mode not in ("auto", "0", "1"):
         raise ValueError("PROXY_PASSTHROUGH must be auto, 0 (disable), or 1 (forward unchanged)")
@@ -90,9 +94,14 @@ def main(arguments):
         env = dict(os.environ)
         container = container_environment(env, owner)
         flags = ["--label", OWNER_LABEL + "=" + owner_label(owner)]
-        flags += [part for key, value in container.items() for part in ("-e", key + "=" + value)]
-        command = arguments[:2] + flags + arguments[2:]
-        return subprocess.call(command, env=env)
+        # Docker's argument list is visible to other host processes. Keep proxy
+        # credentials in a private file, removed after every Docker exit/error.
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                         prefix="xorder-toolkit-proxies-") as proxy_file:
+            proxy_file.writelines(f"{key}={value}\n" for key, value in container.items())
+            proxy_file.flush()
+            command = arguments[:2] + flags + ["--env-file", proxy_file.name] + arguments[2:]
+            return subprocess.call(command, env=env)
     finally:
         stop(owner)
 

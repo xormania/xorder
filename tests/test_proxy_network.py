@@ -116,7 +116,9 @@ class ProxyNetworkTests(unittest.TestCase):
             container = fixture.peer(self.owner, "127.0.0.1")
             container["Config"]["Labels"][proxy_relay.OWNER_LABEL] = label.split("=", 1)[1]
             (self.docker_path / "peers.json").write_text(json.dumps([container]))
-            forwarded = next(value for value in arguments if value.startswith("HTTPS_PROXY=http://127.0.0.2:"))
+            proxy_file = Path(arguments[arguments.index("--env-file") + 1])
+            forwarded = next(value for value in proxy_file.read_text().splitlines()
+                             if value.startswith("HTTPS_PROXY=http://127.0.0.2:"))
             ports.append(int(forwarded.rsplit(":", 1)[1]))
             self.roundtrip(ports[0])
             self.assertEqual(arguments[-3:], ["application", "-e", "HTTPS_PROXY"])
@@ -175,3 +177,54 @@ class ProxyNetworkTests(unittest.TestCase):
         container["Config"]["Labels"] = {}
         self.assertFalse(allowed([container]))
         self.assertFalse(allowed([{}]))
+
+
+class NetworkCommandPrivacyTests(unittest.TestCase):
+    def test_authenticated_proxies_stay_out_of_argv_and_private_file_is_removed(self):
+        credential = "probe-" + uuid.uuid4().hex
+        proxy = f"http://user:{credential}@bridge.test:3128"
+        for outcome in (0, 37, OSError("synthetic Docker failure")):
+            with self.subTest(outcome=outcome):
+                files = []
+
+                def command(arguments, env):
+                    self.assertNotIn(credential, " ".join(arguments))
+                    self.assertEqual(env["HTTPS_PROXY"], proxy)
+                    self.assertEqual(arguments[-3:], ["image", "application", "argument"])
+                    path = Path(arguments[arguments.index("--env-file") + 1])
+                    files.append(path)
+                    self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                    values = dict(line.split("=", 1) for line in path.read_text().splitlines())
+                    self.assertEqual(values["HTTPS_PROXY"], proxy)
+                    self.assertEqual(values["ALL_PROXY"], proxy)
+                    self.assertEqual(values["NO_PROXY"], "internal.example,localhost,127.0.0.1,::1")
+                    if isinstance(outcome, OSError):
+                        raise outcome
+                    return outcome
+
+                with patch.dict(os.environ, {"HTTPS_PROXY": proxy, "ALL_PROXY": proxy,
+                                             "NO_PROXY": "internal.example"}, clear=True), \
+                        patch.object(network.subprocess, "call", side_effect=command), \
+                        patch.object(network, "stop") as stop:
+                    if isinstance(outcome, OSError):
+                        with self.assertRaisesRegex(OSError, "synthetic Docker failure"):
+                            network.main(["docker", "run", "image", "application", "argument"])
+                    else:
+                        self.assertEqual(network.main(["docker", "run", "image", "application", "argument"]), outcome)
+                    stop.assert_called_once()
+                self.assertEqual(len(files), 1)
+                self.assertFalse(files[0].exists())
+
+    def test_newlines_cannot_add_container_environment_or_leak_values(self):
+        for key in (*network.PROXIES, "NO_PROXY", "no_proxy"):
+            for newline in ("\n", "\r"):
+                with self.subTest(key=key, newline=newline), \
+                        patch.object(network, "bridge_address") as bridge, \
+                        patch.object(network.subprocess, "call") as command, \
+                        patch.object(network, "stop"), \
+                        patch.dict(os.environ, {key: "proxy.example" + newline + "INJECTED=private-value"}, clear=True):
+                    with self.assertRaisesRegex(ValueError, "single line") as error:
+                        network.main(["docker", "run", "image"])
+                    self.assertNotIn("private-value", str(error.exception))
+                    command.assert_not_called()
+                    bridge.assert_not_called()
