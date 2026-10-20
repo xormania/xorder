@@ -6,6 +6,12 @@ instructions, and sanitized results together.
 The [session plans](../docs/plans/README.md) assign separate directories and
 branches so independent Sol sessions can investigate concurrently.
 
+The [cloud capability fixture](cloud-capability-fixture/README.md) supplies a
+reusable experimental image recipe and native probe commands for those sessions.
+Its [handoff](cloud-capability-fixture/HANDOFF.md) describes the next native
+experiments; [results](cloud-capability-fixture/RESULTS.md) separates executed
+checks from pending image and cloud validation.
+
 | Planned directory | Question |
 | --- | --- |
 | `core-transports/` | Can one small core serve exact context through stdio and HTTP? |

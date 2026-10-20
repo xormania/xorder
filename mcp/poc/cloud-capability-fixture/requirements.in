@@ -1,0 +1,4 @@
+# Official SDK. Refresh the hash lock deliberately, then rerun both transports.
+mcp==2.3.0
+# Remote probes may run behind a SOCKS proxy; loopback probes connect directly.
+httpx2[socks]==2.15.1

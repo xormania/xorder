@@ -1,0 +1,8 @@
+*
+!Dockerfile
+!requirements.lock
+!probe.py
+!smoke.py
+!packet.md
+!manifest.json
+!xorder-cloud-probe
