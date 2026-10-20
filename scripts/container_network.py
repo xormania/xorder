@@ -4,6 +4,7 @@ import ipaddress
 import os
 import subprocess
 import sys
+import tempfile
 from urllib.parse import urlsplit
 
 PROXIES = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY")
@@ -28,6 +29,8 @@ def container_proxies(environment):
         override = "CONTAINER_" + upper
         for key in (upper, upper.lower()):
             value = environment.get(override, environment.get(key, environment.get(upper, "")))
+            if "\n" in value or "\r" in value:
+                raise ValueError(f"{override if override in environment else key} must be a single line (value redacted)")
             if upper != "NO_PROXY" and value:
                 try:
                     loopback = is_loopback(value)
@@ -49,8 +52,15 @@ def main(arguments):
     environment = dict(os.environ)
     proxies = container_proxies(environment)
     if arguments[1] == "run":
-        flags = [part for key, value in proxies.items() for part in ("-e", key + "=" + value)]
-        arguments = arguments[:2] + flags + arguments[2:]
+        # Keep credential-bearing proxy URLs out of the process command line.
+        # NamedTemporaryFile is private (0600) and removed after Docker exits,
+        # including nonzero exits and exceptions. Host client proxies stay intact.
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                         prefix="xorder-container-proxies-") as proxy_file:
+            proxy_file.writelines(f"{key}={value}\n" for key, value in proxies.items())
+            proxy_file.flush()
+            arguments = arguments[:2] + ["--env-file", proxy_file.name] + arguments[2:]
+            return subprocess.call(arguments, env=environment)
     else:
         # Compose interpolation uses these names; the Docker client and daemon
         # keep their host proxy configuration.

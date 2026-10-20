@@ -19,6 +19,15 @@ DOCKER = r'''#!/usr/bin/env python3
 import json, os, pathlib, sys
 args = sys.argv[1:]
 files = []
+env_files = []
+container_environment = {}
+for index, arg in enumerate(args[:-1]):
+    if arg == "--env-file":
+        path = pathlib.Path(args[index + 1])
+        env_files.append({"path": str(path), "mode": path.stat().st_mode & 0o777})
+        for line in path.read_text().splitlines():
+            key, value = line.split("=", 1)
+            container_environment[key] = value
 if args and args[0] == "compose":
     for index, arg in enumerate(args[:-1]):
         if arg == "-f":
@@ -27,7 +36,8 @@ if args and args[0] == "compose":
     if "run" in args:
         (pathlib.Path(os.environ["WORKSPACE"]) / "workspace-proof.txt").touch()
 with open(os.environ["TEST_DOCKER_LOG"], "a") as log:
-    log.write(json.dumps({"args": args, "files": files, "env": dict(os.environ)}) + "\n")
+    log.write(json.dumps({"args": args, "files": files, "env": dict(os.environ),
+                         "env_files": env_files, "container_environment": container_environment}) + "\n")
 if args and args[0] == "run":
     if args[-2:] == ["codex", "--version"] and "PUID=0" in args:
         raise SystemExit(64)
@@ -180,10 +190,10 @@ class ReadinessNetworkTests(unittest.TestCase):
         self.assertIn("LIBRARY_CA_FILE=/run/library-proxy.pem", call["args"])
         self.assertEqual(call["args"][-4:], ["candidate:test", "printf", "%s", "literal argument"])
         for name, value in proxies.items():
-            self.assertIn(name + "=" + value, call["args"])
+            self.assertEqual(call["container_environment"][name], value)
             self.assertEqual(call["env"][name], value)
 
-    def test_loopback_proxies_are_removed_only_from_container_arguments(self):
+    def test_loopback_proxies_are_removed_only_from_container_environment(self):
         for proxy in ("http://127.0.0.1:36985", "http://127.9.8.7:42", "http://[::1]:42",
                       "http://LOCALHOST.:42", "http://[::ffff:127.0.0.1]:42"):
             with self.subTest(proxy=proxy):
@@ -194,7 +204,7 @@ class ReadinessNetworkTests(unittest.TestCase):
                 self.assert_success(result)
                 call, = self.captured()
                 for key in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
-                    self.assertIn(key + "=", call["args"])
+                    self.assertEqual(call["container_environment"][key], "")
                 self.assertEqual(call["env"]["HTTPS_PROXY"], proxy)
                 self.assertIn("ignoring host", result.stderr)
                 self.assertNotIn(proxy, result.stderr)
@@ -210,7 +220,37 @@ class ReadinessNetworkTests(unittest.TestCase):
                 self.assert_success(result)
                 call, = self.captured()
                 for key in ("HTTPS_PROXY", "https_proxy"):
-                    self.assertIn(key + "=" + override, call["args"])
+                    self.assertEqual(call["container_environment"][key], override)
+
+    def test_proxy_credentials_use_a_private_file_and_are_cleaned_on_docker_exit(self):
+        proxy = "http://user:secret-proxy-password@bridge.test:3128"
+        for exit_status in (0, 37):
+            with self.subTest(exit_status=exit_status):
+                self.log.unlink(missing_ok=True)
+                result = self.execute("scripts/run-image.sh", "candidate:test", "true",
+                                      HTTPS_PROXY=proxy, ALL_PROXY=proxy,
+                                      TEST_DOCKER_RUN_EXIT=str(exit_status))
+                self.assertEqual(result.returncode, exit_status, result.stderr)
+                call, = self.captured()
+                self.assertNotIn("secret-proxy-password", json.dumps(call["args"]))
+                self.assertNotIn("secret-proxy-password", result.stdout + result.stderr)
+                for key in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
+                    self.assertEqual(call["container_environment"][key], proxy)
+                self.assertEqual(call["env"]["HTTPS_PROXY"], proxy)
+                proxy_file, = call["env_files"]
+                self.assertEqual(proxy_file["mode"], 0o600)
+                self.assertFalse(Path(proxy_file["path"]).exists())
+
+    def test_proxy_newlines_cannot_inject_additional_container_environment(self):
+        for name in ("HTTPS_PROXY", "NO_PROXY", "CONTAINER_HTTPS_PROXY"):
+            for newline in ("\n", "\r"):
+                with self.subTest(name=name, newline=newline):
+                    result = self.execute("scripts/run-image.sh", "candidate:test", "true",
+                                          **{name: "proxy.test" + newline + "INJECTED=private-value"})
+                    self.assertEqual(result.returncode, 64)
+                    self.assertEqual(self.captured(), [])
+                    self.assertIn("single line", result.stderr)
+                    self.assertNotIn("private-value", result.stderr)
 
     def test_compose_interpolation_uses_container_proxies_without_changing_host_proxies(self):
         result = self.execute("scripts/verify-image.sh", "python-dev/fixture", "candidate:test",
@@ -253,8 +293,8 @@ if "rev-parse" in sys.argv:
         online = [call for call in self.captured() if call["args"][-1] == "exec harnesses status"]
         self.assertEqual(len(online), 2)
         for call in online:
-            self.assertIn("HTTPS_PROXY=", call["args"])
-            self.assertIn("https_proxy=", call["args"])
+            self.assertEqual(call["container_environment"]["HTTPS_PROXY"], "")
+            self.assertEqual(call["container_environment"]["https_proxy"], "")
             self.assertIn("LIBRARY_CA_FILE=/run/library-proxy.pem", call["args"])
         git_calls = [json.loads(line) for line in git_log.read_text().splitlines()]
         self.assertTrue(any("fetch" in call["args"] for call in git_calls))
@@ -363,7 +403,7 @@ if sys.argv[1] == "init":
                 self.assertIn("type=bind,src=" + str(checkout) + ",dst=/workspace", install["args"])
                 self.assertIn("type=bind,src=" + str(self.ca) + ",dst=/run/library-proxy.pem,readonly", install["args"])
                 self.assertIn("LIBRARY_CA_FILE=/run/library-proxy.pem", install["args"])
-                self.assertIn("HTTPS_PROXY=" + env["HTTPS_PROXY"], install["args"])
+                self.assertEqual(install["container_environment"]["HTTPS_PROXY"], env["HTTPS_PROXY"])
                 self.assertEqual(install["env"]["HTTPS_PROXY"], env["HTTPS_PROXY"])
                 command = install["args"][install["args"].index("candidate:test") + 1:]
                 self.assertEqual(command[:3], ["composer", "install", "--working-dir=/workspace/demo"])
