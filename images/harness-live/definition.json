@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "family": "harness-live",
+  "input_fingerprint_version": 2,
+  "purpose": "Opt-in live harness environment with persistent installation, explicit updates and private operator authentication.",
+  "capabilities": ["python", "node", "tmux", "harness-installation", "harness-updates", "interactive-harnesses"],
+  "extensions": [],
+  "tools": ["bash", "git", "gh", "curl", "jq", "rg", "psql", "python", "node", "npm", "tmux", "harnesses"],
+  "execution": {
+    "workspace": "/workspace",
+    "home": "/home/dev",
+    "default_uid": 1000,
+    "default_gid": 1000,
+    "uid_env": "PUID",
+    "gid_env": "PGID",
+    "cache_paths": ["/home/dev/.cache", "/home/dev/.local/share/xorder/harnesses"]
+  },
+  "companions": [],
+  "limitations": [
+    "Vendor harnesses are installed on initialization, not bundled in the image; first installation needs the documented vendor endpoints.",
+    "The persistent HOME contains private authentication state and must not be shared or published.",
+    "Reproduction requires the image digest, exact installed harness versions and consumer source revision; the image digest alone does not identify runtime-installed tools.",
+    "Live model acceptance is operator-run and paid; image readiness never authenticates or calls a model.",
+    "Use a dedicated persistent HOME for one operator and UID; root runs also retain HOME=/home/dev in this image."
+  ],
+  "lines": {
+    "trixie": {
+      "runtime_line": "3.14",
+      "os": "debian-trixie",
+      "revision": "1.0.0",
+      "platforms": ["linux/amd64"],
+      "base": {
+        "tag": "docker.io/library/python:3.14-slim-trixie",
+        "digest": "sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170"
+      },
+      "changes": ["Add an opt-in Python, Node and tmux environment with persistent harness installation, inspection, explicit updates and rollback."],
+      "migration": "New opt-in line. Use a dedicated private HOME volume, inspect exact runtime installation receipts, and run credential-free readiness before operator authentication."
+    }
+  }
+}

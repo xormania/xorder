@@ -342,6 +342,8 @@ def generated(root=ROOT):
             text += "[Toolkit validation and fresh-app recipe](../php-toolkit.md) · "
         if d["family"] == "php-serena":
             text += "[Serena MCP and Symfony recipe](../serena.md) · "
+        if d["family"] == "harness-live":
+            text += "[Harness installation, updates and interactive use](../harness-live.md) · "
         text += "[Usage](../usage.md) · [Selection](../selection.md) · [Compatibility evidence](../compatibility.md)\n\n"
         text += "## Limitations\n\n" + "\n".join(f"- {x}" for x in d["limitations"]) + "\n"
         outputs[root / "docs" / "images" / (line.replace("/", "-") + ".md")] = text

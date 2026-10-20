@@ -40,7 +40,7 @@ def build(line, image, source, parent=None, cache=None, registry_imports=()):
         args.update(INFECTION_URL=tools["infection"]["url"], INFECTION_SHA256=tools["infection"]["sha256"])
     if d["family"] == "php-frankenphp":
         args["APCU_VERSION"] = tools["apcu_version"]
-    if d["family"] in ("uxor-dev", "php-serena"):
+    if d["family"] in ("uxor-dev", "php-serena", "harness-live"):
         args["NODE_IMAGE"] = pinned(tools["node"])
     if d["family"] == "uxor-dev":
         args.update(TAILWIND_VERSION=tools["tailwind"]["version"],
@@ -108,6 +108,10 @@ def cache_probe(line, image, source, parent=None):
 def inspect(line, image, destination):
     cmd = ["docker", "run", "--rm", "--mount", f"type=bind,src={ROOT / 'scripts'},dst=/inventory,readonly", image,
            "python3", "/inventory/inventory.py", line.split("/")[0]]
+    if line.startswith("harness-live/"):
+        # The immutable image inventory describes its runtime, not private,
+        # independently managed harnesses initialized in an operator's HOME.
+        cmd[3:3] = ["-e", "HARNESS_AUTO_INSTALL=0"]
     result = subprocess.check_output(cmd, text=True)
     Path(destination).parent.mkdir(parents=True, exist_ok=True)
     try:

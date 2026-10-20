@@ -142,6 +142,7 @@ and direct usage pages remains sufficient.
 - [Startup disk budgets, run leases, and idle activity](docs/runtime.md)
 - [Optional local failure triage](docs/failure-triage.md)
 - [Prepared Serena v2 REPL, shell access and editing](docs/serena.md)
+- [Opt-in harness installation, updates and interactive use](docs/harness-live.md)
 - [Agent feedback implementation and runner operations](docs/agent-feedback.md)
 - [Browser releases matched to consumer Playwright pins](docs/browser-releases.md)
 - [Isolated Toolkit validation and fresh Symfony applications](docs/php-toolkit.md)

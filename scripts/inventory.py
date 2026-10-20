@@ -43,6 +43,11 @@ if family.startswith("php") or family == "uxor-dev":
 elif family == "python-dev":
     runtime = run("python", "-c", "import platform; print(platform.python_version())")
     commands.update({"python": ["python", "--version"], "uv": ["uv", "--version"], "pip": ["python", "-m", "pip", "--version"]})
+elif family == "harness-live":
+    runtime = run("python3", "-c", "import platform; print(platform.python_version())")
+    commands.update({"python": ["python3", "--version"], "node": ["node", "--version"],
+                     "npm": ["npm", "--version"], "tmux": ["tmux", "-V"],
+                     "harnesses": ["harnesses", "--version"]})
 elif family == "rust-dev":
     runtime = run("rustc", "--version").split()[1]
     commands.update({"rustc": ["rustc", "--version"], "cargo": ["cargo", "--version"], "rustfmt": ["rustfmt", "--version"], "clippy": ["cargo", "clippy", "--version"], "rustup": ["rustup", "--version"]})

@@ -62,6 +62,12 @@ class ImageSelectionTests(unittest.TestCase):
                 self.assertEqual(matrix(selected, self.defs), {"include": [
                     {"line": "php-dev/8.5-trixie", "verify_lines": ["php-serena/8.5-trixie"]}]})
 
+    def test_harness_recipe_and_real_consumer_fixture_stay_opt_in(self):
+        for path in ("images/harness-live/Dockerfile", "images/harness-live/harness-pins.json",
+                     "tests/fixtures/harness-live/run.sh", "tests/fixtures/harness-live/consumer.json"):
+            with self.subTest(path=path):
+                self.assertEqual(self.selected(path), ["harness-live/trixie"])
+
     def test_shared_php_behavior_includes_serena(self):
         expected = sorted(line for line, d in self.defs.items()
                           if d["family"].startswith("php-") or d["family"] == "uxor-dev")

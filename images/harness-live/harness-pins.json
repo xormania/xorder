@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "harnesses": {
+    "codex": {
+      "version": "0.163.0",
+      "installation": "npm install --prefix <version-directory>/npm --save-exact --ignore-scripts --include=optional @openai/codex@0.163.0",
+      "documentation": "https://github.com/openai/codex#installing-and-running-codex-cli"
+    },
+    "claude": {
+      "version": "2.1.302",
+      "installation": "https://claude.ai/install.sh | bash -s 2.1.302 (isolated installer HOME)",
+      "documentation": "https://code.claude.com/docs/en/setup#install-a-specific-version"
+    },
+    "grok": {
+      "version": "1.0.62",
+      "installation": "https://x.ai/cli/install.sh | bash -s 1.0.62 (isolated installer HOME)",
+      "documentation": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/01-getting-started.md"
+    }
+  }
+}

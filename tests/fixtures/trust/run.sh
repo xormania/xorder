@@ -8,7 +8,7 @@ servers=()
 cleanup() {
   for server in "${servers[@]}"; do kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true; done
   if [ -d "$work/workspace" ]; then
-    docker run --rm -e PUID=0 -e PGID=0 --mount "type=bind,src=$work/workspace,dst=/workspace" "$image" \
+    docker run --rm -e HARNESS_AUTO_INSTALL=0 -e PUID=0 -e PGID=0 --mount "type=bind,src=$work/workspace,dst=/workspace" "$image" \
       bash -c 'rm -f /workspace/root-proof; chown "$1:$2" /workspace' -- "$(id -u)" "$(id -g)" >/dev/null 2>&1 || true
   fi
   rm -rf "$work"
@@ -44,7 +44,7 @@ PY
 done
 first_port=$(cat "$work/first/port")
 second_port=$(cat "$work/second/port")
-docker run --rm --network host \
+docker run --rm -e HARNESS_AUTO_INSTALL=0 --network host \
   --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" \
   "$image" bash -c '
   set -euo pipefail
@@ -54,7 +54,7 @@ docker run --rm --network host \
   bash /run/trust-uv-clients.sh untrusted "https://localhost:$1" "https://localhost:$2"
   ' -- "$first_port" "$second_port"
 # A single root still works, and cannot trust the independently signed server.
-docker run --rm --network host -e LIBRARY_CA_FILE=/run/ca.pem \
+docker run --rm -e HARNESS_AUTO_INSTALL=0 --network host -e LIBRARY_CA_FILE=/run/ca.pem \
   --mount "type=bind,src=$work/first/ca.crt,dst=/run/ca.pem,readonly" \
   --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" "$image" bash -c '
   set -euo pipefail
@@ -67,20 +67,20 @@ docker run --rm --network host -e LIBRARY_CA_FILE=/run/ca.pem \
   ' -- "$first_port" "$second_port"
 cat "$work/first/ca.crt" "$work/second/ca.crt" > "$work/bundle.pem"
 # Both independently signed origins must work for every advertised TLS client.
-docker run --rm --network host -e LIBRARY_CA_FILE=/run/ca.pem \
+docker run --rm -e HARNESS_AUTO_INSTALL=0 --network host -e LIBRARY_CA_FILE=/run/ca.pem \
   --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" \
   --mount "type=bind,src=$root/clients.sh,dst=/run/trust-clients.sh,readonly" \
   --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" \
   "$image" bash /run/trust-clients.sh "https://localhost:$first_port" "https://localhost:$second_port"
 # Exercise uv's isolated build after the same root entrypoint retains UID 0.
-docker run --rm --network host -e PUID=0 -e PGID=0 -e LIBRARY_CA_FILE=/run/ca.pem \
+docker run --rm -e HARNESS_AUTO_INSTALL=0 --network host -e PUID=0 -e PGID=0 -e LIBRARY_CA_FILE=/run/ca.pem \
   --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" \
   --mount "type=bind,src=$root/uv-clients.sh,dst=/run/trust-uv-clients.sh,readonly" \
   "$image" bash -c 'set -euo pipefail; test "$(id -u)" = 0; exec bash /run/trust-uv-clients.sh trusted "$@"' \
   -- "https://localhost:$first_port" "https://localhost:$second_port"
 # Repeating setup in the same root container removes roots omitted from the new
 # bundle, including the old image's single-file layout, without stale trust.
-docker run --rm --network host -e PUID=0 -e PGID=0 -e LIBRARY_CA_FILE=/run/ca.pem \
+docker run --rm -e HARNESS_AUTO_INSTALL=0 --network host -e PUID=0 -e PGID=0 -e LIBRARY_CA_FILE=/run/ca.pem \
   --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" \
   --mount "type=bind,src=$work/first/ca.crt,dst=/run/single.pem,readonly" \
   --mount "type=bind,src=$work/second/ca.crt,dst=/run/second.pem,readonly" "$image" bash -c '
@@ -110,14 +110,14 @@ printf '%s\n' '-----BEGIN CERTIFICATE-----' 'not-a-certificate' '-----END CERTIF
 cat "$work/first/ca.crt" > "$work/truncated.pem"
 printf '%s\n' '-----BEGIN CERTIFICATE-----' 'truncated' >> "$work/truncated.pem"
 for invalid in bad empty mixed truncated; do
-  if docker run --rm -e LIBRARY_CA_FILE=/run/ca.pem --mount "type=bind,src=$work/$invalid.pem,dst=/run/ca.pem,readonly" "$image" true; then
+  if docker run --rm -e HARNESS_AUTO_INSTALL=0 -e LIBRARY_CA_FILE=/run/ca.pem --mount "type=bind,src=$work/$invalid.pem,dst=/run/ca.pem,readonly" "$image" true; then
     echo "$invalid certificate bundle was accepted" >&2; exit 1
   fi
 done
-if docker run --rm --user 1000 -e LIBRARY_CA_FILE=/run/ca.pem --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" "$image" true; then
+if docker run --rm -e HARNESS_AUTO_INSTALL=0 --user 1000 -e LIBRARY_CA_FILE=/run/ca.pem --mount "type=bind,src=$work/bundle.pem,dst=/run/ca.pem,readonly" "$image" true; then
   echo 'A non-root entrypoint silently ignored system trust setup' >&2; exit 1
 fi
 mkdir "$work/workspace"
-docker run --rm -e PUID=0 -e PGID=0 --mount "type=bind,src=$work/workspace,dst=/workspace" "$image" bash -c 'chown 0:0 /workspace; chmod 755 /workspace; touch root-proof; test "$(id -u)" = 0'
+docker run --rm -e HARNESS_AUTO_INSTALL=0 -e PUID=0 -e PGID=0 --mount "type=bind,src=$work/workspace,dst=/workspace" "$image" bash -c 'chown 0:0 /workspace; chmod 755 /workspace; touch root-proof; test "$(id -u)" = 0'
 test "$(stat -c %u "$work/workspace/root-proof")" = 0
 echo 'Single and bundled CAs, TLS clients, repeated setup, validation errors and PUID=0 passed'
