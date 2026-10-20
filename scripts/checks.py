@@ -71,7 +71,7 @@ def reviewed(name: str, findings: list[dict], *, accepted: dict[int, dict] | Non
 
 
 def bandit_findings(report: dict) -> list[dict]:
-    """Validate the complete current report before selecting the dashboard policy."""
+    """Validate and retain every finding in the current scanner report."""
     if not isinstance(report, dict) or not isinstance(report.get("results"), list) or not isinstance(report.get("errors"), list):
         raise ValueError("invalid Bandit report")
     if report["errors"]:
@@ -94,17 +94,15 @@ def bandit_findings(report: dict) -> list[dict]:
             raise ValueError("invalid Bandit source line")
         if not re.fullmatch(r"B\d{3}", row["test_id"]):
             raise ValueError("invalid Bandit rule ID")
-    return [row for row in report["results"]
-            if row["issue_severity"] in {"MEDIUM", "HIGH"}
-            and row["issue_confidence"] in {"MEDIUM", "HIGH"}]
+    return report["results"]
 
 
-def bandit_sarif(findings: list[dict]) -> dict:
-    """Serialize validated, unreviewed findings under the dashboard policy."""
+def bandit_sarif(findings: list[dict], accepted: dict[int, dict] | None = None) -> dict:
+    """Preserve all scanner findings; recorded reviews annotate, never suppress."""
     rules = []
     indices = {}
     results = []
-    for row in findings:
+    for index, row in enumerate(findings):
         rule = row["test_id"]
         if rule not in indices:
             indices[rule] = len(rules)
@@ -114,7 +112,7 @@ def bandit_sarif(findings: list[dict]) -> dict:
             rules.append(descriptor)
         result = {
             "ruleId": rule, "ruleIndex": indices[rule],
-            "level": "error" if row["issue_severity"] == "HIGH" else "warning",
+            "level": {"LOW": "note", "MEDIUM": "warning", "HIGH": "error"}[row["issue_severity"]],
             "message": {"text": row["issue_text"]},
             "locations": [{"physicalLocation": {
                 "artifactLocation": {"uri": quote(row["filename"].removeprefix("./"), safe="/")},
@@ -122,6 +120,10 @@ def bandit_sarif(findings: list[dict]) -> dict:
             }}],
             "properties": {"issue_severity": row["issue_severity"], "issue_confidence": row["issue_confidence"]},
         }
+        if accepted and index in accepted:
+            entry = accepted[index]
+            result["message"]["text"] += "\n\nRecorded CI exception: " + entry["reason"]
+            result["properties"]["recorded_ci_exception"] = entry
         results.append(result)
     return {
         "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
@@ -131,7 +133,7 @@ def bandit_sarif(findings: list[dict]) -> dict:
     }
 
 
-def execute(name: str, command: list[str], output: Path) -> dict:
+def execute(name: str, command: list[str], output: Path, *, bandit_dashboard: bool = False) -> dict:
     started = time.monotonic()
     record = {"name": name, "status": "error", "findings": 0, "reviewed": 0}
     try:
@@ -166,22 +168,42 @@ def execute(name: str, command: list[str], output: Path) -> dict:
                 if re.search(r"\bERROR\b|Bandit internal error", completed.stderr):
                     raise ValueError("Bandit reported an internal/plugin error; see bandit.log")
                 findings = bandit_findings(report)
-                record["advisory"] = len(report["results"]) - len(findings)
+                blocking_indices = [index for index, row in enumerate(findings)
+                                    if row["issue_severity"] in {"MEDIUM", "HIGH"}
+                                    and row["issue_confidence"] in {"MEDIUM", "HIGH"}]
+                record["advisory"] = len(findings) - len(blocking_indices)
             else:
                 if not isinstance(report, list):
                     raise ValueError("invalid Hadolint report: expected a list")
                 findings = [{**row, "rule": row["code"]} for row in report
                             if row["level"] in {"warning", "error"}]
             accepted = {} if name == "bandit" else None
-            unreviewed, record["reviewed"] = reviewed(name, findings, accepted=accepted)
             if name == "bandit":
+                if bandit_dashboard:
+                    try:
+                        reviewed(name, findings, accepted=accepted)
+                    except (OSError, ValueError, TypeError, KeyError, IndexError) as error:
+                        record["review_warning"] = str(error)
+                    unreviewed = []
+                    record["reviewed"] = len(accepted)
+                    record["findings"] = len(findings)
+                    record["status"] = "reported"
+                else:
+                    blocking = [findings[index] for index in blocking_indices]
+                    unreviewed, record["reviewed"] = reviewed(name, blocking, accepted=accepted)
+                    accepted = {blocking_indices[index]: entry for index, entry in accepted.items()}
                 reviews = {"schema_version": 1, "reviewed": [
                     {"finding": findings[index], "exception": entry} for index, entry in accepted.items()
                 ]}
+                if record.get("review_warning"):
+                    reviews["warning"] = record["review_warning"]
                 (output / "bandit-reviewed.json").write_text(json.dumps(reviews, indent=2) + "\n")
-                (output / "bandit.sarif").write_text(json.dumps(bandit_sarif(unreviewed), indent=2) + "\n")
-            record["findings"] = len(unreviewed)
-            record["status"] = "failed" if unreviewed else "passed"
+                (output / "bandit.sarif").write_text(json.dumps(bandit_sarif(findings, accepted), indent=2) + "\n")
+            else:
+                unreviewed, record["reviewed"] = reviewed(name, findings)
+            if not (name == "bandit" and bandit_dashboard):
+                record["findings"] = len(unreviewed)
+                record["status"] = "failed" if unreviewed else "passed"
             for row in unreviewed:
                 location = row.get("file", row.get("filename", ""))
                 line = row.get("line", row.get("line_number", ""))
@@ -194,6 +216,9 @@ def execute(name: str, command: list[str], output: Path) -> dict:
                 # Gitleaks never enters this branch; its output is always fully redacted.
                 print(completed.stdout[:12000], flush=True)
     except (OSError, ValueError, TypeError, KeyError, IndexError, subprocess.TimeoutExpired) as error:
+        record["status"] = "error"
+        if name == "bandit":
+            (output / "bandit.sarif").unlink(missing_ok=True)
         record["error"] = str(error)
         print(f"{name}: execution error: {error}", flush=True)
     record["seconds"] = round(time.monotonic() - started, 3)
@@ -202,22 +227,26 @@ def execute(name: str, command: list[str], output: Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "out/fast-checks")
-    parser.add_argument("--only", choices=["bandit"], help="Run only Bandit for the dashboard reporting workflow")
+    parser.add_argument("--output", type=Path)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--only", choices=["bandit"], help="Run only the existing Bandit CI gate")
+    mode.add_argument("--bandit-dashboard", action="store_true",
+                      help="Report every Bandit finding, including assertions and nosec annotations; no finding gate")
     parser.add_argument("--budget-seconds", type=float, default=90)
     parser.add_argument("--started-at", type=float, default=None,
                         help="Unix timestamp before tool installation, for the CI setup+checks target")
     args = parser.parse_args()
     started = args.started_at if args.started_at is not None else time.time()
-    args.output = args.output.resolve()
+    args.output = (args.output or ROOT / "out" / ("bandit-dashboard" if args.bandit_dashboard else "fast-checks")).resolve()
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "bandit.sarif").unlink(missing_ok=True)
     (args.output / "bandit-reviewed.json").unlink(missing_ok=True)
     paths = tracked_files()
-    shells = [path for path in paths if shell_file(path)] if not args.only else []
+    only_bandit = bool(args.only or args.bandit_dashboard)
+    shells = [path for path in paths if shell_file(path)] if not only_bandit else []
     python = [path for path in paths if path.endswith(".py")]
-    dockerfiles = [path for path in paths if Path(path).name == "Dockerfile"] if not args.only else []
-    if not python or (not args.only and (not shells or not dockerfiles)):
+    dockerfiles = [path for path in paths if Path(path).name == "Dockerfile"] if not only_bandit else []
+    if not python or (not only_bandit and (not shells or not dockerfiles)):
         raise ValueError("Expected maintained shell, Python and Dockerfile inputs; refusing an empty scan")
     commands = [
         ("shellcheck", ["shellcheck", "--format=json1", "--severity=warning", *shells]),
@@ -225,32 +254,40 @@ def main() -> int:
         ("ruff", ["ruff", "check", "--no-cache", *python]),
         ("actionlint", ["actionlint", "-oneline"]),
         ("zizmor", ["zizmor", "--offline", "--strict-collection", ".github"]),
-        ("bandit", ["bandit", "-q", "-f", "json", "-c", "checks/bandit.yaml", *python]),
+        ("bandit", ["bandit", "-q", "-f", "json",
+                    *(["--ignore-nosec"] if args.bandit_dashboard else ["-c", "checks/bandit.yaml"]), *python]),
     ]
     for mode, command in (("history", ["git", "--log-opts=--all"]), ("worktree", ["dir", "."])):
         name = f"gitleaks-{mode}"
         commands.append((name, ["gitleaks", *command, "--config=.gitleaks.toml", "--redact=100",
                                 "--no-banner", "--report-format=json",
                                 f"--report-path={args.output / (name + '.json')}"]))
-    if args.only:
-        commands = [(name, command) for name, command in commands if name == args.only]
+    if only_bandit:
+        commands = [(name, command) for name, command in commands if name == "bandit"]
     with ThreadPoolExecutor(max_workers=len(commands)) as pool:
-        results = list(pool.map(lambda item: execute(*item, args.output), commands))
+        results = list(pool.map(lambda item: execute(*item, args.output, bandit_dashboard=args.bandit_dashboard), commands))
     elapsed = round(time.time() - started, 3)
     summary = {"seconds": elapsed, "target_seconds": args.budget_seconds,
                "within_target": elapsed <= args.budget_seconds,
                "inputs": {"python": len(python), "shell": len(shells), "dockerfile": len(dockerfiles)},
                "results": results}
     (args.output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    lines = ["### Fast static checks", "", "| Check | Result | Seconds | New blocking findings | Reviewed |",
+    title = "Bandit dashboard scan" if args.bandit_dashboard else "Fast static checks"
+    finding_column = "All findings" if args.bandit_dashboard else "New blocking findings"
+    lines = [f"### {title}", "", f"| Check | Result | Seconds | {finding_column} | Reviewed |",
              "| --- | --- | ---: | ---: | ---: |"]
     for row in results:
         lines.append(f"| {row['name']} | {row['status']} | {row['seconds']:.3f} | {row['findings']} | {row['reviewed']} |")
     lines.extend(["", f"Setup + checks (when --started-at supplied): **{elapsed:.1f}s / {args.budget_seconds:.0f}s target**.",
                   "The target excludes runner queue/provisioning, checkout and report upload.",
-                  "Bandit low-severity/low-confidence findings remain in bandit.json; execution errors fail the check.",
+                  "Bandit JSON and SARIF retain every finding from the selected scanner mode.",
                   ""])
-    if not args.only:
+    if args.bandit_dashboard:
+        lines.append("Reported means the scanner completed, not that findings were resolved. Assertions and nosec annotations remain scanned; recorded reviews do not suppress alerts.")
+        for row in results:
+            if row.get("review_warning"):
+                lines.append(f"Review metadata warning: {row['review_warning']}")
+    elif not only_bandit:
         lines.append("zizmor runs offline; online vulnerability/stale-reference audits are not included.")
     if not summary["within_target"]:
         lines.append("Runtime exceeded the target; inspect timings before broadening the suite.")
@@ -260,7 +297,8 @@ def main() -> int:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as stream:
             stream.write(markdown)
     print(markdown, flush=True)
-    return int(any(row["status"] != "passed" for row in results))
+    expected = "reported" if args.bandit_dashboard else "passed"
+    return int(any(row["status"] != expected for row in results))
 
 
 if __name__ == "__main__":

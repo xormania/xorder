@@ -3,8 +3,6 @@ name: Bandit
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
   workflow_dispatch:
   schedule:
     - cron: '26 9 * * 4'
@@ -16,7 +14,7 @@ concurrency:
 jobs:
   bandit:
     # Only trusted master code receives the code-scanning upload permission.
-    # PRs run the same scan in the read-only required fast-checks job.
+    # PRs retain their existing policy gate in read-only required fast checks.
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -34,13 +32,13 @@ jobs:
           cache-dependency-path: requirements-checks.txt
       - name: Install pinned Bandit and check dependencies
         run: python -m pip install -r requirements-checks.txt
-      - name: Scan maintained Python with the shared policy
-        run: python scripts/checks.py --only bandit
+      - name: Scan maintained Python and preserve every dashboard finding
+        run: python scripts/checks.py --bandit-dashboard
       - name: Update existing Bandit code-scanning results
-        if: ${{ !cancelled() && hashFiles('out/fast-checks/bandit.sarif') != '' }}
+        if: ${{ !cancelled() && hashFiles('out/bandit-dashboard/bandit.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
         with:
-          sarif_file: out/fast-checks/bandit.sarif
+          sarif_file: out/bandit-dashboard/bandit.sarif
           category: .github/workflows/bandit.yml:bandit/
           wait-for-processing: true
       - name: Retain findings, reviewed reasons and timings
@@ -48,39 +46,6 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bandit-code-scanning
-          path: out/fast-checks/
-          retention-days: 14
-          if-no-files-found: error
-  alert-inventory:
-    # Read dashboard state without checking out or executing pull-request code.
-    needs: bandit
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      security-events: read
-    steps:
-      - name: Read current master alerts after any completed upload
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          gh api --paginate --slurp \
-            "repos/$REPOSITORY/code-scanning/alerts?state=open&ref=refs/heads/master&per_page=100" \
-            > code-scanning-pages.json
-          jq '[.[][] | {number, state, rule: .rule.id, severity: .rule.severity, security_severity: .rule.security_severity_level, tool: .tool.name, url: .html_url, path: .most_recent_instance.location.path, line: .most_recent_instance.location.start_line, message: .most_recent_instance.message.text}]' code-scanning-pages.json \
-            > code-scanning-alerts.json
-          {
-            echo '### Current open code-scanning alerts on master'
-            echo ''
-            jq -r '"Total: \(length)", (group_by(.tool)[] | "- \(.[0].tool): \(length) open alerts")' code-scanning-alerts.json
-            echo ''
-            echo 'The artifact retains the alert IDs, rules and locations for verification.'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Retain the current alert inventory
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: code-scanning-alerts
-          path: code-scanning-alerts.json
+          path: out/bandit-dashboard/
           retention-days: 14
           if-no-files-found: error
