@@ -24,12 +24,15 @@ def resolve(reference, authenticated=False):
     req = urllib.request.Request(auth + "?" + query)
     if authenticated and registry == "ghcr.io":
         credentials = f"{os.environ['GITHUB_ACTOR']}:{os.environ['GH_TOKEN']}".encode()
-        req.add_header("Authorization", "Basic " + base64.b64encode(credentials).decode())
+        # Registry redirects must never forward the account credential.
+        req.add_unredirected_header("Authorization", "Basic " + base64.b64encode(credentials).decode())
     # The token endpoint is constructed with HTTPS for every registry.
     with urllib.request.urlopen(req, timeout=60) as response:  # nosec B310
         body = json.load(response)
         token = body.get("token") or body["access_token"]
-    req = urllib.request.Request(f"https://{host}/v2/{repository}/manifests/{tag}", headers={"Authorization": "Bearer " + token, "Accept": ACCEPT})
+    req = urllib.request.Request(f"https://{host}/v2/{repository}/manifests/{tag}", headers={"Accept": ACCEPT})
+    # Pull/push bearer tokens are also scoped to the initial registry request.
+    req.add_unredirected_header("Authorization", "Bearer " + token)
     try:
         # The manifest endpoint is constructed with HTTPS above.
         with urllib.request.urlopen(req, timeout=60) as response:  # nosec B310
