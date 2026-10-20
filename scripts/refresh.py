@@ -22,7 +22,8 @@ def apt_indexes():
     """Track package-index changes, excluding Release dates and signatures."""
     result = {}
     for url in APT_RELEASES:
-        with urllib.request.urlopen(url, timeout=60) as response:
+        # APT_RELEASES is a fixed list of HTTPS Debian release endpoints.
+        with urllib.request.urlopen(url, timeout=60) as response:  # nosec B310
             text = response.read().decode()
         match = re.search(r"^ ([a-f0-9]{64})\s+\d+\s+main/binary-amd64/Packages.xz$", text, re.M)
         if not match:
@@ -44,7 +45,8 @@ def refresh(base_ref=None):
     for name in ("composer", "uv", "node"):
         tools[name]["digest"] = resolve(tools[name]["tag"])["digest"]
     for name in ("redis", "xdebug", "pcov", "apcu"):
-        with urllib.request.urlopen(f"https://pecl.php.net/rest/r/{name}/stable.txt", timeout=60) as response:
+        # Both the HTTPS origin and the extension-name set are fixed here.
+        with urllib.request.urlopen(f"https://pecl.php.net/rest/r/{name}/stable.txt", timeout=60) as response:  # nosec B310
             tools[name + "_version"] = response.read().decode().strip()
     release = fetch_json("https://api.github.com/repos/symfony-cli/symfony-cli/releases/latest")
     asset = next(a for a in release["assets"] if a["name"] == "symfony-cli_linux_amd64.tar.gz")

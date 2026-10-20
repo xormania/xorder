@@ -1,0 +1,4 @@
+# Start with Python correctness checks. Formatting, import ordering and layout
+# conventions are separate choices; do not hide undefined names or syntax errors.
+[lint]
+select = ["F", "E9"]

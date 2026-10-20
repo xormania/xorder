@@ -6,7 +6,6 @@ import json
 import re
 import subprocess
 import urllib.parse
-from pathlib import Path
 
 from library import ROOT, encoded, version
 from playwright_fixture import application_image

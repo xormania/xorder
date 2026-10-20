@@ -31,6 +31,11 @@ contracts while generic discovery is introduced.
 
 Local metadata validation:
 
+Run the [fast static checks](fast-checks.md) before pushing Python, shell,
+Dockerfile or GitHub automation changes. The same commands run locally and in
+CI; tool setup plus checks has an initial ninety-second target. Scanner failures
+block, and reviewed exceptions are bound to the exact source bytes.
+
 ```sh
 python3 -m pip install -r requirements-ci.txt
 python3 scripts/library.py generate

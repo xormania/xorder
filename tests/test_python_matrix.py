@@ -1,7 +1,6 @@
 """Matrix identity, SQLite behavior and scoped consumer validation."""
 import copy
 import importlib.util
-import json
 from pathlib import Path
 import sys
 import unittest

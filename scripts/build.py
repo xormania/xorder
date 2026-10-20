@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from library import ROOT, children, definitions, fingerprint, read, records, reusable_record, validate_inventory
+from library import ROOT, children, definitions, read, records, reusable_record, validate_inventory
 from image_validation import prerequisites, supported_suites
 from build_cache import current_branch, plan as registry_cache_plan
 

@@ -8,8 +8,10 @@ import urllib.request
 
 
 def fetch_json(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "xorder-refresh"})
     origin = urllib.parse.urlsplit(url)
+    if origin.scheme not in ("http", "https"):
+        raise ValueError("JSON requests require an HTTP or HTTPS URL")
+    request = urllib.request.Request(url, headers={"User-Agent": "xorder-refresh"})
     if (origin.scheme == "https" and origin.hostname == "api.github.com"
             and origin.port in (None, 443) and not origin.username and not origin.password):
         token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
@@ -21,7 +23,8 @@ def fetch_json(url):
         request.add_header("X-GitHub-Api-Version", "2022-11-28")
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:
+            # Schemes are restricted above; only the exact HTTPS API gets credentials.
+            with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
                 return json.load(response)
         except urllib.error.HTTPError as error:
             retry_after = error.headers.get("Retry-After")

@@ -6,7 +6,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from . import model
 
 
 COMMANDS = ("docker", "php", "nix", "devenv", "bash", "git", "python3")

@@ -1,10 +1,12 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
+  # Keep fixes prompt; pinned revisions and PR validation provide the adoption gate.
+  - package-ecosystem: github-actions # zizmor: ignore[dependabot-cooldown]
     directory: /
     schedule:
       interval: weekly
-  - package-ecosystem: pip
+  # Apply the same prompt-update policy to pinned Python validation tools.
+  - package-ecosystem: pip # zizmor: ignore[dependabot-cooldown]
     directory: /
     schedule:
       interval: weekly

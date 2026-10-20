@@ -25,12 +25,14 @@ def resolve(reference, authenticated=False):
     if authenticated and registry == "ghcr.io":
         credentials = f"{os.environ['GITHUB_ACTOR']}:{os.environ['GH_TOKEN']}".encode()
         req.add_header("Authorization", "Basic " + base64.b64encode(credentials).decode())
-    with urllib.request.urlopen(req, timeout=60) as response:
+    # The token endpoint is constructed with HTTPS for every registry.
+    with urllib.request.urlopen(req, timeout=60) as response:  # nosec B310
         body = json.load(response)
         token = body.get("token") or body["access_token"]
     req = urllib.request.Request(f"https://{host}/v2/{repository}/manifests/{tag}", headers={"Authorization": "Bearer " + token, "Accept": ACCEPT})
     try:
-        with urllib.request.urlopen(req, timeout=60) as response:
+        # The manifest endpoint is constructed with HTTPS above.
+        with urllib.request.urlopen(req, timeout=60) as response:  # nosec B310
             body = json.load(response)
             digest = response.headers["Docker-Content-Digest"]
             platforms = {m["platform"]["os"] + "/" + m["platform"]["architecture"]: m["digest"] for m in body.get("manifests", []) if m.get("platform", {}).get("os") != "unknown"}

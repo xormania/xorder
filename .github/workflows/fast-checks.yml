@@ -1,0 +1,50 @@
+name: Fast static checks
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+  schedule:
+    - cron: '26 9 * * 4'
+permissions:
+  contents: read
+concurrency:
+  group: fast-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  fast-checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Start setup and check timer
+        id: timer
+        run: echo "started=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-checks.txt
+      - name: Install pinned check tools
+        run: |
+          python -m pip install -r requirements-checks.txt
+          python scripts/setup_checks.py --bin-dir "$RUNNER_TEMP/xorder-check-bin"
+          echo "$RUNNER_TEMP/xorder-check-bin" >> "$GITHUB_PATH"
+      - name: Run all fast checks
+        env:
+          STARTED_AT: ${{ steps.timer.outputs.started }}
+        run: |
+          python -m unittest discover -s tests -p test_fast_checks.py -q
+          python scripts/checks.py --started-at "$STARTED_AT" --budget-seconds 90
+      - name: Retain findings and timings
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fast-checks
+          path: out/fast-checks/
+          retention-days: 14
+          if-no-files-found: error

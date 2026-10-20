@@ -92,7 +92,8 @@ def github_json(repository, endpoint):
     if token:
         headers["Authorization"] = "Bearer " + token
     request = urllib.request.Request(f"https://api.github.com/repos/{repository}/{endpoint}", headers=headers)
-    with urllib.request.urlopen(request, timeout=30) as response:
+    # The API origin and HTTPS scheme are constructed here, never supplied by records.
+    with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
         return json.load(response)
 
 
