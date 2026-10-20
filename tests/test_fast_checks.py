@@ -1,10 +1,12 @@
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from unittest.mock import patch
 
@@ -13,6 +15,22 @@ import checks
 
 
 class FastCheckTests(unittest.TestCase):
+    def test_required_aggregate_rejects_failed_cancelled_or_skipped_fast_checks(self):
+        source = (checks.ROOT / ".github/workflows/validate.yml").read_text().split("  checks:\n", 1)[1]
+        needs = re.search(r"needs: \[([^]]+)\]", source)[1].split(", ")
+        self.assertIn("fast-checks", needs)
+        bindings = re.findall(r"([A-Z_]+): \$\{\{ needs\.([a-z-]+)\.result \}\}", source)
+        fast_variable = next(variable for variable, job in bindings if job == "fast-checks")
+        script = textwrap.dedent(source.split("        run: |\n", 1)[1])
+        environment = {variable: "success" for variable, _ in bindings}
+        self.assertEqual(subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script],
+                                        env=environment, capture_output=True).returncode, 0)
+        for outcome in ("failure", "cancelled", "skipped"):
+            with self.subTest(outcome=outcome):
+                result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script],
+                                        env={**environment, fast_variable: outcome}, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+
     def test_duplicate_finding_is_not_covered_by_one_review(self):
         finding = {"filename": "example.py", "test_id": "B108", "code": "1 example()\n"}
         exception = {"path": "example.py", "test_id": "B108",

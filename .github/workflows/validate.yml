@@ -14,6 +14,11 @@ concurrency:
   # A new source revision or target branch still supersedes obsolete work.
   cancel-in-progress: ${{ github.event.action != 'edited' || github.event.changes.base.ref.from != '' }}
 jobs:
+  fast-checks:
+    # Workflow-local ./ references resolve this commit; actionlint lacks $/ support.
+    uses: ./.github/workflows/fast-checks.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
   attribution:
     runs-on: ubuntu-24.04
     steps:
@@ -275,11 +280,12 @@ jobs:
           if-no-files-found: ignore
   checks:
     if: always()
-    needs: [attribution, metadata, images, resources, environments, application]
+    needs: [fast-checks, attribution, metadata, images, resources, environments, application]
     runs-on: ubuntu-24.04
     steps:
       - env:
           ATTRIBUTION: ${{ needs.attribution.result }}
+          FAST_CHECKS: ${{ needs.fast-checks.result }}
           METADATA: ${{ needs.metadata.result }}
           IMAGES: ${{ needs.images.result }}
           RESOURCES: ${{ needs.resources.result }}
@@ -287,6 +293,7 @@ jobs:
           APPLICATION: ${{ needs.application.result }}
         run: |
           test "$ATTRIBUTION" = success
+          test "$FAST_CHECKS" = success
           test "$METADATA" = success
           [[ "$IMAGES" == success || "$IMAGES" == skipped ]]
           [[ "$RESOURCES" == success || "$RESOURCES" == skipped ]]

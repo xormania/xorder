@@ -1,6 +1,8 @@
 # Fast static checks
 
-`Fast static checks / fast-checks` runs on every PR to master, pushes to master,
+`Validate` calls `Fast static checks / fast-checks` on every PR and includes its
+result in the existing required `checks` aggregate. No ruleset update is needed
+to prevent merging when a fast check fails. It also runs on pushes to master,
 weekly, and manually. It replaces the separate Bandit workflow and requires no
 Codacy account, project token or paid scanner Action. Its job has read-only
 repository access and does not retain checkout credentials.
@@ -35,6 +37,9 @@ zizmor uses offline analysis with strict input collection. This keeps PR scans
 deterministic and fast; online vulnerable-action/stale-reference audits are not
 included. actionlint 1.7.12 lacks GitHub's supported `concurrency.queue` field;
 two path-specific diagnostic exceptions preserve existing release queue behavior.
+The workflow-local reusable call retains the same-commit `./` syntax while this
+actionlint version lacks GitHub's newer `$/` syntax; its zizmor exception is
+limited to that call.
 
 ## Local use
 
