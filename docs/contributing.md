@@ -128,6 +128,9 @@ accepted image:
 | `tests/fixtures/native-check.c` | Native compilation on the PHP, Python and Rust families that run it |
 | Image recipe, copied input, tool pin, definition or unknown runtime helper | Full readiness for every affected image and descendant |
 
+The Python compatibility matrix also consumes the native fixture internally;
+changes to that fixture retain its full matrix readiness check.
+
 Multiple fixture changes combine their checks. Full readiness takes precedence
 when another changed input requires it. A target without an exact matching
 accepted artifact builds and runs full readiness even when the requested checks

@@ -179,7 +179,11 @@ def affected_suites(changed, defs, root, previous_tools=None, previous_definitio
             if family not in KNOWN_FAMILIES:
                 suites[line] = {"full"}
                 continue
-            if suite in supported_suites(family):
+            if suite == "native" and family == "python-matrix":
+                # Its own readiness fixture mounts and compiles the shared C
+                # source, but it has no independent native-only entry point.
+                suites[line] = {"full"}
+            elif suite in supported_suites(family):
                 suites.setdefault(line, set()).add(suite)
             # A fixture may also be a real COPY input. In that case the normal
             # input/descendant contract takes precedence over partial checks.

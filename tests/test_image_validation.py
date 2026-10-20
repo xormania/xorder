@@ -1,6 +1,7 @@
 """Image CI selection and orchestration against independent dependency scenarios."""
 import copy
 import hashlib
+import importlib.util
 import io
 import json
 import subprocess
@@ -157,19 +158,46 @@ class ImageSelectionTests(unittest.TestCase):
         self.assertEqual(set(suites), expected)
         self.assertTrue(all(selected == ["trust"] for selected in suites.values()))
 
-    def test_native_fixture_excludes_early_exit_readiness_families(self):
+    def test_native_fixture_selects_direct_and_matrix_consumers(self):
         suites = affected_suites(["tests/fixtures/native-check.c"], self.defs, ROOT)
-        expected = set(self.defs) - {"playwright-browser/1.58-trixie", "harness-live/trixie",
-                                     "python-matrix/trixie"}
+        expected = set(self.defs) - {"playwright-browser/1.58-trixie", "harness-live/trixie"}
         self.assertEqual(set(suites), expected)
+        self.assertEqual(suites.pop("python-matrix/trixie"), ["full"])
         self.assertTrue(all(selected == ["native"] for selected in suites.values()))
+
+    def test_native_matrix_plan_covers_the_mounted_fixture_consumer(self):
+        fixture = ROOT / "tests/fixtures/python-matrix/check.py"
+        spec = importlib.util.spec_from_file_location("matrix_native_consumer", fixture)
+        checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(checker)
+        consumer = json.loads((fixture.parent / "consumer.json").read_text())
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(checker, "ROOT", Path(directory)), \
+                patch.object(checker, "run") as run, \
+                patch.object(checker.subprocess, "run"), \
+                patch.object(checker.subprocess, "check_output", return_value=consumer["commit"]), \
+                patch("sys.argv", [str(fixture), "matrix-test-image"]), \
+                patch("sys.stdout", new_callable=io.StringIO):
+            checker.main()
+        docker = next(call.args for call in run.call_args_list if call.args[:2] == ("docker", "run"))
+        self.assertIn(f"type=bind,src={directory}/tests/fixtures/native-check.c,dst=/native-check.c,readonly", docker)
+        self.assertEqual(docker[-3:], ("matrix-test-image", "python3.14", "/proof/run.py"))
+        suites = affected_suites(["tests/fixtures/native-check.c"], self.defs, ROOT)
+        row = next(row for row in matrix(suites, self.defs, suites)["include"]
+                   if row["line"] == "python-dev/3.14-trixie")
+        self.assertEqual(row, {
+            "line": "python-dev/3.14-trixie",
+            "verify_lines": ["python-dev/3.14-trixie", "python-matrix/trixie"],
+            "verify_suites": {"python-dev/3.14-trixie": ["native"], "python-matrix/trixie": ["full"]},
+        })
+        self.assertNotIn("native", supported_suites("python-matrix"))
 
     def test_independent_fixture_suites_are_combined_per_line(self):
         suites = affected_suites(["tests/fixtures/native-check.c", "tests/fixtures/trust/run.sh"],
                                  self.defs, ROOT)
         self.assertEqual(suites["uxor-dev/8.5-trixie"], ["native", "trust"])
         self.assertEqual(suites["harness-live/trixie"], ["trust"])
-        self.assertEqual(suites["python-matrix/trixie"], ["trust"])
+        self.assertEqual(suites["python-matrix/trixie"], ["full"])
         self.assertNotIn("playwright-browser/1.58-trixie", suites)
         self.assertEqual(self.selected("tests/fixtures/native-check.c", "tests/fixtures/trust/run.sh"),
                          sorted(suites))
