@@ -67,7 +67,8 @@ jobs:
         run: |
           gh api --paginate --slurp \
             "repos/$REPOSITORY/code-scanning/alerts?state=open&ref=refs/heads/master&per_page=100" \
-            --jq '[.[][] | {number, state, rule: .rule.id, severity: .rule.severity, security_severity: .rule.security_severity_level, tool: .tool.name, url: .html_url, path: .most_recent_instance.location.path, line: .most_recent_instance.location.start_line, message: .most_recent_instance.message.text}]' \
+            > code-scanning-pages.json
+          jq '[.[][] | {number, state, rule: .rule.id, severity: .rule.severity, security_severity: .rule.security_severity_level, tool: .tool.name, url: .html_url, path: .most_recent_instance.location.path, line: .most_recent_instance.location.start_line, message: .most_recent_instance.message.text}]' code-scanning-pages.json \
             > code-scanning-alerts.json
           {
             echo '### Current open code-scanning alerts on master'
