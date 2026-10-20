@@ -1,0 +1,12 @@
+# Scan tracked Python sources without a global rule skip or directory exclusion.
+# The runner retains low-severity results and gates medium/high severity findings
+# with medium/high confidence after matching exact reviewed exceptions.
+skips: []
+
+# Assertions belong in unit tests. Keep B101 enabled for production scripts,
+# examples and executable acceptance fixtures, where python -O changes behavior.
+assert_used:
+  skips:
+    - tests/test_*.py
+    - ./tests/test_*.py
+    - '*/tests/test_*.py'

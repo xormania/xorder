@@ -57,7 +57,8 @@ def api_bytes(url, token, limit):
                                     "X-GitHub-Api-Version": "2022-11-28"})
     # Redirected artifact downloads must not carry the API credential.
     request.add_unredirected_header("Authorization", "Bearer " + token)
-    with urlopen(request, timeout=20) as response:
+    # The exact HTTPS GitHub API origin is enforced before constructing the request.
+    with urlopen(request, timeout=20) as response:  # nosec B310
         content = response.read(limit + 1)
     if len(content) > limit:
         raise ValueError("Validation evidence response exceeds its limit")

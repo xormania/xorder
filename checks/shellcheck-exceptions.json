@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "path": "tests/fixtures/trust/run.sh",
+      "line": 33,
+      "rule": "SC2034",
+      "code_sha256": "71f611525b25ebd4945ba59c31a103c3ec4f4d272c38325d33271dbcdd764901",
+      "file_sha256": "9d27a1bcf6c8e1bc5de2f76bbb27766f9ce99e3e1d04115c9b6c504a3814c651",
+      "reason": "The loop deliberately uses a fixed number of startup polls; the counter value is not needed. Success breaks the loop, and the required port file is read immediately afterward."
+    },
+    {
+      "path": "tests/fixtures/php/run.sh",
+      "line": 17,
+      "rule": "SC2034",
+      "code_sha256": "77c651c3376357cb1045f795a336be7b5a136b32e206d1d16c52f3b947da2a2b",
+      "file_sha256": "00834f9f85bcf370555e643b5de1ad3803439068617e031960b3b2ac184c82bd",
+      "reason": "The loop deliberately bounds readiness polling to thirty attempts; only the retry count matters. The response is subsequently checked for the Ready marker."
+    },
+    {
+      "path": "tests/fixtures/artifacts/environment/check.sh",
+      "line": 12,
+      "rule": "SC2034",
+      "code_sha256": "77c651c3376357cb1045f795a336be7b5a136b32e206d1d16c52f3b947da2a2b",
+      "file_sha256": "62c98090647ffb8967ab4e6113cf99eaa3ffd699e2e27a5e753e414fc267d1c2",
+      "reason": "The loop deliberately bounds readiness polling to thirty attempts; the counter value is not needed. The script requires the response file and expected success and missing-route content afterward."
+    },
+    {
+      "path": "scripts/xorder/verify-composer.sh",
+      "line": 10,
+      "rule": "SC1007",
+      "code_sha256": "473815177a53b4c7f4511ee39b6e52794ec777c8ddef71dc5d4e42e0923b0030",
+      "file_sha256": "8722031287878ba9c61f05fdc79ac5c02efb999d7075323e94185de3f79851f7",
+      "reason": "CDPATH is intentionally set to the empty string only for cd so a caller-supplied CDPATH cannot redirect resolution or add output to the captured directory. This is valid Bash environment-assignment syntax."
+    },
+    {
+      "path": "scripts/xorder/verify-composer.sh",
+      "line": 11,
+      "rule": "SC1007",
+      "code_sha256": "e77f4dcd7eaab40c8afb6ea9269cf5df3aad4ccdf2aa19f3aee4878430f2be3d",
+      "file_sha256": "8722031287878ba9c61f05fdc79ac5c02efb999d7075323e94185de3f79851f7",
+      "reason": "CDPATH is intentionally set to the empty string only for cd so a caller-supplied CDPATH cannot redirect resolution or add output to the captured directory. This is valid Bash environment-assignment syntax."
+    },
+    {
+      "path": "scripts/xorder/verify-composer.sh",
+      "line": 12,
+      "rule": "SC1007",
+      "code_sha256": "54dae86bbe2d4e04a6c2f08d3c3a331457ea8de37c51b434b7671a22d0d48d13",
+      "file_sha256": "8722031287878ba9c61f05fdc79ac5c02efb999d7075323e94185de3f79851f7",
+      "reason": "CDPATH is intentionally set to the empty string only for cd so a caller-supplied CDPATH cannot redirect resolution or add output to the captured directory. This is valid Bash environment-assignment syntax."
+    }
+  ]
+}

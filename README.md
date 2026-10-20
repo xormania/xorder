@@ -134,6 +134,7 @@ and direct usage pages remains sufficient.
 - [Profiles and private assignment overlays](docs/profiles.md)
 - [Selection and requirement gaps](docs/selection.md)
 - [Shared CI and local registry build caches](docs/build-cache.md)
+- [Fast static checks, reviewed exceptions and local use](docs/fast-checks.md)
 - [Workspace, caches, database, and browser recipes](docs/usage.md)
 - [Optional Python compatibility matrix and real tmux checks](docs/python-matrix.md)
 - [FrankenPHP and uxor development/testing](docs/uxor.md)

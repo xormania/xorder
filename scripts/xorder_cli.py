@@ -2,7 +2,6 @@
 """Optional xorder discovery helper; Python 3 and requirements-ci.txt are required."""
 import argparse
 import hashlib
-import json
 from pathlib import Path
 from jsonschema.exceptions import ValidationError
 

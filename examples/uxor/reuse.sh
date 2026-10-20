@@ -2,7 +2,7 @@
 # Inspect existing dependencies; never repair, install, restore or run hooks.
 set -uo pipefail
 profile=$(cd "$(dirname "$0")" && pwd)
-cd /app/demo
+cd /app/demo || exit 1
 failed=0
 if ! composer validate --no-check-publish --no-interaction --no-plugins --no-scripts; then
   failed=1

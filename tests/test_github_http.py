@@ -12,6 +12,15 @@ import github_http
 
 
 class GitHubHttpTests(unittest.TestCase):
+    def test_non_http_schemes_are_rejected_before_opening(self):
+        for url in ('file:///etc/passwd', 'data:application/json,%7B%7D',
+                    'ftp://example.test/data', '/local/response.json'):
+            with self.subTest(url=url), \
+                    patch.object(github_http.urllib.request, 'urlopen') as open_url, \
+                    self.assertRaisesRegex(ValueError, 'HTTP or HTTPS'):
+                github_http.fetch_json(url)
+            open_url.assert_not_called()
+
     def test_token_is_scoped_to_https_api_and_is_not_forwarded_on_redirect(self):
         api = 'https://api.github.com/repos/xormania/uxor/commits/main'
         urls = (api, 'https://raw.githubusercontent.com/xormania/uxor/main/package.json',

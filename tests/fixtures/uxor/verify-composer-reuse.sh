@@ -44,7 +44,8 @@ cp "$work/complete.lock" composer.lock
 rm -rf vendor
 mv "$work/package.zip" "$work/package.saved.zip"
 mkdir "$work/bin"
-export XORDER_FIXTURE_REAL_GIT="$(command -v git)" XORDER_FIXTURE_GIT_CLONES="$work/clones"
+XORDER_FIXTURE_REAL_GIT=$(command -v git)
+export XORDER_FIXTURE_REAL_GIT XORDER_FIXTURE_GIT_CLONES="$work/clones"
 cat > "$work/bin/git" <<'GIT'
 #!/usr/bin/env bash
 for argument in "$@"; do

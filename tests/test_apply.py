@@ -1,7 +1,6 @@
 """Target file ownership and recovery through real staged artifact bytes."""
 import copy
 import io
-import json
 from pathlib import Path
 import sys
 import tarfile

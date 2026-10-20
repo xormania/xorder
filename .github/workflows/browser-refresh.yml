@@ -23,7 +23,8 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.LIBRARY_BOT_TOKEN || github.token }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Trusted automation pushes branches; no checkout or credential artifacts are uploaded.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
           token: ${{ secrets.LIBRARY_BOT_TOKEN || github.token }}

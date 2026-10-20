@@ -1,0 +1,14 @@
+title = "xorder secret scanning"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Generated build_key fields are SHA-256 artifact fingerprints, not credentials"
+condition = "AND"
+regexTarget = "match"
+paths = ['''^catalog\.json$''', '''^release-records/.*\.json$''']
+regexes = ['''^build_key"\s*:\s*"[a-f0-9]{64}"$''']

@@ -1,0 +1,11 @@
+# actionlint 1.7.12 predates GitHub's concurrency.queue support.
+# GitHub support: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+# Preserve the existing serialized release queue; filter only this unsupported-key
+# diagnostic in its two consumers. Remove these exceptions after tool support.
+paths:
+  .github/workflows/aliases.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"$'
+  .github/workflows/publish.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"$'

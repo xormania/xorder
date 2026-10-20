@@ -78,6 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - run: python -m pip install -r requirements-ci.txt
       - id: assurance-smoke
@@ -94,9 +95,11 @@ jobs:
             test -n "${PUBLICATION_REASON//[[:space:]]/}" || { echo 'Supply publication_reason for a manual release or recovery.'; exit 1; }
           fi
           matrix=$(python scripts/library.py release-matrix)
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "has_images=$(python -c 'import json,sys; print(str(bool(json.loads(sys.argv[1])["line"])).lower())' "$matrix")" >> "$GITHUB_OUTPUT"
-          python -c 'import json,sys; lines=[line for line in json.loads(sys.argv[1])["line"] if line.startswith("playwright-browser/")]; print("browsers="+json.dumps({"line":lines})); print("has_browsers="+str(bool(lines)).lower())' "$matrix" >> "$GITHUB_OUTPUT"
+          {
+            echo "matrix=$matrix"
+            echo "has_images=$(python -c 'import json,sys; print(str(bool(json.loads(sys.argv[1])["line"])).lower())' "$matrix")"
+            python -c 'import json,sys; lines=[line for line in json.loads(sys.argv[1])["line"] if line.startswith("playwright-browser/")]; print("browsers="+json.dumps({"line":lines})); print("has_browsers="+str(bool(lines)).lower())' "$matrix"
+          } >> "$GITHUB_OUTPUT"
       - id: resources
         env:
           PYTHONPATH: scripts
@@ -120,6 +123,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - run: python -m pip install -r requirements-ci.txt
       - name: Publish and verify public exact resource
@@ -147,6 +151,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - run: python -m pip install -r requirements-ci.txt
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
@@ -181,6 +186,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -321,7 +327,8 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.LIBRARY_BOT_TOKEN || github.token }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Trusted automation pushes branches; no checkout or credential artifacts are uploaded.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
           token: ${{ secrets.LIBRARY_BOT_TOKEN || github.token }}

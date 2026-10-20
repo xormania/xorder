@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "path": "images/harness-live/Dockerfile",
+      "line": 8,
+      "rule": "DL3008",
+      "code_sha256": "184bf7ac7a684bc00fa243575b900568d862d5cb0cb6279acd875821db531d00",
+      "file_sha256": "4a1cf0a929559d51b5c0976b551c6d1ae2fcc4e8871260dd6be5fc4f6280258b",
+      "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
+    },
+    {
+      "path": "images/php-browser/Dockerfile",
+      "line": 5,
+      "rule": "DL3008",
+      "code_sha256": "27169a066ddc862e3d5a16bbd9adb64244723ea4f9b34070126cf4874be2d4d8",
+      "file_sha256": "8725f0b4ba158a9bc073d04b86c2c5d53cc6d1aacd1444d1a06f9a0e249fa899",
+      "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
+    },
+    {
+      "path": "images/php-serena/Dockerfile",
+      "line": 18,
+      "rule": "DL4006",
+      "code_sha256": "d073b610f1d2afcb6f65208d7f08ca62c7cf0969f7d8f35bf2b9344ddb2a79c7",
+      "file_sha256": "1e20e3cba7879ad6919be5615bf365424e83977074d45b6928b41d1824bed9d4",
+      "reason": "The only pipeline in this RUN sends an echo-generated pinned SHA-256 record to sha256sum --check. The verifier is the last process and its failure stops the && chain; this is not a download-to-shell pipeline or a pipeline hiding a fetch failure."
+    },
+    {
+      "path": "images/php-serena/Dockerfile",
+      "line": 38,
+      "rule": "DL4006",
+      "code_sha256": "0536d1cba496d480924977f894860cc3be5da77b6e3cc802dd0ccc3cc009cdd3",
+      "file_sha256": "1e20e3cba7879ad6919be5615bf365424e83977074d45b6928b41d1824bed9d4",
+      "reason": "The only pipeline in this RUN sends an echo-generated pinned SHA-256 record to sha256sum --check. The verifier is the last process and its failure stops the && chain; this is not a download-to-shell pipeline or a pipeline hiding a fetch failure."
+    },
+    {
+      "path": "images/php-toolkit/Dockerfile",
+      "line": 8,
+      "rule": "DL3003",
+      "code_sha256": "dac32d471b965ac90de72f6b3c50dc2dbb2a4496997a62e5c8ae5a6e7f542e7b",
+      "file_sha256": "ff954d3e1ab47823b11e8863605a6491493c0d687b6a1ffcbcaae0fa426b5eb8",
+      "reason": "This RUN uses set -e and a checked cd to install one isolated locked Composer fixture. The directory change is local to that RUN; the inherited /workspace WORKDIR must remain the public image default. A new WORKDIR would change that runtime contract."
+    },
+    {
+      "path": "images/php-toolkit/Dockerfile",
+      "line": 20,
+      "rule": "DL3003",
+      "code_sha256": "dac32d471b965ac90de72f6b3c50dc2dbb2a4496997a62e5c8ae5a6e7f542e7b",
+      "file_sha256": "ff954d3e1ab47823b11e8863605a6491493c0d687b6a1ffcbcaae0fa426b5eb8",
+      "reason": "This RUN uses set -e and a checked cd to install one isolated locked Composer fixture. The directory change is local to that RUN; the inherited /workspace WORKDIR must remain the public image default. A new WORKDIR would change that runtime contract."
+    },
+    {
+      "path": "images/playwright-browser/Dockerfile",
+      "line": 8,
+      "rule": "DL3008",
+      "code_sha256": "fecbb1ecb1dcec04207b0faa2dc4722aa26340f3f0532c787b88a82ef2bc87c5",
+      "file_sha256": "add3fd68ba8a8d75867f833695d3d6dbd0711973353bfe2607260b71e925bd21",
+      "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
+    },
+    {
+      "path": "images/python-matrix/Dockerfile",
+      "line": 7,
+      "rule": "DL3008",
+      "code_sha256": "02ab4d82656a0cd25c279ba69e1ccfb68a8239f624c597b222b6eb60f05dba04",
+      "file_sha256": "a8a8ccaa85f968896640315fc2bed40918e617eebc1380dd5dcf8f1c2f041812",
+      "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
+    },
+    {
+      "path": "images/uxor-dev/Dockerfile",
+      "line": 13,
+      "rule": "DL4006",
+      "code_sha256": "97b04a611992c6a0e1bf7e8d3ae2b5e43cba2790db470f98a98a619f7086397c",
+      "file_sha256": "aaa95c40577449b007463d1c026315786e317f8427c68092a14c596c6a114579",
+      "reason": "The only pipeline in this RUN sends an echo-generated pinned SHA-256 record to sha256sum --check. The verifier is the last process and its failure stops the && chain; this is not a download-to-shell pipeline or a pipeline hiding a fetch failure."
+    }
+  ]
+}

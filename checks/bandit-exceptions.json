@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "path": "examples/serena/run.py",
+      "test_id": "B108",
+      "code_sha256": "42ea0c10e34d4c13cab926d92c925290163d48d01f24a8f05eab738148622733",
+      "reason": "This string is a Docker --tmpfs mount specification for the disposable container /tmp, not a predictable host temporary-file creation.",
+      "file_sha256": "df50710c70db481038c30eca74476f15c3ce64c51f4eaf519955750fe0fa1ef9"
+    },
+    {
+      "path": "examples/uxor/runner.py",
+      "test_id": "B104",
+      "code_sha256": "fd0e97869f4509b73a1f7a6221421d2582c97cdbd34281ad5791642b901b8349",
+      "reason": "Playwright intentionally listens on the development container interfaces to serve the configured Compose network; host publishing remains explicit in the consuming Compose configuration.",
+      "file_sha256": "44c9fcfa04051ba5ca83ffcdc0ee8a1bb50ff2be8e466d8b8b2150e66caae60a"
+    },
+    {
+      "path": "images/python-matrix/install.py",
+      "test_id": "B108",
+      "code_sha256": "237b1bcd62d2121503587c3bddb1491d1397c8a4262220cebc3fe429defb0082",
+      "reason": "The uv cache lives only inside the isolated root-owned Docker build filesystem and is removed after installation; this is not a shared host temporary directory.",
+      "file_sha256": "8cce2bbc9343380df3a027a80d174b745a9351fdbe7d0c9e8e9022e2b19616c5"
+    },
+    {
+      "path": "tests/test_agent_feedback.py",
+      "test_id": "B108",
+      "code_sha256": "48837e2c12d51c5524da29ba3b723e28338acfc12ad6c9cc3b6632abfa3dd440",
+      "reason": "The /tmp string is malicious archive-link fixture data used to verify extraction rejects links escaping the selected workspace; it is never created as a temporary path.",
+      "file_sha256": "5b2342e86adf9a8f1bd44fd22c80c5a056ea4b26ccda2e32c9d38bec02de7c9c"
+    },
+    {
+      "path": "tests/test_harness_root_trust.py",
+      "test_id": "B108",
+      "code_sha256": "f15f724a6fdf49a1fc875d281ca8dcbd4519095a3bbe3e6857a4620d5602b8fb",
+      "reason": "The test deliberately exercises the sticky /tmp parent. tempfile.mkdtemp or TemporaryDirectory creates a unique private directory; cleanup is registered and the trust behavior is asserted.",
+      "file_sha256": "ad21acf75d54bd158d2401c1655240c8727c1f1ed60fe01607c10813a0b37a29"
+    },
+    {
+      "path": "tests/test_harness_root_trust.py",
+      "test_id": "B108",
+      "code_sha256": "fb63ad41f59e81a2ad3036097db089a76931d7bec31f08d66d6a9a2448bad6a4",
+      "reason": "The test deliberately exercises the sticky /tmp parent. tempfile.mkdtemp or TemporaryDirectory creates a unique private directory; cleanup is registered and the trust behavior is asserted.",
+      "file_sha256": "ad21acf75d54bd158d2401c1655240c8727c1f1ed60fe01607c10813a0b37a29"
+    },
+    {
+      "path": "tests/test_harness_root_trust.py",
+      "test_id": "B108",
+      "code_sha256": "416167ab5db397793ce0bfa59b093b722e06d4b5638a4ff1f3767afbadfdae03",
+      "reason": "The test deliberately exercises the sticky /tmp parent. tempfile.mkdtemp or TemporaryDirectory creates a unique private directory; cleanup is registered and the trust behavior is asserted.",
+      "file_sha256": "ad21acf75d54bd158d2401c1655240c8727c1f1ed60fe01607c10813a0b37a29"
+    },
+    {
+      "path": "tests/test_validation_workflow.py",
+      "test_id": "B307",
+      "code_sha256": "bbd81330eb03163e3943c1c8233055415e3611282bcfd9779c693eae956dbcd4",
+      "reason": "This unit-test helper evaluates the repository-owned workflow expression with builtins disabled against test-owned webhook fixtures. It does not evaluate production requests or external payloads.",
+      "file_sha256": "6f1cf0b59e3f07b88773175c78cf0f22476ba1637988194cb297123ecf4da1ae"
+    }
+  ]
+}
