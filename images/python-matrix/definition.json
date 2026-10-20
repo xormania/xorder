@@ -1,0 +1,55 @@
+{
+  "capabilities": [
+    "python-matrix",
+    "tmux",
+    "sqlite-wal",
+    "sqlite-readonly-uri"
+  ],
+  "companions": [
+    "postgres:17-trixie"
+  ],
+  "execution": {
+    "cache_paths": [
+      "/home/dev/.cache"
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
+  },
+  "extensions": [],
+  "family": "python-matrix",
+  "input_fingerprint_version": 2,
+  "limitations": [
+    "Python 3.10 reached upstream end of life on 2026-10-01; it is included for compatibility testing, without upstream security support.",
+    "The selected interpreter patches are fixed in images/python-matrix/versions.json and installed during the build; runtime downloads are disabled.",
+    "Vendor harness CLIs and credentials are not part of this image."
+  ],
+  "lines": {
+    "trixie": {
+      "base": {
+        "parent": "python-dev/3.14-trixie"
+      },
+      "changes": [
+        "Add preinstalled Python 3.10, 3.12 and 3.14 compatibility interpreters, SQLite behavior validation, and tmux."
+      ],
+      "migration": "New opt-in matrix line. Keep existing Python development pins unless the additional interpreters and tmux are needed; adopt its verified digest after publication.",
+      "os": "debian-trixie",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "revision": "1.0.0",
+      "runtime_line": "3.14"
+    }
+  },
+  "purpose": "Python 3.10, 3.12 and 3.14 compatibility testing with tmux and the Python development toolchain.",
+  "schema_version": 1,
+  "tools": [
+    "python3.10",
+    "python3.12",
+    "python3.14",
+    "tmux"
+  ]
+}

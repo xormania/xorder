@@ -123,6 +123,10 @@ published tag.
 
 ## Python and Rust
 
+For preinstalled Python 3.10/3.12/3.14 compatibility lanes and real tmux checks,
+see the opt-in [Python matrix](python-matrix.md). Its definition remains
+unavailable until publication and release acceptance produce a verified digest.
+
 ```sh
 # python-dev; use uv.lock from the project
 bash scripts/run-image.sh "$IMAGE" uv sync --locked
