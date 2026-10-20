@@ -76,7 +76,7 @@ if [[ "$family" = php-frankenphp || "$family" = uxor-dev ]]; then
 fi
 export IMAGE="$image" WORKSPACE="$work" PUID PGID
 PUID=$(id -u); PGID=$(id -g)
-compose=(docker compose -p "$project" -f "$root/examples/php/compose.yaml")
+compose=(python3 "$root/scripts/container_network.py" docker compose -p "$project" -f "$root/examples/php/compose.yaml")
 overrides=
 if [[ -n "${CA_CERTIFICATE:-}" ]]; then
   # A conditional override avoids an empty/default bind mount when no CA is

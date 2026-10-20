@@ -112,6 +112,7 @@ class ShellSuiteTests(unittest.TestCase):
         self.environment.pop("CA_CERTIFICATE", None)
         self.write("scripts/verify-image.sh", (ROOT / "scripts/verify-image.sh").read_text())
         self.write("scripts/run-image.sh", (ROOT / "scripts/run-image.sh").read_text())
+        self.write("scripts/container_network.py", (ROOT / "scripts/container_network.py").read_text())
         self.write("tests/fixtures/native-check.c", "int main(void) {return 0;}\n")
         self.write("tests/fixtures/trust/run.sh", '''#!/bin/bash
 set -eu

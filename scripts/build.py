@@ -29,6 +29,9 @@ def pinned(base):
 
 def build(line, image, source, parent=None, cache=None, registry_imports=()):
     d = definitions()[line]
+    if d["base"].get("parent") and not parent:
+        raise ValueError(f"{line} derives from {d['base']['parent']}; supply "
+                         "--parent <accepted parent digest> or build the parent with --children")
     tools = read(ROOT / "images/tools.json")
     from artifact_identity import apt_refresh
     args = {"BASE_IMAGE": parent or pinned(d["base"]), "SOURCE_COMMIT": source,
@@ -50,6 +53,17 @@ def build(line, image, source, parent=None, cache=None, registry_imports=()):
     local_parent = parent and parent.startswith("image-library-")
     cmd = ["docker", "buildx", "build", "--load", "--platform", "linux/amd64", "-t", image,
            "-f", f"images/{d['family']}/Dockerfile"]
+    ca = os.environ.get("CA_CERTIFICATE")
+    if ca:
+        path = Path(ca)
+        if not path.is_absolute() or not path.is_file() or not os.access(path, os.R_OK):
+            raise ValueError("CA_CERTIFICATE must be a readable absolute PEM file")
+        # BuildKit parses CSV, so quote the entire src field for comma-containing paths.
+        import csv
+        import io
+        secret = io.StringIO()
+        csv.writer(secret, lineterminator="").writerow(["id=xorder_ca", "src=" + str(path)])
+        cmd += ["--secret", secret.getvalue()]
     if local_parent:
         # The daemon's implicit builder shares its local image store. A custom
         # Docker context (as in CI) need not be named "default".
@@ -339,7 +353,10 @@ def main(argv=None):
                                for line, names in suites.items()}
         except ValueError as error:
             p.error(str(error))
-    validate_tree(a, defs, selected, needed)
+    try:
+        validate_tree(a, defs, selected, needed)
+    except ValueError as error:
+        p.error(str(error))
 
 
 if __name__ == "__main__":
