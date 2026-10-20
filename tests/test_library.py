@@ -27,6 +27,10 @@ def record(line, revision="1.0.0", digest="a"):
             "symfony-7.4": {"composer_lock_sha256": "1" * 64, "packages": {
                 "symfony/ux-toolkit": "v3.5.1", "symfony/framework-bundle": "v7.4.1"}},
         }
+    if d["family"] == "python-matrix":
+        inv["interpreters"] = {minor: {"version": minor + ".1", "executable": "/usr/local/bin/python" + minor,
+                                      "sqlite_version": "3.46.1"} for minor in ("3.10", "3.12", "3.14")}
+        inv["tools"]["tmux"] = "tmux 3.5a"
     return {"schema_version": 1, "line_id": line, "version": revision, "source_commit": "b" * 40,
             "source_tag": line + "/v" + revision, "created_at": "2026-01-01T00:00:00Z", "definition": d,
             "resolved_base": "test@sha256:" + "c" * 64, "tools": {}, "input_fingerprint": "d" * 64,

@@ -105,6 +105,39 @@ class HarnessManagerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "checksum"):
             self.manager.rollback("codex", "1.0.0")
 
+    def test_executable_permission_loss_fails_status_ensure_and_launch(self):
+        executable = self.installed("grok", "1.0.0")
+        self.manager.activate("grok", "1.0.0")
+        executable.chmod(0o644)
+        self.assertEqual(self.manager.status(["grok"])["harnesses"]["grok"]["integrity"], "failed")
+        with self.assertRaisesRegex(ValueError, "changed"):
+            self.manager.ensure(["grok"])
+        with patch.object(os, "execve") as execute, self.assertRaisesRegex(ValueError, "permissions changed"):
+            self.manager.execute("grok", ["--version"])
+        execute.assert_not_called()
+
+    def test_directory_traversal_or_setuid_permission_changes_are_detected(self):
+        executable = self.installed("grok", "1.0.0")
+        self.manager.activate("grok", "1.0.0")
+        executable.chmod(0o4755)
+        self.assertEqual(self.manager.status(["grok"])["harnesses"]["grok"]["integrity"], "failed")
+        executable.chmod(0o755)
+        directory = executable.parent
+        original_mode = directory.stat().st_mode & 0o7777
+        directory.chmod(0o644)
+        try:
+            self.assertEqual(self.manager.status(["grok"])["harnesses"]["grok"]["integrity"], "failed")
+        finally:
+            directory.chmod(original_mode)
+
+    def test_version_directory_mode_is_part_of_integrity(self):
+        self.installed("grok", "1.0.0")
+        self.manager.activate("grok", "1.0.0")
+        directory = self.manager.installation("grok", "1.0.0")
+        before = directory.stat().st_mode & 0o7777
+        directory.chmod(before ^ 0o1000)
+        self.assertEqual(self.manager.status(["grok"])["harnesses"]["grok"]["integrity"], "failed")
+
     def test_receipt_executable_cannot_escape_installation(self):
         self.installed("grok", "1.0.0")
         directory = self.manager.installation("grok", "1.0.0")

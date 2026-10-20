@@ -21,7 +21,8 @@
     "The persistent HOME contains private authentication state and must not be shared or published.",
     "Reproduction requires the image digest, exact installed harness versions and consumer source revision; the image digest alone does not identify runtime-installed tools.",
     "Live model acceptance is operator-run and paid; image readiness never authenticates or calls a model.",
-    "Use a dedicated persistent HOME for one operator and UID; root runs also retain HOME=/home/dev in this image."
+    "Use a dedicated persistent HOME for one operator and UID; root runs retain HOME=/home/dev and reject non-root-owned or group/other-writable state before ownership changes.",
+    "Native release signatures are verified against image-pinned keys; adopting a rotated signing key requires an image update."
   ],
   "lines": {
     "trixie": {

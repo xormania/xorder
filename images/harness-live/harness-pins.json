@@ -8,13 +8,13 @@
     },
     "claude": {
       "version": "2.1.302",
-      "installation": "https://claude.ai/install.sh | bash -s 2.1.302 (isolated installer HOME)",
-      "documentation": "https://code.claude.com/docs/en/setup#install-a-specific-version"
+      "installation": "Exact official native release; verify the GPG-signed manifest and its Linux x64 binary SHA-256 before execution",
+      "documentation": "https://code.claude.com/docs/en/setup#binary-integrity-and-code-signing"
     },
     "grok": {
       "version": "1.0.62",
-      "installation": "https://x.ai/cli/install.sh | bash -s 1.0.62 (isolated installer HOME)",
-      "documentation": "https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/01-getting-started.md"
+      "installation": "Exact official @xai-official/grok-linux-x64 npm artifact; verify the registry signature and SHA-512 tarball identity before native extraction",
+      "documentation": "https://docs.x.ai/build/enterprise"
     }
   }
 }

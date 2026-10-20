@@ -5,6 +5,7 @@ import contextlib
 import datetime
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -12,14 +13,29 @@ import re
 import shutil
 import signal
 import shlex
+import stat
 import subprocess
 import sys
 import tempfile
 
 VERSION = "1.0.0"
+HELPERS = Path(__file__).resolve().parent
+if not (HELPERS / "root_trust.py").is_file():
+    HELPERS = Path("/usr/local/share/xorder")
+
+
+def helper(name):
+    spec = importlib.util.spec_from_file_location("xorder_harness_" + name, HELPERS / (name + ".py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ROOT_TRUST = helper("root_trust")
+CURL = "/usr/bin/curl"
+NPM = "/usr/local/bin/npm"
 NAMES = ("codex", "claude", "grok")
 VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9._-]+)?\Z")
-INSTALLERS = {"claude": "https://claude.ai/install.sh", "grok": "https://x.ai/cli/install.sh"}
 LATEST = {"claude": "https://downloads.claude.ai/claude-code-releases/latest",
           "grok": "https://x.ai/cli/stable"}
 
@@ -59,17 +75,23 @@ def sha256(path):
 
 
 def file_hashes(directory):
-    """Bind native dependencies and npm lock bytes, not only a launcher script."""
-    hashes = {}
+    """Bind dependencies, executable/traversal permissions and link destinations."""
+    hashes = {".": {"type": "directory", "mode": stat.S_IMODE(directory.stat().st_mode)}}
     for path in sorted(directory.rglob("*")):
         if path.name == "receipt.json" and path.parent == directory:
             continue
         if path.is_symlink():
             if not path.resolve().is_relative_to(directory.resolve()):
                 raise ValueError("Installed symlink escapes version directory")
-            hashes[str(path.relative_to(directory))] = "symlink:" + os.readlink(path)
+            hashes[str(path.relative_to(directory))] = {"symlink": os.readlink(path)}
         elif path.is_file():
-            hashes[str(path.relative_to(directory))] = sha256(path)
+            hashes[str(path.relative_to(directory))] = {"sha256": sha256(path),
+                                                       "mode": stat.S_IMODE(path.stat().st_mode)}
+        elif path.is_dir():
+            hashes[str(path.relative_to(directory))] = {"type": "directory",
+                                                       "mode": stat.S_IMODE(path.stat().st_mode)}
+        else:
+            raise ValueError("Unsupported installed file type: " + str(path))
     return hashes
 
 
@@ -113,7 +135,7 @@ def runtime_environment():
 
 
 def fetch(url, destination, env):
-    run(["curl", "--fail", "--silent", "--show-error", "--location", "--proto", "=https",
+    run([CURL, "--fail", "--silent", "--show-error", "--location", "--proto", "=https",
          "--proto-redir", "=https", "--connect-timeout", "15", "--max-time", "180",
          "--retry", "2", "--output", str(destination), url], env=env, timeout=570)
 
@@ -164,15 +186,20 @@ class Manager:
     def __init__(self, root, pins):
         self.root = Path(root).expanduser().absolute()
         self.pins_path = Path(pins)
+        ROOT_TRUST.validate_root_store(self.root)
 
     @contextlib.contextmanager
     def locked(self):
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        ROOT_TRUST.validate_root_store(self.root)
         with (self.root / ".lock").open("a") as stream:
             fcntl.flock(stream, fcntl.LOCK_EX)
             yield
 
     def state(self):
+        if not self.root.exists() and not self.root.is_symlink():
+            return {"schema_version": 1, "harnesses": {}}
+        ROOT_TRUST.validate_root_store(self.root, require_exists=True)
         return read_json(self.root / "selected.json", {"schema_version": 1, "harnesses": {}})
 
     def installation(self, name, selected_version):
@@ -193,21 +220,34 @@ class Manager:
         return receipt, executable
 
     def status(self, names):
-        state = self.state()
         result = {"schema_version": 1, "root": str(self.root), "harnesses": {}}
+        try:
+            state = self.state()
+        except (ValueError, OSError) as error:
+            result["harnesses"] = {name: {"status": "invalid", "integrity": "failed", "detail": str(error)}
+                                   for name in names}
+            return result
         for name in names:
             selected = state["harnesses"].get(name)
             if selected is None:
                 result["harnesses"][name] = {"status": "not_installed"}
             else:
-                receipt, executable = self.receipt(name, selected["version"])
+                try:
+                    receipt, executable = self.receipt(name, selected["version"])
+                except (ValueError, OSError) as error:
+                    result["harnesses"][name] = {"status": "invalid", "version": selected["version"],
+                                                "integrity": "failed", "detail": str(error)}
+                    continue
                 result["harnesses"][name] = {**{key: value for key, value in receipt.items() if key != "files"}, "executable": str(executable),
                     "status": "installed", "previous": selected.get("previous"),
                     "integrity": "passed" if self.integrity(name, selected["version"], receipt) else "failed"}
         return result
 
     def integrity(self, name, selected_version, receipt):
-        return file_hashes(self.installation(name, selected_version)) == receipt["files"]
+        try:
+            return file_hashes(self.installation(name, selected_version)) == receipt["files"]
+        except (ValueError, OSError):
+            return False
 
     def wrappers(self):
         directory = self.root / "bin"
@@ -223,7 +263,9 @@ class Manager:
                 os.replace(temporary, path)
 
     def activate(self, name, selected_version):
-        self.receipt(name, selected_version)
+        receipt, executable = self.receipt(name, selected_version)
+        if not self.integrity(name, selected_version, receipt) or not os.access(executable, os.X_OK):
+            raise ValueError("Installed harness bytes or executable permissions changed")
         state = self.state()
         current = state["harnesses"].get(name, {})
         previous = current.get("version")
@@ -247,37 +289,24 @@ class Manager:
                 home.mkdir(mode=0o700)
                 env = isolated_environment(home)
                 (stage / "bin").mkdir()
-                installer_hash = None
                 if name == "codex":
-                    run(["npm", "install", "--prefix", str(stage / "npm"), "--save-exact", "--ignore-scripts",
-                         "--include=optional", "--no-audit", "--no-fund", "@openai/codex@" + selected_version], env=env)
+                    run([NPM, "install", "--prefix", str(stage / "npm"), "--save-exact", "--ignore-scripts",
+                         "--include=optional", "--no-audit", "--no-fund", "--registry=https://registry.npmjs.org",
+                         "@openai/codex@" + selected_version], env=env)
                     executable = stage / "npm/node_modules/.bin/codex"
-                    source = "https://registry.npmjs.org/@openai/codex/" + selected_version
+                    provenance = {"distribution": "npm-package-lock",
+                                  "source": "https://registry.npmjs.org/@openai/codex/" + selected_version}
                 else:
-                    installer = stage / "installer.sh"
-                    fetch(INSTALLERS[name], installer, env)
-                    installer_hash = sha256(installer)
-                    if name == "grok":
-                        env["GROK_BIN_DIR"] = str(stage / "installer-bin")
-                        Path(env["GROK_BIN_DIR"]).mkdir()
-                        env["PATH"] = env["GROK_BIN_DIR"] + os.pathsep + env.get("PATH", "")
-                    run(["bash", str(installer), selected_version], env=env)
-                    installed = home / ".local/bin/claude" if name == "claude" else stage / "installer-bin/grok"
-                    executable = stage / "bin" / name
-                    shutil.copy2(installed.resolve(strict=True), executable)
-                    source = INSTALLERS[name]
-                    installer.unlink()
-                    shutil.rmtree(stage / "installer-bin", ignore_errors=True)
+                    executable, provenance = helper("provenance").install_native(
+                        name, selected_version, stage, env, fetch, run)
                 output = probe(name, executable, selected_version, env)
                 # Never retain installer-generated config or home/account state.
                 shutil.rmtree(home)
                 receipt = {"schema_version": 1, "name": name, "version": selected_version,
                            "executable": str(executable.relative_to(stage)), "version_output": output,
-                           "sha256": sha256(executable.resolve()), "installer": source,
+                           "sha256": sha256(executable.resolve()), "provenance": provenance,
                            "installed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                            "files": file_hashes(stage)}
-                if installer_hash:
-                    receipt["installer_sha256"] = installer_hash
                 lock = stage / "npm/package-lock.json"
                 if lock.is_file():
                     receipt["package_lock_sha256"] = sha256(lock)
@@ -310,7 +339,7 @@ class Manager:
             home = Path(directory)
             env = isolated_environment(home)
             if name == "codex":
-                output = run(["npm", "view", "@openai/codex", "version", "--registry=https://registry.npmjs.org"],
+                output = run([NPM, "view", "@openai/codex", "version", "--registry=https://registry.npmjs.org"],
                              env=env, timeout=60).stdout.strip()
             else:
                 target = home / "latest"
@@ -332,7 +361,9 @@ class Manager:
         selected = self.state()["harnesses"].get(name)
         if selected is None:
             raise ValueError(name + " is not installed; run harnesses ensure")
-        _, executable = self.receipt(name, selected["version"])
+        receipt, executable = self.receipt(name, selected["version"])
+        if not self.integrity(name, selected["version"], receipt) or not os.access(executable, os.X_OK):
+            raise ValueError("Installed harness bytes or executable permissions changed")
         # Resolve npm launcher symlinks now; later selection changes cannot redirect this process.
         command = command_for(name, executable, args)
         os.execve(str(executable), command, runtime_environment())

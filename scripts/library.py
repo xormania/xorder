@@ -106,6 +106,13 @@ def validate_inventory(definition, inventory):
     assert set(definition["extensions"]) <= set(inventory["extensions"])
     assert set(definition["tools"]) <= set(inventory["tools"])
     assert inventory["runtime_version"].startswith(definition["runtime_line"] + ".")
+    if definition["family"] == "python-matrix":
+        assert set(inventory["interpreters"]) == {"3.10", "3.12", "3.14"}
+        for minor, interpreter in inventory["interpreters"].items():
+            assert SEMVER.fullmatch(interpreter["version"]) and interpreter["version"].startswith(minor + ".")
+            assert interpreter["executable"].startswith("/"), "Interpreter path must be measured"
+            assert SEMVER.fullmatch(interpreter["sqlite_version"]), "SQLite version must be measured"
+        assert re.fullmatch(r"tmux 3\.[0-9]+[a-z]?", inventory["tools"]["tmux"])
     if definition["family"] == "php-browser":
         browser = re.search(r"\d+", inventory["tools"]["chromium"])[0]
         driver = re.search(r"\d+", inventory["tools"]["chromedriver"])[0]
@@ -330,6 +337,10 @@ def generated(root=ROOT):
                 inv = platform["inventory"]
                 text += f"## Measured inventory — {platform['platform']}\n\nRuntime: {inv['runtime_version']}; OS: {inv['os']['PRETTY_NAME']}.\n\n"
                 text += "| Tool | Version |\n| --- | --- |\n" + "\n".join(f"| {k} | {v.replace('|', '/')} |" for k, v in sorted(inv["tools"].items())) + "\n\n"
+                if inv.get("interpreters"):
+                    text += "| Interpreter | Python | SQLite | Executable |\n| --- | --- | --- | --- |\n"
+                    text += "\n".join(f"| {minor} | {facts['version']} | {facts['sqlite_version']} | `{facts['executable']}` |"
+                                      for minor, facts in sorted(inv["interpreters"].items())) + "\n\n"
                 if inv["extensions"]:
                     text += "Extensions: " + ", ".join(f"`{e}`" for e in sorted(inv["extensions"])) + ".\n\n"
                 text += measurement_markdown(platform)
@@ -344,6 +355,8 @@ def generated(root=ROOT):
             text += "[Toolkit validation and fresh-app recipe](../php-toolkit.md) · "
         if d["family"] == "php-serena":
             text += "[Serena MCP and Symfony recipe](../serena.md) · "
+        if d["family"] == "python-matrix":
+            text += "[Python matrix and tmux recipe](../python-matrix.md) · "
         text += "[Usage](../usage.md) · [Selection](../selection.md) · [Compatibility evidence](../compatibility.md)\n\n"
         text += "## Limitations\n\n" + "\n".join(f"- {x}" for x in d["limitations"]) + "\n"
         outputs[root / "docs" / "images" / (line.replace("/", "-") + ".md")] = text

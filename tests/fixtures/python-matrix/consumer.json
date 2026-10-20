@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/xormania/xordination.git",
+  "commit": "5b30613769f2aedb7a1ff523f0576374a4a67bb3",
+  "python_lines": ["3.10", "3.12", "3.14"],
+  "contract_count": 145
+}

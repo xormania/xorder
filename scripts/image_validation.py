@@ -123,6 +123,8 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
                 families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev", "python-dev"}
             elif path.startswith("tests/fixtures/python/"):
                 families = {"python-dev"}
+            elif path.startswith("tests/fixtures/python-matrix/"):
+                families = {"python-matrix"}
             elif path.startswith("tests/fixtures/rust/"):
                 families = {"rust-dev"}
             elif path.startswith(("scripts/", "schemas/", "tests/", "examples/", ".github/workflows/")):
