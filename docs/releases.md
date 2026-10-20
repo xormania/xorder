@@ -196,11 +196,18 @@ No failed candidate advances the catalog or alias. GitHub Release publication
 alone does not complete catalog writeback and alias promotion; workflow status
 and the default-branch catalog show those separate steps.
 
-Ordinary image publication batches changed inputs on Sunday 06:00 UTC. The refresh
-proposal runs Saturday 06:23 UTC, and Monday 06:00 UTC proposes a release group
-from accepted records. Each proposal still needs its normal PR acceptance;
-unfinished image evidence never enters a group. Off-schedule publication and
-recovery require an explicit workflow-dispatch reason.
+Image publication starts when relevant source changes land on master. The release
+matrix selects new or changed image inputs and incomplete derived-image trees;
+unchanged accepted artifacts are reused without rebuilding. This includes first
+publication of a new line, so consumers do not have to wait for a weekly batch.
+Public digest verification, assurance, and catalog acceptance still apply.
+
+Sunday 06:00 UTC retries pending publications. The refresh proposal runs Saturday
+06:23 UTC, and Monday 06:00 UTC proposes a release group from accepted records.
+Each proposal still needs its normal PR acceptance; unfinished image evidence
+never enters a group. Manual publication and recovery require an explicit
+workflow-dispatch reason. Publication timing does not change release-group support
+periods or allocate new revisions for unchanged inputs.
 
 [Release groups](release-groups.md) announce support deadlines. The
 [retention planner](retention.md) protects supported groups and their complete

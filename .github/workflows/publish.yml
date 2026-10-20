@@ -1,15 +1,15 @@
 name: Publish verified resources
 on:
   schedule:
-    # Build the weekly input batch before Monday's accepted-group proposal.
+    # Retry pending publications before Monday's accepted-group proposal.
     - cron: '0 6 * * 0'
   push:
     branches: [master]
-    paths: ['images/**', 'artifacts/**', 'scripts/**', 'schemas/**', 'tests/**', 'examples/**', '.github/workflows/publish.yml']
+    paths: ['images/**', 'artifacts/**', 'scripts/**', 'schemas/**', 'tests/**', 'examples/**', '.dockerignore', '.github/workflows/publish.yml']
   workflow_dispatch:
     inputs:
       publication_reason:
-        description: 'Required reason for off-schedule publication, security fix, or candidate recovery'
+        description: 'Required reason for manual publication, security fix, or candidate recovery'
         type: string
         required: false
         default: ''
@@ -91,13 +91,9 @@ jobs:
           PUBLICATION_REASON: ${{ inputs.publication_reason }}
         run: |
           if [ "$EVENT" = workflow_dispatch ]; then
-            test -n "${PUBLICATION_REASON//[[:space:]]/}" || { echo 'Supply publication_reason for an off-schedule release or recovery.'; exit 1; }
+            test -n "${PUBLICATION_REASON//[[:space:]]/}" || { echo 'Supply publication_reason for a manual release or recovery.'; exit 1; }
           fi
-          if [ "$EVENT" = push ]; then
-            matrix='{"line":[]}'
-          else
-            matrix=$(python scripts/library.py release-matrix)
-          fi
+          matrix=$(python scripts/library.py release-matrix)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "has_images=$(python -c 'import json,sys; print(str(bool(json.loads(sys.argv[1])["line"])).lower())' "$matrix")" >> "$GITHUB_OUTPUT"
           python -c 'import json,sys; lines=[line for line in json.loads(sys.argv[1])["line"] if line.startswith("playwright-browser/")]; print("browsers="+json.dumps({"line":lines})); print("has_browsers="+str(bool(lines)).lower())' "$matrix" >> "$GITHUB_OUTPUT"
