@@ -1,0 +1,85 @@
+# Preserve the original workflow path/job so new results update existing alerts.
+name: Bandit
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+  schedule:
+    - cron: '26 9 * * 4'
+permissions:
+  contents: read
+concurrency:
+  group: bandit-code-scanning-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  bandit:
+    # Only trusted master code receives the code-scanning upload permission.
+    # PRs run the same scan in the read-only required fast-checks job.
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-checks.txt
+      - name: Install pinned Bandit and check dependencies
+        run: python -m pip install -r requirements-checks.txt
+      - name: Scan maintained Python with the shared policy
+        run: python scripts/checks.py --only bandit
+      - name: Update existing Bandit code-scanning results
+        if: ${{ !cancelled() && hashFiles('out/fast-checks/bandit.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
+        with:
+          sarif_file: out/fast-checks/bandit.sarif
+          category: .github/workflows/bandit.yml:bandit/
+          wait-for-processing: true
+      - name: Retain findings, reviewed reasons and timings
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bandit-code-scanning
+          path: out/fast-checks/
+          retention-days: 14
+          if-no-files-found: error
+  alert-inventory:
+    # Read dashboard state without checking out or executing pull-request code.
+    needs: bandit
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      security-events: read
+    steps:
+      - name: Read current master alerts after any completed upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh api --paginate --slurp \
+            "repos/$REPOSITORY/code-scanning/alerts?state=open&ref=refs/heads/master&per_page=100" \
+            --jq '[.[][] | {number, state, rule: .rule.id, severity: .rule.severity, security_severity: .rule.security_severity_level, tool: .tool.name, url: .html_url, path: .most_recent_instance.location.path, line: .most_recent_instance.location.start_line, message: .most_recent_instance.message.text}]' \
+            > code-scanning-alerts.json
+          {
+            echo '### Current open code-scanning alerts on master'
+            echo ''
+            jq -r '"Total: \(length)", (group_by(.tool)[] | "- \(.[0].tool): \(length) open alerts")' code-scanning-alerts.json
+            echo ''
+            echo 'The artifact retains the alert IDs, rules and locations for verification.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain the current alert inventory
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: code-scanning-alerts
+          path: code-scanning-alerts.json
+          retention-days: 14
+          if-no-files-found: error
