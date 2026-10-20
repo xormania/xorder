@@ -1,0 +1,23 @@
+[
+  {
+    "command": [
+      "python3",
+      "scripts/library.py",
+      "check"
+    ],
+    "exit_code": 0,
+    "log": "repository-check-1.log"
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests"
+    ],
+    "exit_code": 0,
+    "log": "repository-check-2.log"
+  }
+]

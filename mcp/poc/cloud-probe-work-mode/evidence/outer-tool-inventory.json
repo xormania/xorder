@@ -1,0 +1,13 @@
+{
+  "observed_at": "2026-10-20T10:13:48.603Z",
+  "plugin_management_names": [
+    "mcp__codex_apps__plugin_management_get_app_permissions",
+    "mcp__codex_apps__plugin_management_get_plugin_dependencies",
+    "mcp__codex_apps__plugin_management_search_plugins",
+    "mcp__codex_apps__plugin_management_suggest_plugins",
+    "mcp__codex_apps__plugin_management_uninstall_app",
+    "mcp__codex_apps__plugin_management_update_app_permissions"
+  ],
+  "source": "ALL_TOOLS inventory of callable functions at observation time; no custom MCP registration or tunnel provisioner found",
+  "xorder_native_tools": []
+}

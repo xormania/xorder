@@ -1,0 +1,26 @@
+{
+  "observed_at": "2026-10-20T10:13:48.708014+00:00",
+  "source_commit": "7cbf2ed56dc6381d431d8b428999d06e0ecef6ba",
+  "source_status_before_setup": [],
+  "product": "ChatGPT Work Mode",
+  "product_evidence": "Developer-provided Work Mode context; outer conversation exposes functions.exec and connector tools. User-visible UI version and entry route not independently inspected.",
+  "caller": "outer cloud session; fixture checks execute as an SDK client through a shell tool",
+  "os": "Linux",
+  "machine": "x86_64",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "commands": {
+    "python3": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+    "uv": "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/uv",
+    "docker": null,
+    "podman": null,
+    "buildah": null,
+    "buildctl": null,
+    "codex": null,
+    "claude": null,
+    "tunnel-client": null
+  },
+  "docker_probe": {
+    "status": "unavailable",
+    "error": "FileNotFoundError: docker executable not present; build and verify-image.sh not executed"
+  }
+}

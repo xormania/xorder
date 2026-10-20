@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "surface": "ChatGPT Work Mode; existing outer hosted conversation; managed Linux/x86_64 command runtime",
+  "observed_at": "2026-10-20T10:17:20.725003+00:00",
+  "fixture_commit": "7cbf2ed56dc6381d431d8b428999d06e0ecef6ba",
+  "image_id_or_digest": null,
+  "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+  "caller": "outer cloud session; executed fixture observations use SDK test clients through functions.exec",
+  "observations": {
+    "setup_install": {
+      "status": "passed",
+      "scope": "Native command runtime only",
+      "evidence": [
+        "evidence/environment.json",
+        "evidence/install.log",
+        "evidence/fixture-tests.log"
+      ],
+      "details": "Fresh venv; locked binary-only dependencies installed with --require-hashes; Python 3.12.14, mcp 2.3.0; four focused tests passed."
+    },
+    "stdio_transport": {
+      "status": "passed",
+      "scope": "SDK client in this execution environment; no native outer conversation call",
+      "evidence": [
+        "evidence/sdk-auto.json",
+        "evidence/sdk-legacy.json",
+        "evidence/sdk-auto.log",
+        "evidence/sdk-legacy.log"
+      ],
+      "details": "stdio; automatic negotiation 2026-07-28 and legacy handshake 2025-11-25; discovery, challenge echo, packet and section digests, input bounds, unknown identity errors passed."
+    },
+    "http_transport": {
+      "status": "passed",
+      "scope": "SDK client in this execution environment; no native outer conversation call",
+      "evidence": [
+        "evidence/sdk-auto.json",
+        "evidence/sdk-legacy.json",
+        "evidence/sdk-auto.log",
+        "evidence/sdk-legacy.log"
+      ],
+      "details": "http-loopback; automatic negotiation 2026-07-28 and legacy handshake 2025-11-25; discovery, challenge echo, packet and section digests, input bounds, unknown identity errors passed."
+    },
+    "outer_session_mcp_registration": {
+      "status": "not_tested",
+      "assessment": "blocked on exposed registration/access interface",
+      "evidence": [
+        "evidence/outer-tool-inventory.json",
+        "README.md#continue-the-native-registration-experiment"
+      ],
+      "blocker": "No callable custom-MCP creation or tunnel provisioning operation and no xorder native tools were exposed. No remote endpoint, tunnel_id or runtime key was supplied. Account UI and permissions were not inspected. Local installation does not register a hosted plugin."
+    },
+    "native_diagnostic_delivery": {
+      "status": "not_tested",
+      "evidence": [
+        "evidence/diagnostic-serialization.json"
+      ],
+      "blocker": "No native hook/event registration interface exposed. Official documentation excludes plugin command hooks from cloud-orchestrated Work. Managed enterprise MCP-hook applicability was not inspected. Manual diagnostic serialization passed only."
+    },
+    "diagnostic_retrieval_retry": {
+      "status": "passed",
+      "scope": "SDK protocol test only; no fresh-model behavior observation",
+      "evidence": [
+        "evidence/sdk-auto.json",
+        "evidence/sdk-legacy.json"
+      ],
+      "details": "The existing smoke client retrieves the packet, receives the deliberate error, and retries with its programmed receipt. This is not an independently reasoning agent following diagnostic guidance."
+    },
+    "process_restart": {
+      "status": "passed",
+      "scope": "Independent SDK-managed fixture process launches only; hosted plugin restart/reconnection not tested",
+      "evidence": [
+        "evidence/sdk-auto.json",
+        "evidence/sdk-legacy.json"
+      ],
+      "details": "Four distinct boot IDs were observed across two transports and two modes, with one stable packet hash."
+    },
+    "fresh_session_reuse": {
+      "status": "not_tested",
+      "evidence": [
+        "evidence/persistence.json",
+        "README.md#read-the-persistence-marker-first-in-a-new-session"
+      ],
+      "details": "Marker create/read succeeded in independent Python processes in this same conversation. A genuinely new session has not read it or retested configuration/tool visibility."
+    },
+    "host_egress": {
+      "status": "passed",
+      "scope": "Targeted setup operations only",
+      "evidence": [
+        "evidence/install.log",
+        "evidence/environment.json"
+      ],
+      "details": "Git fetch from the configured repository origin and pinned package installation succeeded. This establishes only those setup paths; public inbound access, tunnel API egress and arbitrary network access were not tested."
+    },
+    "container_egress": {
+      "status": "not_tested",
+      "evidence": [
+        "evidence/environment.json"
+      ],
+      "blocker": "No Docker, Podman, Buildah or buildctl executable found."
+    },
+    "authenticated_remote_registration": {
+      "status": "not_tested",
+      "evidence": [],
+      "blocker": "No remote plugin connection or authenticated tunnel was provisioned."
+    },
+    "image_build_and_verification": {
+      "status": "not_tested",
+      "evidence": [
+        "evidence/environment.json"
+      ],
+      "blocker": "docker version could not execute (FileNotFoundError); image build and verify-image.sh were not executed."
+    }
+  },
+  "next_decision": "blocked on access",
+  "surface_details": {
+    "product_evidence": "Developer-provided ChatGPT Work Mode context",
+    "ui_entry_point": "Existing Work conversation; initiating UI navigation and product build not independently inspected",
+    "executor": "functions.exec -> exec_command -> native Python fixture / official MCP SDK",
+    "inner_cli_executed": false,
+    "codex_cloud_surface_tested": false
+  },
+  "smallest_next_step": "Provision or select a reachable endpoint or workspace-associated Secure MCP Tunnel, register/install it using ChatGPT Plugins > + > Add custom MCP server, and use it in a new Work conversation. The tested stdio command is retained; account availability is unverified.",
+  "sources": [
+    {
+      "url": "https://learn.chatgpt.com/docs/extend/mcp",
+      "claim": "Hosted Work uses plugin remote MCP tools; ChatGPT web does not read local Codex configuration."
+    },
+    {
+      "url": "https://developers.openai.com/plugins/deploy/connect-chatgpt",
+      "claim": "Public HTTPS or Secure MCP Tunnel, custom MCP plugin creation and new-chat testing."
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/secure-mcp-tunnels",
+      "claim": "Tunnel supports a local stdio MCP server and requires tunnel_id, runtime key and account permissions."
+    },
+    {
+      "url": "https://learn.chatgpt.com/docs/plugins",
+      "claim": "Plugin hooks are unsupported in cloud-orchestrated Work."
+    }
+  ],
+  "repository_validation": {
+    "catalog_check": "passed",
+    "unit_tests": {
+      "status": "passed",
+      "run": 748,
+      "skipped": 11
+    },
+    "history_attribution_before_result_commit": "passed",
+    "evidence": [
+      "evidence/repository-checks.json",
+      "evidence/repository-check-2.log"
+    ]
+  }
+}

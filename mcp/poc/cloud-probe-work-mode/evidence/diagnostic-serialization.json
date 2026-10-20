@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-10-20T10:15:19.579666+00:00",
+  "command": [
+    "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/.venv/bin/python",
+    "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/probe.py",
+    "diagnostic",
+    "--challenge",
+    "work-diagnostic-2d9033ec48a049ac968afe8346068546"
+  ],
+  "caller": "manual shell command; not a native host hook",
+  "exit_code": 0,
+  "result": {
+    "advisory": true,
+    "marker": "xorder-poc-diagnostic-v1",
+    "message": "xorder-poc-diagnostic-v1 challenge=work-diagnostic-2d9033ec48a049ac968afe8346068546. Retrieve context/poc-test-kit at 0.0.0-poc.1 using xorder_context_get; its usage section explains the fixture receipt. This is advisory probe feedback."
+  },
+  "native_execution": "not_tested",
+  "model_delivery_via_hook": "not_tested"
+}

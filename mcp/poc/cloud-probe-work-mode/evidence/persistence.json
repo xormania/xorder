@@ -1,0 +1,57 @@
+{
+  "observed_at": "2026-10-20T10:15:19.400596+00:00",
+  "candidate_location": "/workspace/scratch/80fb065312eb/cloud-probe-state",
+  "challenge": "work-reuse-754c3f28462c4ebb8d1b8d756263767b",
+  "candidate_guarantee": "scratch filesystem; no durability or new-session visibility guarantee established",
+  "fresh_session_reuse": "not_tested",
+  "note": "Read this exact marker in a genuinely new session before running setup or any create/copy action; retained evidence copies are not persistence evidence.",
+  "create": {
+    "command": [
+      "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/.venv/bin/python",
+      "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/probe.py",
+      "state",
+      "create",
+      "--directory",
+      "/workspace/scratch/80fb065312eb/cloud-probe-state",
+      "--challenge",
+      "work-reuse-754c3f28462c4ebb8d1b8d756263767b"
+    ],
+    "exit_code": 0,
+    "result": {
+      "observation": "file-read",
+      "scope": "this path only; session persistence requires a later independent read",
+      "sha256": "sha256:6161f10edb7c33c52a900c1429fe53186be45fcdeb2e83cbdeab66712e4c076b",
+      "state": {
+        "challenge": "work-reuse-754c3f28462c4ebb8d1b8d756263767b",
+        "fixture_version": "0.1.0",
+        "marker": "5882c824-5196-45f1-ae06-cc02551c26af",
+        "schema_version": 1
+      }
+    }
+  },
+  "read": {
+    "command": [
+      "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/.venv/bin/python",
+      "/workspace/scratch/80fb065312eb/xorder-cloud-probe/mcp/poc/cloud-capability-fixture/probe.py",
+      "state",
+      "read",
+      "--directory",
+      "/workspace/scratch/80fb065312eb/cloud-probe-state",
+      "--challenge",
+      "work-reuse-754c3f28462c4ebb8d1b8d756263767b"
+    ],
+    "exit_code": 0,
+    "result": {
+      "observation": "file-read",
+      "scope": "this path only; session persistence requires a later independent read",
+      "sha256": "sha256:6161f10edb7c33c52a900c1429fe53186be45fcdeb2e83cbdeab66712e4c076b",
+      "state": {
+        "challenge": "work-reuse-754c3f28462c4ebb8d1b8d756263767b",
+        "fixture_version": "0.1.0",
+        "marker": "5882c824-5196-45f1-ae06-cc02551c26af",
+        "schema_version": 1
+      }
+    }
+  },
+  "same_session_independent_processes": "passed"
+}
