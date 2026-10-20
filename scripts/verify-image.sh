@@ -8,11 +8,6 @@ if [[ -n "${CA_CERTIFICATE:-}" ]]; then
   [[ "$CA_CERTIFICATE" = /* && -f "$CA_CERTIFICATE" && -r "$CA_CERTIFICATE" ]] || { echo 'CA_CERTIFICATE must be a readable absolute PEM file' >&2; exit 64; }
 fi
 family=${line%%/*}
-if [[ "$family" = harness-live ]]; then
-  bash "$root/tests/fixtures/harness-live/run.sh" "$image"
-  bash "$root/tests/fixtures/trust/run.sh" "$image"
-  exit 0
-fi
 if [[ "$family" = playwright-browser ]]; then
   work=$(mktemp -d)
   trap 'rm -rf "$work"' EXIT
@@ -23,6 +18,11 @@ if [[ "$family" = playwright-browser ]]; then
     "$image" node /proof/check.cjs | tee "$root/out/playwright/acceptance.json"
   test -s "$work/chromium.png" && test -s "$work/firefox.png" && test -s "$work/webkit.png"
   bash "$root/tests/fixtures/playwright/parity.sh" "$image" "$line"
+  exit 0
+fi
+if [[ "$family" = harness-live ]]; then
+  bash "$root/tests/fixtures/harness-live/run.sh" "$image"
+  bash "$root/tests/fixtures/trust/run.sh" "$image"
   exit 0
 fi
 kind=${family%-dev}

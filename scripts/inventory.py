@@ -21,7 +21,12 @@ commands = {"bash": ["bash", "--version"], "git": ["git", "--version"], "gh": ["
             "curl": ["curl", "--version"], "jq": ["jq", "--version"], "rg": ["rg", "--version"],
             "psql": ["psql", "--version"]}
 extensions = {}
-if family.startswith("php") or family == "uxor-dev":
+if family == "harness-live":
+    runtime = run("python3", "-c", "import platform; print(platform.python_version())")
+    commands.update({"python": ["python3", "--version"], "node": ["node", "--version"],
+                     "npm": ["npm", "--version"], "tmux": ["tmux", "-V"],
+                     "harnesses": ["harnesses", "--version"]})
+elif family.startswith("php") or family == "uxor-dev":
     runtime = run("php", "-r", "echo PHP_VERSION;")
     extensions = json.loads(run("php", "-r", '$out=[]; foreach(get_loaded_extensions() as $e) {$out[strtolower($e)]=phpversion($e) ?: "bundled";} echo json_encode($out);'))
     commands.update({"php": ["php", "--version"], "composer": ["composer", "--version"], "symfony": ["symfony", "version"]})
@@ -43,11 +48,6 @@ if family.startswith("php") or family == "uxor-dev":
 elif family == "python-dev":
     runtime = run("python", "-c", "import platform; print(platform.python_version())")
     commands.update({"python": ["python", "--version"], "uv": ["uv", "--version"], "pip": ["python", "-m", "pip", "--version"]})
-elif family == "harness-live":
-    runtime = run("python3", "-c", "import platform; print(platform.python_version())")
-    commands.update({"python": ["python3", "--version"], "node": ["node", "--version"],
-                     "npm": ["npm", "--version"], "tmux": ["tmux", "-V"],
-                     "harnesses": ["harnesses", "--version"]})
 elif family == "rust-dev":
     runtime = run("rustc", "--version").split()[1]
     commands.update({"rustc": ["rustc", "--version"], "cargo": ["cargo", "--version"], "rustfmt": ["rustfmt", "--version"], "clippy": ["cargo", "clippy", "--version"], "rustup": ["rustup", "--version"]})
