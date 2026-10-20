@@ -119,11 +119,28 @@ provide exact build inputs without repeating their own behavior checks, and
 unaffected sibling branches are skipped. Matching available parent artifacts are
 pulled by digest; missing or changed parents are built before the selected child.
 
+Independent fixture changes also select their own checks on an unchanged,
+accepted image:
+
+| Changed input | Selected checks |
+| --- | --- |
+| `tests/fixtures/trust/` | CA trust checks on each family that runs them |
+| `tests/fixtures/native-check.c` | Native compilation on the PHP, Python and Rust families that run it |
+| Image recipe, copied input, tool pin, definition or unknown runtime helper | Full readiness for every affected image and descendant |
+
+Multiple fixture changes combine their checks. Full readiness takes precedence
+when another changed input requires it. A target without an exact matching
+accepted artifact builds and runs full readiness even when the requested checks
+were narrower. The public readiness command and publication retain full
+verification by default. Partial checks record their actual suites in PR metrics
+and do not establish full readiness or publication evidence.
+
 Catalog and known schema-only changes run metadata validation. Shared image
 orchestration changes, including `validate.yml`, and unknown runtime helpers
 still exercise all images because their impact spans the validation path.
-Metadata/schema/unit checks run on every PR, and `checks` accepts intentionally
-skipped runtime jobs while failing on failed or cancelled required jobs.
+Catalog and policy validation run on every PR. Unit and syntax checks run for
+every new source head. `checks` accepts intentionally skipped runtime jobs while
+failing on failed or cancelled required jobs.
 
 Inspect selection without building:
 
@@ -132,8 +149,9 @@ python3 scripts/library.py validation-matrix --base BASE_COMMIT
 python3 scripts/library.py validation-matrix --all
 ```
 
-The matrix records each parent tree and its `verify_lines`, also shown in the
-workflow summary. The existing `affected` root-list interface remains available.
+The matrix records each parent tree, its `verify_lines`, and the requested
+`verify_suites` for each target, also shown in the workflow summary. The existing
+`affected` root-list interface remains available.
 For a toolkit-only local check:
 
 ```sh
@@ -145,11 +163,25 @@ Manual `Validate` runs and the weekly Tuesday 06:23 UTC schedule exercise every
 image, resource, environment, and application surface. Unchanged available
 images are still reused for runtime checks; these runs do not publish images.
 
-After a successful validation of the same PR and unchanged base, image selection
-compares the next update with that successful ancestral head. Failed runs,
-changed bases, unrelated force-pushes, and unavailable history fall back to the
-full PR delta. Metadata tests always run; an unchanged image does not need another
-build merely because a review fix changed another image.
+After a successful validation of the same PR and unchanged tested base, image,
+resource and application selection reuse that validated coverage. Each run
+retains a `validation-context` artifact binding its run, source head, actual
+checkout parents and tree. The checked-out merge supplies the tested base;
+historical API PR metadata and the event's base SHA are not proof of that base.
+Incremental updates
+compare source heads when the successful ancestral head already contains the
+base. A source head behind the base can reuse an identical successful head;
+later source updates conservatively check the full PR delta. Failed runs,
+changed bases, unrelated force-pushes, unavailable history and missing or expired
+context evidence also fall back to the full PR delta. An unrecognized checkout
+runs every runtime check. This preserves changes introduced by the tested merge.
+
+Title/body edits queue behind active validation instead of cancelling it. Once
+the same source head, tested base and checkout tree have passed, the queued run
+retains catalog/policy checks and reuses the completed unit, syntax and runtime
+results. A changed
+target branch still cancels obsolete work and requires selection against the
+new base. A failed or cancelled run cannot supply reusable coverage.
 
 New revisions use version-2 fingerprints of their Dockerfile, its local COPY
 inputs, executable modes, `.dockerignore`, and consumed tool pins. PHP-only

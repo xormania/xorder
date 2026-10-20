@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 from image_inputs import TOOL_KEYS, files as input_files
-from image_validation import affected_lines, matrix as validation_matrix
+from image_validation import affected_lines, affected_suites, matrix as validation_matrix
 
 ROOT = Path(__file__).resolve().parents[1]
 DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
@@ -478,6 +478,7 @@ def main():
     for command in ("affected", "validation-matrix"):
         a = sub.add_parser(command)
         a.add_argument("--base")
+        a.add_argument("--head", default="HEAD", help="Comparison head; defaults to the current checkout")
         a.add_argument("--all", action="store_true")
     sub.add_parser("cache-key").add_argument("line")
     sub.add_parser("release-matrix")
@@ -514,9 +515,9 @@ def main():
     elif args.command in ("affected", "validation-matrix"):
         defs = definitions()
         if args.all or not args.base:
-            selected = sorted(defs)
+            suites = {line: ["full"] for line in sorted(defs)}
         else:
-            changed = subprocess.check_output(["git", "diff", "--name-only", "--no-renames", args.base, "HEAD"], cwd=ROOT, text=True).splitlines()
+            changed = subprocess.check_output(["git", "diff", "--name-only", "--no-renames", args.base, args.head], cwd=ROOT, text=True).splitlines()
             previous_tools = json.loads(subprocess.check_output(["git", "show", f"{args.base}:images/tools.json"], cwd=ROOT, text=True))
             previous_definitions = {}
             for path in changed:
@@ -524,8 +525,8 @@ def main():
                     previous = subprocess.run(["git", "show", f"{args.base}:{path}"], cwd=ROOT, capture_output=True, text=True)
                     if previous.returncode == 0:
                         previous_definitions[path] = json.loads(previous.stdout)
-            selected = affected_lines(changed, defs, ROOT, previous_tools, previous_definitions)
-        result = validation_matrix(selected, defs) if args.command == "validation-matrix" else {"line": sorted({root_line(line, defs) for line in selected})}
+            suites = affected_suites(changed, defs, ROOT, previous_tools, previous_definitions)
+        result = validation_matrix(suites, defs, suites) if args.command == "validation-matrix" else {"line": sorted({root_line(line, defs) for line in suites})}
         print(json.dumps(result))
     elif args.command == "cache-key":
         print(cache_key(args.line, definitions()))

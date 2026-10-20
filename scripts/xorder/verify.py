@@ -82,6 +82,7 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     matrix = sub.add_parser("matrix")
     matrix.add_argument("--base")
+    matrix.add_argument("--head", default="HEAD")
     matrix.add_argument("--all", action="store_true")
     preparation = sub.add_parser("prepare")
     preparation.add_argument("id")
@@ -92,7 +93,7 @@ def main():
     args = parser.parse_args()
     defs = definitions()
     if args.command == "matrix":
-        changed = subprocess.check_output(["git", "diff", "--name-only", args.base, "HEAD"], cwd=ROOT, text=True).splitlines() if args.base and not args.all else None
+        changed = subprocess.check_output(["git", "diff", "--name-only", args.base, args.head], cwd=ROOT, text=True).splitlines() if args.base and not args.all else None
         ids = affected(changed, defs) if changed is not None else sorted(defs)
         print(json.dumps({"resource": [key for key in ids if defs[key]["kind"] != "environment"], "environment": [key for key in ids if defs[key]["kind"] == "environment"]}))
     else:

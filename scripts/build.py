@@ -10,7 +10,7 @@ import tempfile
 import time
 from pathlib import Path
 from library import ROOT, children, definitions, fingerprint, read, records, reusable_record, validate_inventory
-from image_validation import prerequisites
+from image_validation import prerequisites, supported_suites
 from build_cache import current_branch, plan as registry_cache_plan
 
 
@@ -175,21 +175,38 @@ def prepare_parity_application(fixture, source):
     return facts["Id"]
 
 
-def verify(line, image, destination, *, source_validation=False, source=None):
+def checked_suites(family, suites):
+    """Reject incomplete or unsupported plans before any image action."""
+    if (not isinstance(suites, list) or not suites
+            or not all(isinstance(suite, str) for suite in suites)
+            or len(suites) != len(set(suites))):
+        raise ValueError("Verification suites must be a nonempty array of unique names")
+    if "full" in suites and len(suites) != 1:
+        raise ValueError("Full verification cannot be combined with partial suites")
+    if not set(suites) <= supported_suites(family):
+        raise ValueError(f"Unsupported verification suite for {family}: {suites}")
+    return suites
+
+
+def verify(line, image, destination, *, source_validation=False, source=None, suites=None):
     command = ["bash", str(ROOT / "scripts/verify-image.sh"), line, image]
     family = definitions()[line]["family"]
+    suites = checked_suites(family, ["full"] if suites is None else suites)
+    full = suites == ["full"]
+    if not full:
+        command += suites
     environment = dict(os.environ)
     # A caller cannot smuggle an unconstrained fixture exemption through the
     # builder. The trusted verify entry point authors its own observed proof.
     environment.pop("XORDER_SOURCE_VALIDATION_PROOF", None)
     if family == "playwright-browser":
         environment.pop("XORDER_PARITY_LOCAL_APPLICATION", None)
-    if source_validation and family == "playwright-browser":
+    if full and source_validation and family == "playwright-browser":
         fixture = read(ROOT / "tests/fixtures/playwright/consumers" / (line.split("/", 1)[1] + ".json"))
         local_app = prepare_parity_application(fixture, source)
         if local_app:
             environment["XORDER_PARITY_LOCAL_APPLICATION"] = local_app
-    if family in ("uxor-dev", "playwright-browser"):
+    if full and family in ("uxor-dev", "playwright-browser"):
         from xorder.downstream import observe_source_images, source_commit, write_source_proof
         service = "browser" if family == "playwright-browser" else "php"
         with tempfile.TemporaryDirectory(prefix="xorder-source-proof-") as proof_directory:
@@ -218,16 +235,27 @@ def validate_tree(a, defs, selected=None, needed=None):
             build(a.line, a.image, a.source, a.parent, a.cache)
     built = time.monotonic()
     should_verify = selected is None or a.line in selected
+    requested_suites = (getattr(a, "verify_suites", None) or {}).get(a.line, ["full"])
+    # A partial check extends existing release evidence; a new artifact has no
+    # such evidence and must establish the complete readiness contract.
+    actual_suites = requested_suites if reused else ["full"]
     if should_verify:
-        if defs[a.line]["family"] == "playwright-browser":
+        if actual_suites != ["full"]:
+            verify(a.line, a.image, a.inventory, suites=actual_suites)
+        elif defs[a.line]["family"] == "playwright-browser":
             verify(a.line, a.image, a.inventory, source_validation=True, source=a.source)
         else:
             verify(a.line, a.image, a.inventory)
     verified = time.monotonic()
+    verification_status = "prerequisite"
+    if should_verify:
+        verification_status = "passed" if actual_suites == ["full"] else "partial-passed"
     metrics = {"line": a.line, **image_measurements(a.image), "cache_source": cache,
                "artifact_reused": bool(reused),
-               "verification_status": "passed" if should_verify else "prerequisite"}
+               "verification_status": verification_status,
+               "verification_suites": actual_suites if should_verify else []}
     if should_verify:
+        metrics["requested_verification_suites"] = requested_suites
         metrics["verify_seconds"] = round(verified-built, 2)
     metrics["pull_seconds" if reused else "build_seconds"] = round(built-start, 2)
     if a.cache_probe and not reused and should_verify:
@@ -237,7 +265,9 @@ def validate_tree(a, defs, selected=None, needed=None):
     destination.write_text(json.dumps(metrics, indent=2) + "\n")
     print(json.dumps(metrics))
     if os.environ.get("GITHUB_STEP_SUMMARY"):
-        verification = (f"behavior/inventory: {metrics['verify_seconds']}s.\n" if should_verify
+        scope = ("full behavior" if actual_suites == ["full"]
+                 else "selected fixtures (" + ", ".join(actual_suites) + ")")
+        verification = (f"{scope}/inventory: {metrics['verify_seconds']}s.\n" if should_verify
                         else "build prerequisite only; behavior not requested.\n")
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
             summary.write(f"\n### {a.line}\n\nImage: {metrics['image_size_bytes']/1024**2:.1f} MiB; "
@@ -273,6 +303,7 @@ def main(argv=None):
     p.add_argument("--reuse-accepted", action="store_true", help="Pull unchanged accepted artifacts and run behavior without rebuilding")
     p.add_argument("--children", action="store_true", help="Build and verify derived profiles with this exact local parent")
     p.add_argument("--verify-lines", help="JSON array of exact behavior targets; other ancestors supply build inputs only")
+    p.add_argument("--verify-suites", help="JSON object mapping every --verify-lines target to its full or independent fixture suites")
     a = p.parse_args(argv)
     defs = definitions()
     if a.line not in defs:
@@ -295,6 +326,17 @@ def main(argv=None):
             if len(needed) > 1 and not a.children:
                 raise ValueError("Descendant checks require --children")
             selected = set(selected)
+        except ValueError as error:
+            p.error(str(error))
+    if a.verify_suites is not None:
+        try:
+            if selected is None:
+                raise ValueError("--verify-suites requires --verify-lines")
+            suites = json.loads(a.verify_suites)
+            if not isinstance(suites, dict) or set(suites) != selected:
+                raise ValueError("--verify-suites must name every selected image and no other images")
+            a.verify_suites = {line: checked_suites(defs[line]["family"], names)
+                               for line, names in suites.items()}
         except ValueError as error:
             p.error(str(error))
     validate_tree(a, defs, selected, needed)
