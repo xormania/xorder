@@ -176,10 +176,12 @@ class RefreshRecoveryTests(unittest.TestCase):
             digests[tools["uv"]["tag"]] = "sha256:" + "f" * 64
             refresh.refresh()
         for path in paths:
-            if path.name == "definition.json" and path.parent.name != "python-dev":
+            if path.name == "definition.json" and path.parent.name not in ("python-dev", "python-matrix"):
                 self.assertEqual(path.read_bytes(), before[path])
         python = read(self.worker / "images/python-dev/definition.json")
         self.assertEqual(python["lines"]["3.14-trixie"]["revision"], "1.0.1")
+        matrix = read(self.worker / "images/python-matrix/definition.json")
+        self.assertEqual(matrix["lines"]["trixie"]["revision"], "1.0.1")
 
     def test_missing_pr_posts_to_repository_with_explicit_base_and_head(self):
         self.interrupt_after_push()

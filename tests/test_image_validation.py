@@ -101,7 +101,7 @@ class ImageSelectionTests(unittest.TestCase):
             "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
         previous = json.loads((ROOT / "images/tools.json").read_text())
         previous["uv"]["digest"] = "sha256:" + "0" * 64
-        self.assertEqual(self.selected("images/tools.json", previous_tools=previous), ["python-dev/3.14-trixie"])
+        self.assertEqual(self.selected("images/tools.json", previous_tools=previous), ["python-dev/3.14-trixie", "python-matrix/trixie"])
 
     def test_deleted_definition_has_no_current_image_target(self):
         path = "images/rust-dev/definition.json"

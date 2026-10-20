@@ -10,6 +10,7 @@ TOOL_KEYS = {
     "php-frankenphp": ("composer", "redis_version", "xdebug_version", "pcov_version", "symfony", "apcu_version", "infection", "apt_indexes"),
     "uxor-dev": ("node", "tailwind"),
     "python-dev": ("uv", "apt_indexes"),
+    "python-matrix": ("apt_indexes",),
     "rust-dev": ("apt_indexes",),
     "php-browser": ("apt_indexes",),
     "php-serena": ("node",),

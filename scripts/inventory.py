@@ -40,9 +40,12 @@ if family.startswith("php") or family == "uxor-dev":
     if family == "uxor-dev":
         commands.update({"node": ["node", "--version"], "npm": ["npm", "--version"],
                          "tailwindcss": ["tailwindcss", "--help"]})
-elif family == "python-dev":
+elif family in ("python-dev", "python-matrix"):
     runtime = run("python", "-c", "import platform; print(platform.python_version())")
     commands.update({"python": ["python", "--version"], "uv": ["uv", "--version"], "pip": ["python", "-m", "pip", "--version"]})
+    if family == "python-matrix":
+        commands.update({f"python{minor}": [f"python{minor}", "--version"] for minor in ("3.10", "3.12", "3.14")})
+        commands["tmux"] = ["tmux", "-V"]
 elif family == "rust-dev":
     runtime = run("rustc", "--version").split()[1]
     commands.update({"rustc": ["rustc", "--version"], "cargo": ["cargo", "--version"], "rustfmt": ["rustfmt", "--version"], "clippy": ["cargo", "clippy", "--version"], "rustup": ["rustup", "--version"]})
@@ -61,6 +64,13 @@ for line in Path("/etc/os-release").read_text().splitlines():
 result = {"platform": "linux/" + {"x86_64": "amd64", "aarch64": "arm64"}[platform.machine()],
           "runtime_version": runtime, "tools": tools, "extensions": extensions,
           "os": os_release, "packages": run("dpkg-query", "-W", "-f=${Package}=${Version}\\n").splitlines()}
+if family == "python-matrix":
+    result["interpreters"] = {}
+    for minor, expected in json.loads(Path("/opt/xorder/python-matrix/versions.json").read_text()).items():
+        observed = json.loads(run(f"python{minor}", "-c", "import json,platform,sqlite3,sys; print(json.dumps(dict(version=platform.python_version(), executable=sys.executable, sqlite_version=sqlite3.sqlite_version)))"))
+        if observed["version"] != expected:
+            raise SystemExit(f"Python {minor}: expected {expected}, observed {observed['version']}")
+        result["interpreters"][minor] = observed
 if family == "rust-dev":
     result["rust_targets"] = run("rustup", "target", "list", "--installed").splitlines()
 if family == "php-serena":
