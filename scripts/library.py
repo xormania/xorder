@@ -349,6 +349,8 @@ def generated(root=ROOT):
             text += "**Not available:** no verified public release. The following capabilities describe the intended profile.\n\n"
         text += "Capabilities: " + ", ".join(f"`{c}`" for c in d["capabilities"]) + ".\n\n"
         text += "Workspace `/workspace`, HOME `/home/dev`, default UID/GID 1000; configure `PUID` and `PGID`.\n\n"
+        if d["family"] == "harness-live":
+            text += "[Harness installation, updates and interactive use](../harness-live.md) · "
         if d["family"] == "php-toolkit":
             text += "[Toolkit validation and fresh-app recipe](../php-toolkit.md) · "
         if d["family"] == "php-serena":

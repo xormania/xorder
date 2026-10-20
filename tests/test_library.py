@@ -86,14 +86,14 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(affected(["tests/fixtures/php/composer.lock"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["tests/fixtures/python/uv.lock"], defs), ["python-dev/3.14-trixie"])
         self.assertEqual(affected(["tests/fixtures/rust/Cargo.lock"], defs), ["rust-dev/1.99-trixie"])
-        self.assertEqual(len(affected(["images/tools.json"], defs)), 7)
+        self.assertEqual(len(affected(["images/tools.json"], defs)), 8)
         self.assertEqual(affected(["examples/uxor/runner.py"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/uxor/run.sh"], defs), ["php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/shared/network.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["examples/shared/proxy_relay.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
         self.assertEqual(affected(["tests/fixtures/network/check.py"], defs), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie"])
-        self.assertEqual(len(affected(["scripts/new-build-helper.py"], defs)), 7)
-        self.assertEqual(len(affected([".github/workflows/new-image-check.yml"], defs)), 7)
+        self.assertEqual(len(affected(["scripts/new-build-helper.py"], defs)), 8)
+        self.assertEqual(len(affected([".github/workflows/new-image-check.yml"], defs)), 8)
 
     def test_unrelated_tool_pins_do_not_change_release_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -203,7 +203,7 @@ class DiscoveryTests(unittest.TestCase):
                 fp = hashlib.sha256((fp + ref).encode()).hexdigest()
             r["input_fingerprint"] = fp
             accepted.append(r)
-        self.assertEqual(pending_releases(defs, []), ["php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie", "playwright-browser/1.58-trixie", "python-dev/3.14-trixie", "rust-dev/1.99-trixie"])
+        self.assertEqual(pending_releases(defs, []), ["harness-live/trixie", "php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-frankenphp/8.4-trixie", "php-frankenphp/8.5-trixie", "playwright-browser/1.58-trixie", "python-dev/3.14-trixie", "rust-dev/1.99-trixie"])
         self.assertEqual(pending_releases(defs, accepted), [])
         missing = [r for r in accepted if r["line_id"] != "php-browser/8.4-trixie"]
         self.assertEqual(pending_releases(defs, missing), ["php-dev/8.4-trixie"])
@@ -254,7 +254,7 @@ class DiscoveryTests(unittest.TestCase):
             tools["node"]["digest"] = "sha256:" + "f" * 64
             path.write_text(json.dumps(tools))
             changed = [line for line, d in defs.items() if fingerprint(d, root) != before[line]]
-            self.assertEqual(changed, ["php-serena/8.5-trixie", "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
+            self.assertEqual(changed, ["harness-live/trixie", "php-serena/8.5-trixie", "uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
         r = record("uxor-dev/8.5-trixie")
         r["platforms"][0]["inventory"]["tools"]["node"] = "v24.1.0"
         with self.assertRaisesRegex(AssertionError, "Node line must match CI"):

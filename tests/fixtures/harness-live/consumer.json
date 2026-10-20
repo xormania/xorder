@@ -1,0 +1,8 @@
+{
+  "commit": "5b30613769f2aedb7a1ff523f0576374a4a67bb3",
+  "files": {
+    "scripts/testing/live_tmux.py": "f3ba698957922c844282850bb3f1ed395f401f7c79c04ee39244271614a4f264",
+    "src/xordination/adapters.py": "931331b5464bfc9d24242ba5bb5768378980bf5c83023050d16eb04cdc4abd59"
+  },
+  "repository": "https://github.com/xormania/xordination.git"
+}

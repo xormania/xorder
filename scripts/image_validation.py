@@ -99,6 +99,8 @@ def affected_lines(changed, defs, root, previous_tools=None, previous_definition
             inputs.update(line for line, d in defs.items() if consumes(d["family"], path, root, d.get("line")))
             if path.startswith("images/shared/") or path == ".dockerignore":
                 continue
+            elif path.startswith("tests/fixtures/harness-live/"):
+                families = {"harness-live"}
             elif path.startswith(("tests/fixtures/php/", "tests/fixtures/mutation/")):
                 families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev"}
             elif path.startswith(("examples/php-toolkit/", "tests/fixtures/php-toolkit/")):

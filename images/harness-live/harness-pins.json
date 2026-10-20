@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "harnesses": {
+    "codex": {
+      "version": "0.163.0",
+      "installation": "npm install --prefix <version-directory>/npm --save-exact --ignore-scripts --include=optional @openai/codex@0.163.0",
+      "documentation": "https://github.com/openai/codex#installing-and-running-codex-cli"
+    },
+    "claude": {
+      "version": "2.1.302",
+      "installation": "Exact official native release; verify the GPG-signed manifest and its Linux x64 binary SHA-256 before execution",
+      "documentation": "https://code.claude.com/docs/en/setup#binary-integrity-and-code-signing"
+    },
+    "grok": {
+      "version": "1.0.62",
+      "installation": "Exact official @xai-official/grok-linux-x64 npm artifact; verify the registry signature and SHA-512 tarball identity before native extraction",
+      "documentation": "https://docs.x.ai/build/enterprise"
+    }
+  }
+}

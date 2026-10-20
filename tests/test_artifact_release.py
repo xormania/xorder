@@ -409,7 +409,7 @@ class AffectedResourceTests(unittest.TestCase):
         definitions = {"context/guidance": {"kind": "context"}, "binary/composer": {"kind": "binary"}, "environment/php": {"kind": "environment"}}
         self.assertEqual(verify.affected(["scripts/xorder/transport.py"], definitions), sorted(definitions))
         self.assertEqual(image_affected(["scripts/xorder/transport.py"], image_definitions()), [])
-        self.assertEqual(len(image_affected(["scripts/unknown-image-helper.py"], image_definitions())), 7)
+        self.assertEqual(len(image_affected(["scripts/unknown-image-helper.py"], image_definitions())), 8)
 
     def test_environment_verifier_changes_select_native_environment_only(self):
         definitions = {"context/guidance": {"kind": "context"}, "environment/php": {"kind": "environment"}}

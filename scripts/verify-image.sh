@@ -25,6 +25,11 @@ if [[ "$family" = playwright-browser ]]; then
   bash "$root/tests/fixtures/playwright/parity.sh" "$image" "$line"
   exit 0
 fi
+if [[ "$family" = harness-live ]]; then
+  bash "$root/tests/fixtures/harness-live/run.sh" "$image"
+  bash "$root/tests/fixtures/trust/run.sh" "$image"
+  exit 0
+fi
 kind=${family%-dev}
 case "$family" in php-browser|php-toolkit|php-serena|php-frankenphp|uxor-dev) kind=php ;; esac
 work=$(mktemp -d)
