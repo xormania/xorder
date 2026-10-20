@@ -88,10 +88,12 @@ def immutable_record(record):
 def github_json(repository, endpoint):
     headers = {"Accept": "application/vnd.github+json", "User-Agent": "xorder-catalog-check",
                "X-GitHub-Api-Version": "2022-11-28"}
+    request = urllib.request.Request(f"https://api.github.com/repos/{repository}/{endpoint}", headers=headers)
     token = os.environ.get("GH_TOKEN")
     if token:
-        headers["Authorization"] = "Bearer " + token
-    request = urllib.request.Request(f"https://api.github.com/repos/{repository}/{endpoint}", headers=headers)
+        # Authentication belongs only to the original API request. urllib
+        # omits unredirected headers when a response redirects to another URL.
+        request.add_unredirected_header("Authorization", "Bearer " + token)
     # The API origin and HTTPS scheme are constructed here, never supplied by records.
     with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
         return json.load(response)
