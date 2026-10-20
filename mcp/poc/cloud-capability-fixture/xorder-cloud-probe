@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+exec /opt/xorder-cloud-probe/venv/bin/python /opt/xorder-cloud-probe/probe.py "$@"

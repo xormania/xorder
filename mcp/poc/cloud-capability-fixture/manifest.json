@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "fixture_version": "0.1.0",
+  "packet_id": "context/poc-test-kit",
+  "packet_version": "0.0.0-poc.1",
+  "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+  "experimental": true,
+  "base_image": "ghcr.io/xormania/python-dev@sha256:b232a236f5c74402be7488aab9e0c98bbb76a647e9667ac37e0cdb98553af589",
+  "base_release_record": "release-records/python-dev/3.14-trixie/1.1.4.json"
+}

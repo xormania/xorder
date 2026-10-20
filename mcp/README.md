@@ -5,7 +5,9 @@ and diagnostic delivery. **Local and cloud use are both in scope.**
 
 **Development branch:** `feat/xorder-mcp`.
 
-**Status:** scope and executable-work plans; PoCs have not yet been implemented.
+**Status:** scope and work plans, plus a runnable
+[cloud capability fixture](poc/cloud-capability-fixture/README.md). Its image
+build and native cloud acceptance remain to be exercised; see its results.
 
 ## Start here
 

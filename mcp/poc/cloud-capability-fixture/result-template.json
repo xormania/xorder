@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "surface": "record exact product, UI entry point and environment type",
+  "observed_at": null,
+  "fixture_commit": null,
+  "image_id_or_digest": null,
+  "packet_sha256": null,
+  "caller": "outer cloud session | inner CLI | SDK client",
+  "observations": {
+    "setup_install": {"status": "not_tested", "evidence": []},
+    "stdio_transport": {"status": "not_tested", "evidence": []},
+    "http_transport": {"status": "not_tested", "evidence": []},
+    "outer_session_mcp_registration": {"status": "not_tested", "evidence": []},
+    "native_diagnostic_delivery": {"status": "not_tested", "evidence": []},
+    "diagnostic_retrieval_retry": {"status": "not_tested", "evidence": []},
+    "process_restart": {"status": "not_tested", "evidence": []},
+    "fresh_session_reuse": {"status": "not_tested", "evidence": []},
+    "host_egress": {"status": "not_tested", "evidence": []},
+    "container_egress": {"status": "not_tested", "evidence": []},
+    "authenticated_remote_registration": {"status": "not_tested", "evidence": []}
+  },
+  "next_decision": "continue | change approach | blocked on access | route failed"
+}
