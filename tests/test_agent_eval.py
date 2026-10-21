@@ -117,7 +117,7 @@ class AgentEvaluationTests(unittest.TestCase):
         self.assertFalse(marker.exists())
 
     def test_output_is_bounded_hashed_and_not_saved_or_printed(self):
-        secret = "xorder-private-test-value"
+        secret = "xorder-private-test-value"  # nosec B105 # synthetic credential test canary
         self.write_adapter(self.evidence_script() + "print(" + repr(secret) + "); print('a'*2000000)\n")
         observation = self.run_eval()
         self.assertGreater(observation["execution"]["output"][0]["bytes"], 2000000)

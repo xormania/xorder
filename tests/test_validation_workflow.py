@@ -202,7 +202,7 @@ class IncrementalComparisonTests(unittest.TestCase):
                      "head_sha": self.source, "event": "pull_request"}
         listing = {"artifacts": [{"id": 456, "name": "validation-context-1", "expired": False, "size_in_bytes": 10}]}
         env = {"GITHUB_REPOSITORY": "example/repository", "PR_NUMBER": "22",
-               "HEAD_SHA": self.source, "BASE_SHA": "a" * 40, "GITHUB_TOKEN": "test-token"}
+               "HEAD_SHA": self.source, "BASE_SHA": "a" * 40, "GITHUB_TOKEN": "test-token"}  # nosec B105 # synthetic credential test canary
         output = io.StringIO()
         with contextlib.chdir(self.root), patch.dict(os.environ, env), \
                 patch.object(sys, "argv", ["validation_base.py", "--github-output"]), \

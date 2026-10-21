@@ -300,7 +300,7 @@ statefile.write_text(json.dumps(state))
             "PHPSTAN_PATHS": '["custom recipes/src", "custom demo/tests"]',
         }
         self.assertEqual(self.run_profile("php-tests", "coverage", "--filter", "important behavior",
-                                          **overrides, UNRELATED_SECRET="keep-on-host").returncode, 0)
+                                          **overrides, UNRELATED_SECRET="keep-on-host").returncode, 0)  # nosec B106 # synthetic credential test canary
         command = self.calls[-1]["args"]
         forwarded = [command[index + 1] for index, value in enumerate(command) if value == "-e"]
         self.assertEqual(set(forwarded), {key + "=" + value for key, value in overrides.items()})

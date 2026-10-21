@@ -160,6 +160,18 @@ class BanditSarifTests(unittest.TestCase):
         self.assertEqual(record["findings"], 1)
         self.assertEqual(self.read_results()[0]["level"], "error")
 
+    def test_dashboard_omits_only_exact_reviewed_findings_and_retains_raw_evidence(self):
+        entry = self.review()
+        unreviewed = {**self.finding, "test_id": "B105", "issue_severity": "LOW"}
+        record = self.run_report([self.finding, self.finding, unreviewed], dashboard=True)
+        self.assertEqual(record["status"], "reported")
+        self.assertEqual(record["reviewed"], 1)
+        self.assertEqual([row["ruleId"] for row in self.read_results()], ["B108", "B105"])
+        raw = json.loads((self.output / "bandit.json").read_text())["results"]
+        self.assertEqual(raw, [self.finding, self.finding, unreviewed])
+        audit = json.loads((self.output / "bandit-reviewed.json").read_text())
+        self.assertEqual(audit["reviewed"], [{"finding": self.finding, "exception": entry}])
+
     def test_dashboard_report_write_failure_is_an_integrity_error(self):
         write_text = Path.write_text
 
@@ -203,7 +215,7 @@ class BanditSarifTests(unittest.TestCase):
         self.assertEqual(observed[0][0], "bandit")
         self.assertIn("example.py", observed[0][1])
 
-    def test_dashboard_cli_uses_full_scan_and_separate_default_output(self):
+    def test_dashboard_cli_uses_repository_config_and_separate_default_output(self):
         observed = []
 
         def execute(name, command, output, **kwargs):
@@ -217,17 +229,17 @@ class BanditSarifTests(unittest.TestCase):
         self.assertEqual(len(observed), 1)
         name, command, output, kwargs = observed[0]
         self.assertEqual(name, "bandit")
-        self.assertIn("--ignore-nosec", command)
-        self.assertNotIn("-c", command)
-        self.assertNotIn("checks/bandit.yaml", command)
+        self.assertNotIn("--ignore-nosec", command)
+        self.assertIn("-c", command)
+        self.assertIn("checks/bandit.yaml", command)
         self.assertEqual(output, self.root / "out/bandit-dashboard")
         self.assertTrue(kwargs["bandit_dashboard"])
         summary = (output / "summary.md").read_text()
-        self.assertIn("All findings", summary)
-        self.assertIn("not that findings were resolved", summary)
+        self.assertIn("Raw", summary)
+        self.assertIn("configured scan completed", summary)
 
     @unittest.skipUnless(shutil.which("bandit"), "Bandit canary runs with the fast-check tools installed")
-    def test_full_dashboard_scan_retains_assertions_and_nosec_annotations(self):
+    def test_dashboard_honors_repository_config_and_scoped_source_annotations(self):
         (self.root / "tests").mkdir()
         source = self.root / "tests/test_probe.py"
         source.write_text("assert True\nresult = eval('1 + 1')  # nosec B307\n")
@@ -237,10 +249,10 @@ class BanditSarifTests(unittest.TestCase):
             gate = checks.execute("bandit", [*command, "-c", "checks/bandit.yaml", "tests/test_probe.py"], self.output)
             self.assertEqual(gate["status"], "passed")
             self.assertEqual(self.read_results(), [])
-            dashboard = checks.execute("bandit", [*command, "--ignore-nosec", "tests/test_probe.py"],
+            dashboard = checks.execute("bandit", [*command, "-c", "checks/bandit.yaml", "tests/test_probe.py"],
                                        self.output, bandit_dashboard=True)
         self.assertEqual(dashboard["status"], "reported")
-        self.assertEqual({row["ruleId"] for row in self.read_results()}, {"B101", "B307"})
+        self.assertEqual(self.read_results(), [])
 
 
 if __name__ == "__main__":

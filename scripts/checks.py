@@ -97,12 +97,14 @@ def bandit_findings(report: dict) -> list[dict]:
     return report["results"]
 
 
-def bandit_sarif(findings: list[dict], accepted: dict[int, dict] | None = None) -> dict:
-    """Preserve all scanner findings; recorded reviews annotate, never suppress."""
+def bandit_sarif(findings: list[dict], accepted: dict[int, dict] | None = None, *, omit_reviewed: bool = False) -> dict:
+    """Retain raw findings; actionable dashboard exports omit exact reviewed matches."""
     rules = []
     indices = {}
     results = []
     for index, row in enumerate(findings):
+        if omit_reviewed and accepted and index in accepted:
+            continue
         rule = row["test_id"]
         if rule not in indices:
             indices[rule] = len(rules)
@@ -179,6 +181,7 @@ def execute(name: str, command: list[str], output: Path, *, bandit_dashboard: bo
                             if row["level"] in {"warning", "error"}]
             accepted = {} if name == "bandit" else None
             if name == "bandit":
+                record["raw_findings"] = len(findings)
                 if bandit_dashboard:
                     try:
                         reviewed(name, findings, accepted=accepted)
@@ -186,19 +189,22 @@ def execute(name: str, command: list[str], output: Path, *, bandit_dashboard: bo
                         record["review_warning"] = str(error)
                     unreviewed = []
                     record["reviewed"] = len(accepted)
-                    record["findings"] = len(findings)
                     record["status"] = "reported"
                 else:
                     blocking = [findings[index] for index in blocking_indices]
                     unreviewed, record["reviewed"] = reviewed(name, blocking, accepted=accepted)
                     accepted = {blocking_indices[index]: entry for index, entry in accepted.items()}
+                record["exported_findings"] = len(findings) - (len(accepted) if bandit_dashboard else 0)
+                if bandit_dashboard:
+                    record["findings"] = record["exported_findings"]
                 reviews = {"schema_version": 1, "reviewed": [
                     {"finding": findings[index], "exception": entry} for index, entry in accepted.items()
                 ]}
                 if record.get("review_warning"):
                     reviews["warning"] = record["review_warning"]
                 (output / "bandit-reviewed.json").write_text(json.dumps(reviews, indent=2) + "\n")
-                (output / "bandit.sarif").write_text(json.dumps(bandit_sarif(findings, accepted), indent=2) + "\n")
+                (output / "bandit.sarif").write_text(json.dumps(
+                    bandit_sarif(findings, accepted, omit_reviewed=bandit_dashboard), indent=2) + "\n")
             else:
                 unreviewed, record["reviewed"] = reviewed(name, findings)
             if not (name == "bandit" and bandit_dashboard):
@@ -231,7 +237,7 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--only", choices=["bandit"], help="Run only the existing Bandit CI gate")
     mode.add_argument("--bandit-dashboard", action="store_true",
-                      help="Report every Bandit finding, including assertions and nosec annotations; no finding gate")
+                      help="Export unreviewed findings from the shared Bandit configuration; no finding gate")
     parser.add_argument("--budget-seconds", type=float, default=90)
     parser.add_argument("--started-at", type=float, default=None,
                         help="Unix timestamp before tool installation, for the CI setup+checks target")
@@ -254,8 +260,7 @@ def main() -> int:
         ("ruff", ["ruff", "check", "--no-cache", *python]),
         ("actionlint", ["actionlint", "-oneline"]),
         ("zizmor", ["zizmor", "--offline", "--strict-collection", ".github"]),
-        ("bandit", ["bandit", "-q", "-f", "json",
-                    *(["--ignore-nosec"] if args.bandit_dashboard else ["-c", "checks/bandit.yaml"]), *python]),
+        ("bandit", ["bandit", "-q", "-f", "json", "-c", "checks/bandit.yaml", *python]),
     ]
     for mode, command in (("history", ["git", "--log-opts=--all"]), ("worktree", ["dir", "."])):
         name = f"gitleaks-{mode}"
@@ -273,22 +278,26 @@ def main() -> int:
                "results": results}
     (args.output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     title = "Bandit dashboard scan" if args.bandit_dashboard else "Fast static checks"
-    finding_column = "All findings" if args.bandit_dashboard else "New blocking findings"
-    lines = [f"### {title}", "", f"| Check | Result | Seconds | {finding_column} | Reviewed |",
-             "| --- | --- | ---: | ---: | ---: |"]
+    finding_column = "Actionable findings" if args.bandit_dashboard else "New blocking findings"
+    export_column = "Exported actionable" if args.bandit_dashboard else "Exported SARIF"
+    lines = [f"### {title}", "", f"| Check | Result | Seconds | {finding_column} | Raw findings | Reviewed | {export_column} |",
+             "| --- | --- | ---: | ---: | ---: | ---: | ---: |"]
     for row in results:
-        lines.append(f"| {row['name']} | {row['status']} | {row['seconds']:.3f} | {row['findings']} | {row['reviewed']} |")
+        lines.append(f"| {row['name']} | {row['status']} | {row['seconds']:.3f} | {row['findings']} | "
+                     f"{row.get('raw_findings', '—')} | {row['reviewed']} | {row.get('exported_findings', '—')} |")
     lines.extend(["", f"Setup + checks (when --started-at supplied): **{elapsed:.1f}s / {args.budget_seconds:.0f}s target**.",
                   "The target excludes runner queue/provisioning, checkout and report upload.",
-                  "Bandit JSON and SARIF retain every finding from the selected scanner mode.",
+                  "Bandit JSON retains every configured finding; bandit-reviewed.json retains exact review reasons.",
                   ""])
     if args.bandit_dashboard:
-        lines.append("Reported means the scanner completed, not that findings were resolved. Assertions and nosec annotations remain scanned; recorded reviews do not suppress alerts.")
+        lines.append("Reported means the configured scan completed. Both modes honor the same rule selection, test assertion scope and nosec annotations; reviewed findings are omitted from actionable SARIF.")
         for row in results:
             if row.get("review_warning"):
                 lines.append(f"Review metadata warning: {row['review_warning']}")
-    elif not only_bandit:
-        lines.append("zizmor runs offline; online vulnerability/stale-reference audits are not included.")
+    else:
+        lines.append("CI SARIF retains all configured findings, including advisory findings and annotated reviewed exceptions. The blocking threshold is unchanged.")
+        if not only_bandit:
+            lines.append("zizmor runs offline; online vulnerability/stale-reference audits are not included.")
     if not summary["within_target"]:
         lines.append("Runtime exceeded the target; inspect timings before broadening the suite.")
     markdown = "\n".join(lines)

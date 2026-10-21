@@ -193,7 +193,7 @@ class ValidationBaseCommandTests(unittest.TestCase):
 
     def test_unavailable_run_history_checks_the_merge_checkout_and_full_metadata(self):
         env = {"BASE_SHA": BASE, "HEAD_SHA": HEAD, "PR_NUMBER": "22",
-               "GITHUB_TOKEN": "test-token", "GITHUB_REPOSITORY": "example/repository"}
+               "GITHUB_TOKEN": "test-token", "GITHUB_REPOSITORY": "example/repository"}  # nosec B105 # synthetic credential test canary
         checkout = {"base_sha": BASE, "checkout_tree": TREE}
         with patch("validation_base.observed_checkout", return_value=checkout), \
                 patch("validation_base.urlopen", side_effect=URLError("unavailable")), \

@@ -113,7 +113,8 @@ class BrowserReleaseTests(unittest.TestCase):
                     browser_release.accepted_evidence(self.line, self.source, self.artifact, path)
 
     def test_verification_refuses_publication_credentials_before_starting_docker(self):
-        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {"GH_TOKEN": "test-only-token"}), \
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {"GH_TOKEN": "test-only-token"  # nosec B105 # synthetic credential test canary
+                }), \
                 patch.object(browser_release.subprocess, "run") as docker:
             path = Path(folder) / "candidate.json"
             path.write_text(json.dumps(self.proposal()))
@@ -143,7 +144,7 @@ class BrowserReleaseTests(unittest.TestCase):
                 patch.object(release, "stage_assurance", return_value={"receipt_url": "https://github.com/xormania/xorder/releases/download/" + quote(self.line + "/v" + proof["version"], safe="") + "/assurance.json", "receipt_sha256": "a" * 64, "predicate_type": "https://github.com/xormania/xorder/assurance/v1"}), \
                 patch("image_assurance.verify_record"), \
                 patch.object(browser_release, "public_parity_application", return_value=("https://github.com/xormania/uxor.git", "a" * 40, "1.58.2", "ghcr.io/xormania/uxor-dev@sha256:" + "b" * 64)), \
-                patch.dict(os.environ, {"GH_TOKEN": "test-only-token", "GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42"}):
+                patch.dict(os.environ, {"GH_TOKEN": "test-only-token", "GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42"}):  # nosec B105 # synthetic credential test canary
             evidence = Path(folder) / "proof.json"
             evidence.write_text(encoded(proof))
             published = release.publish(self.line, self.source, Path(folder) / "release", browser_evidence=evidence)

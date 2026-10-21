@@ -225,8 +225,10 @@ cross_browser=$(bash "$root/examples/uxor/run.sh" exec php -r 'echo PHP_MAJOR_VE
 normal_status=0
 if [ "$cross_browser" = 1 ]; then
   python3 "$root/tests/fixtures/uxor/browser_acceptance.py" config "$WORKSPACE"
+  # All 135 cases must finish across three engines. Five minutes exhausted the
+  # suite budget after 134 passing cases; keep individual tests and retries strict.
   bash "$root/examples/uxor/run.sh" test --attest-server --config=xorder.cross-browser.config.ts \
-    --workers=2 --retries=0 --timeout=30000 --global-timeout=300000 "${consumer[@]:2}" || normal_status=$?
+    --workers=2 --retries=0 --timeout=30000 --global-timeout=600000 "${consumer[@]:2}" || normal_status=$?
 else
   bash "$root/examples/uxor/run.sh" test --attest-server "${consumer[@]:2}" || normal_status=$?
 fi

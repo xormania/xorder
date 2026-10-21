@@ -108,7 +108,8 @@ class AssuranceTests(unittest.TestCase):
             if args[1] == "verify-attestation":
                 return envelope(self.sbom if args[3] == "cyclonedx" else self.receipt)
             return "[]"
-        with patch.dict(os.environ, {"GH_TOKEN": "private", "GITHUB_TOKEN": "private", "DOCKER_CONFIG": "/publisher", "REGISTRY_AUTH_FILE": "/private"}), \
+        with patch.dict(os.environ, {"GH_TOKEN": "private", "GITHUB_TOKEN": "private", "DOCKER_CONFIG": "/publisher", "REGISTRY_AUTH_FILE": "/private"  # nosec B105 # synthetic credential test canary
+                }), \
                 patch.object(assurance, "run", side_effect=commands) as run:
             self.assertEqual(assurance.verify_local(self.receipt, self.folder), self.receipt)
             self.assertEqual(run.call_count, 3)
@@ -199,8 +200,8 @@ class AssuranceTests(unittest.TestCase):
             path.write_text(encoded(value))
             return ""
         with patch.dict(os.environ, {"GITHUB_WORKFLOW_REF": assurance.IDENTITY.removeprefix("https://github.com/"),
-                                    "GH_TOKEN": "publisher", "TRIVY_USERNAME": "publisher",
-                                    "TRIVY_PASSWORD": "private", "TRIVY_REGISTRY_TOKEN": "private",
+                                    "GH_TOKEN": "publisher", "TRIVY_USERNAME": "publisher",  # nosec B105 # synthetic credential test canary
+                                    "TRIVY_PASSWORD": "private", "TRIVY_REGISTRY_TOKEN": "private",  # nosec B105 # synthetic credential test canary
                                     "TRIVY_SEVERITY": "LOW", "TRIVY_IGNOREFILE": "/publisher/ignore"}), \
                 patch.object(assurance, "run", side_effect=scanner), self.assertRaisesRegex(RuntimeError, "scan blocked"):
             assurance.create(IMAGE, SOURCE, EVIDENCE, self.folder / "blocked")

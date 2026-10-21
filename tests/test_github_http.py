@@ -27,7 +27,8 @@ class GitHubHttpTests(unittest.TestCase):
                 'https://api.github.com.example.test/data', 'http://api.github.com/data',
                 'https://api.github.com:444/data', 'https://user@api.github.com/data')
         for url in urls:
-            with self.subTest(url=url), patch.dict(os.environ, {'GH_TOKEN': 'fixture-token'}, clear=True), \
+            with self.subTest(url=url), patch.dict(os.environ, {'GH_TOKEN': 'fixture-token'  # nosec B105 # synthetic credential test canary
+                    }, clear=True), \
                     patch.object(github_http.urllib.request, 'urlopen', return_value=io.BytesIO(b'{}')) as open_url:
                 self.assertEqual(github_http.fetch_json(url), {})
                 request = open_url.call_args.args[0]
@@ -37,8 +38,8 @@ class GitHubHttpTests(unittest.TestCase):
                 self.assertIsNone(redirected.get_header('Authorization'))
 
     def test_workflow_token_fallback_and_anonymous_reads(self):
-        for environment, expected in (({'GITHUB_TOKEN': 'fallback'}, 'Bearer fallback'),
-                                      ({'GITHUB_TOKEN': 'fallback', 'GH_TOKEN': 'preferred'}, 'Bearer preferred'),
+        for environment, expected in (({'GITHUB_TOKEN': 'fallback'}, 'Bearer fallback'),  # nosec B105 # synthetic credential test canary
+                                      ({'GITHUB_TOKEN': 'fallback', 'GH_TOKEN': 'preferred'}, 'Bearer preferred'),  # nosec B105 # synthetic credential test canary
                                       ({}, None)):
             with patch.dict(os.environ, environment, clear=True), \
                     patch.object(github_http.urllib.request, 'urlopen', return_value=io.BytesIO(b'{"sha":"pin"}')) as open_url:

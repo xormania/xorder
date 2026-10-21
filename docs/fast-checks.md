@@ -33,30 +33,39 @@ failure. Gitleaks reports redact secret values completely. Bandit advisory
 findings remain in `bandit.json`. Missing tools, timeouts, malformed reports,
 Bandit parse/plugin errors and stale exceptions fail the check.
 
-The CI gate and the Security dashboard serve different purposes. The gate keeps
-its existing severity/confidence threshold and exact reviewed exceptions. Its
-`bandit.json` and `bandit.sarif` retain every finding actually produced by that
-configured scan, including advisory and reviewed findings. Reviewed findings
-carry their recorded rationale in the SARIF message and properties; they are
-never omitted or marked suppressed. `bandit-reviewed.json` retains their full
-exception records, including source hashes and reasons.
+Both Bandit modes use `checks/bandit.yaml` and honor scoped `nosec` annotations.
+The configuration skips import-only subprocess notices, shell-free process
+notices and caller-owned PATH warnings (`B404`, `B603`, `B606`, `B607`). Shell,
+`shell=True` and wildcard-injection checks remain enabled. Assertions are
+permitted throughout `tests/`, including acceptance fixtures; production
+scripts, examples and installed image tools retain `B101` checks. Credential,
+network, certificate and other security rules remain enabled.
+
+The CI gate keeps its existing severity/confidence threshold and exact reviewed
+exceptions. Its `bandit.json` and `bandit.sarif` retain every finding produced by
+the configured scan, including advisory and annotated reviewed findings.
+`bandit-reviewed.json` retains full exception records, source hashes and reasons.
 
 The dedicated dashboard workflow runs `python scripts/checks.py
---bandit-dashboard`. It scans the same complete Python input set with
-`--ignore-nosec` and without the CI configuration, preserving test assertions
-and annotated calls as well as low-severity/low-confidence findings. Its raw JSON,
-complete SARIF, review audit and summary live in `out/bandit-dashboard/`.
-Recorded CI exceptions annotate findings; they do not close dashboard alerts.
-Stale review metadata produces a warning while the complete raw scan remains
-publishable. Scanner failures and malformed results prohibit SARIF publication
-and cannot reuse an earlier report. Dashboard workflow success means that the
-scanner completed; it does not mean findings were resolved.
+--bandit-dashboard`. It scans the same complete Python input set and retains
+every configured finding in raw JSON. Its actionable SARIF omits only findings
+matched to an existing exact reviewed exception. Every unreviewed finding is
+exported regardless of severity or confidence, independently of the CI blocking
+threshold. The raw report, review audit and summary distinguish raw, reviewed
+and exported counts in `out/bandit-dashboard/`.
+
+Stale review metadata warns and leaves unmatched findings visible; it cannot
+authorize their omission. Scanner failures or malformed results prohibit SARIF
+publication and cannot reuse an earlier report. Dashboard workflow success means
+that the configured scan completed. A fresh trusted upload updates the existing
+alert population; repository tuning does not manually dismiss GitHub alerts.
 
 The reporting workflow retains the original workflow/job identity so fresh
 results update the existing Bandit configuration. The PR fast-check job keeps
 read-only permissions; the reporting workflow owns the separate code-scanning
 upload permission. `--only bandit` remains available for running the existing
-CI gate alone; its configured report is not uploaded as the full dashboard scan.
+CI gate alone; its annotated report is not uploaded as the actionable dashboard
+scan.
 
 Dashboard publishing runs only for trusted master pushes, scheduled scans or
 manual master runs. PR workflows do not export the repository's privileged
@@ -104,8 +113,8 @@ container-only paths/listeners, and Dockerfile policies already exercised by
 behavioral checks. Low-level Hadolint package pinning advice does not override
 the documented Debian package-feed refresh policy. Production URL calls use
 individual B310 annotations after verifying HTTPS construction or explicit
-HTTP/HTTPS scheme checks. Bandit permits assertions only in `tests/test_*.py`
-unit modules; executable fixtures and production scripts retain assertion checks.
+HTTP/HTTPS scheme checks. Keep annotations scoped to the reviewed rule and
+call site; avoid directory exclusions or blanket security-rule skips.
 
 Gitleaks extends its default rules. Its single added exception requires both a
 generated catalog/release-record path and the exact `build_key` SHA-256 JSON

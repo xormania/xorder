@@ -482,7 +482,7 @@ def main():
     value = run(args.scenario.resolve(), args.adapter.resolve(), args.output, args.source_commit,
                 args.timeout, args.human_interventions)
     print(value["outcome"] + ": " + value["reason"] + " (" + str(args.output.resolve()) + ")")
-    return {"pass": 0, "fail": 1, "indeterminate": 2}[value["outcome"]]
+    return {"pass": 0, "fail": 1, "indeterminate": 2}[value["outcome"]]  # nosec B105 # outcome key, not a credential
 
 
 if __name__ == "__main__":

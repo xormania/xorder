@@ -151,7 +151,7 @@ class ResourcePublicationTests(unittest.TestCase):
                 patch.object(release, "download", side_effect=self.transfer), \
                 patch.object(release.time, "monotonic", side_effect=lambda: self.clock), \
                 patch.object(release.time, "sleep", side_effect=self.sleep), \
-                patch.dict(os.environ, {"GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42", "GH_TOKEN": "must-not-be-forwarded"}):
+                patch.dict(os.environ, {"GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42", "GH_TOKEN": "must-not-be-forwarded"}):  # nosec B105 # synthetic credential test canary
             return release.publish(self.resource_id, self.source, self.root / "out", self.repo)
 
     def test_delayed_visibility_retries_reads_without_repeating_any_write(self):

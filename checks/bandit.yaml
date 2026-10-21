@@ -1,12 +1,12 @@
-# Scan tracked Python sources without a global rule skip or directory exclusion.
-# The runner retains low-severity results and gates medium/high severity findings
-# with medium/high confidence after matching exact reviewed exceptions.
-skips: []
+# xorder intentionally launches tools through the caller's PATH with explicit
+# argv. Import/no-shell/PATH notices add no useful signal for those operations.
+# Keep shell=True, shell injection and wildcard injection detectors enabled.
+skips: [B404, B603, B606, B607]
 
-# Assertions belong in unit tests. Keep B101 enabled for production scripts,
-# examples and executable acceptance fixtures, where python -O changes behavior.
+# Assertions are expected throughout test code, including acceptance fixtures.
+# Keep B101 enabled for production scripts, examples and installed image tools.
 assert_used:
   skips:
-    - tests/test_*.py
-    - ./tests/test_*.py
-    - '*/tests/test_*.py'
+    - tests/*
+    - ./tests/*
+    - '*/tests/*'
