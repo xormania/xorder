@@ -323,8 +323,8 @@ if sys.argv[1] == "init":
         self.prepare_parity()
         proxies = {"HTTP_PROXY": "http://reachable.test:3128", "HTTPS_PROXY": "http://reachable.test:3129",
                    "NO_PROXY": "localhost,internal.test", "CA_CERTIFICATE": str(self.ca)}
-        credentials = {"GH_TOKEN": "must-not-forward", "GITHUB_TOKEN": "must-not-forward",
-                       "DOCKER_AUTH_CONFIG": "must-not-forward", "AWS_SECRET_ACCESS_KEY": "must-not-forward",
+        credentials = {"GH_TOKEN": "must-not-forward", "GITHUB_TOKEN": "must-not-forward",  # nosec B105 # synthetic credential test canary
+                       "DOCKER_AUTH_CONFIG": "must-not-forward", "AWS_SECRET_ACCESS_KEY": "must-not-forward",  # nosec B105 # synthetic credential test canary
                        "UNRELATED_SETTING": "must-not-forward"}
         self.assert_success(self.execute("tests/fixtures/playwright/parity.sh", "browser:test", "playwright-browser/fixture",
                                          DOCKER_CONFIG="/caller/credential/config", **proxies, **credentials))

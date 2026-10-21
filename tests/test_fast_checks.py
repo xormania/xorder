@@ -113,6 +113,54 @@ class FastCheckTests(unittest.TestCase):
             self.assertEqual(findings[0]["RuleID"], "generic-api-key")
             self.assertNotIn(token, report.read_text())
 
+    @unittest.skipUnless(shutil.which("bandit"), "Bandit canary runs with the fast-check tools installed")
+    def test_bandit_tuning_preserves_risk_detection_and_limits_test_exemptions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "tests/fixtures").mkdir(parents=True)
+            (root / "production.py").write_text(textwrap.dedent('''\
+                import os
+                import subprocess
+                import requests
+                import urllib.request
+                def exercise(command):
+                    assert command
+                    subprocess.run(command, shell=True)
+                    runner(command, shell=True)
+                    os.system(command)
+                    subprocess.run("tar -cf out.tar *", shell=True)
+                    requests.get("https://example.invalid", verify=False)
+                    urllib.request.urlopen(command)
+                    password = "synthetic-production-canary"
+                    connect(password="synthetic-argument-canary")
+                    return password
+                '''))
+            (root / "safe.py").write_text(textwrap.dedent('''\
+                import os
+                import subprocess
+                subprocess.run(["git", "--version"])
+                os.execvp("git", ["git", "--version"])
+                '''))
+            (root / "tests/fixtures/probe.py").write_text(textwrap.dedent('''\
+                assert True
+                password = "synthetic-reviewed-canary"  # nosec B105
+                secret = "synthetic-unreviewed-canary"
+                '''))
+            completed = subprocess.run(
+                ["bandit", "-q", "-f", "json", "-c", str(checks.ROOT / "checks/bandit.yaml"),
+                 "production.py", "safe.py", "tests/fixtures/probe.py"],
+                cwd=root, capture_output=True, text=True, timeout=15)
+            self.assertEqual(completed.returncode, 1, completed.stderr)
+            report = json.loads(completed.stdout)
+            self.assertEqual(report["errors"], [])
+            results = report["results"]
+            production_rules = {row["test_id"] for row in results if row["filename"].endswith("/production.py")}
+            self.assertTrue({"B101", "B105", "B106", "B501", "B602", "B604", "B605", "B609", "B310"}
+                            .issubset(production_rules), production_rules)
+            self.assertFalse(any(row["filename"].endswith("/safe.py") for row in results))
+            fixture_results = [row for row in results if row["filename"].endswith("/tests/fixtures/probe.py")]
+            self.assertEqual([(row["test_id"], row["line_number"]) for row in fixture_results], [("B105", 3)])
+
 
 if __name__ == "__main__":
     unittest.main()

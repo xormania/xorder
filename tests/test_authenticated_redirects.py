@@ -30,7 +30,7 @@ class AuthenticatedRedirectTests(unittest.TestCase):
         self.assertIsNone(redirected.get_header("Authorization"))
 
     def test_catalog_api_authenticates_initial_request_but_not_redirects(self):
-        for environment, expected in (({"GH_TOKEN": "synthetic-api-token"}, "Bearer synthetic-api-token"),
+        for environment, expected in (({"GH_TOKEN": "synthetic-api-token"}, "Bearer synthetic-api-token"),  # nosec B105 # synthetic credential test canary
                                       ({}, None)):
             with self.subTest(authenticated=bool(expected)), patch.dict(os.environ, environment, clear=True), \
                     patch.object(catalog_checks.urllib.request, "urlopen", return_value=Response(b'{"id":1}')) as open_url:
@@ -48,7 +48,8 @@ class AuthenticatedRedirectTests(unittest.TestCase):
                 return Response(b'{"token":"synthetic-registry-token"}')
             return Response(b'{}', {"Docker-Content-Digest": "sha256:synthetic"})
 
-        with patch.dict(os.environ, {"GITHUB_ACTOR": "example", "GH_TOKEN": "synthetic-login-token"}, clear=True), \
+        with patch.dict(os.environ, {"GITHUB_ACTOR": "example", "GH_TOKEN": "synthetic-login-token"  # nosec B105 # synthetic credential test canary
+                }, clear=True), \
                 patch.object(registry.urllib.request, "urlopen", side_effect=open_url):
             self.assertEqual(registry.resolve("ghcr.io/example/image:v1", authenticated=True),
                              {"digest": "sha256:synthetic", "platforms": {}})

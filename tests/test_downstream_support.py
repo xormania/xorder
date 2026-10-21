@@ -204,7 +204,7 @@ class PolicyAcquisitionTests(unittest.TestCase):
                 return self
             def __exit__(self, *args):
                 pass
-        with patch.object(support.urllib.request, "build_opener") as opener, patch.dict("os.environ", {"GITHUB_TOKEN": "secret"}):
+        with patch.object(support.urllib.request, "build_opener") as opener, patch.dict("os.environ", {"GITHUB_TOKEN": "secret"}):  # nosec B105 # synthetic credential test canary
             opener.return_value.open.return_value = Response()
             value = support._fetch_policy_body(support.DEFAULT_POLICY_URL)
         request = opener.return_value.open.call_args.args[0]
@@ -217,7 +217,7 @@ class PolicyAcquisitionTests(unittest.TestCase):
 
     def test_policy_worker_has_a_wall_deadline_and_no_repository_credentials(self):
         with patch.object(support, "_process_json", return_value=policy()) as process, \
-                patch.dict("os.environ", {"GITHUB_TOKEN": "secret", "GH_TOKEN": "secret", "HTTPS_PROXY": "http://proxy.example:8080"}):
+                patch.dict("os.environ", {"GITHUB_TOKEN": "secret", "GH_TOKEN": "secret", "HTTPS_PROXY": "http://proxy.example:8080"}):  # nosec B105 # synthetic credential test canary
             value = support.fetch_snapshot(now=NOW)
         arguments = process.call_args
         self.assertNotIn("GITHUB_TOKEN", arguments.kwargs["env"])

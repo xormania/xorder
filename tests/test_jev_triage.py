@@ -23,7 +23,7 @@ class FakeOpener:
 
 class JevTriageTests(unittest.TestCase):
     def setUp(self):
-        self.env = {"TYPESAFE_API_KEY": "private-provider-key", "OTHER_TOKEN": "private-log-token"}
+        self.env = {"TYPESAFE_API_KEY": "private-provider-key", "OTHER_TOKEN": "private-log-token"}  # nosec B105 # synthetic credential test canary
         self.receipt = {"exit_code": 1, "started_at": "2026-10-11T02:00:00Z",
                         "host_start": {"load": 17, "cpus": 4},
                         "resolved_projects": [{"name": "webkit", "base_url": "https://php"}],
