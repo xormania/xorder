@@ -325,6 +325,8 @@ from the seeded binary, runs PHPUnit with a nonempty Clover coverage report,
 and runs calendar, dropzone, both data-table and both editor lab specs. PHP 8.5
 executes these 45 behavior cases in Chromium, Firefox and WebKit using each
 engine's desktop device profile, for 135 cases; PHP 8.4 retains 45 Chromium cases.
+The three-engine suite has a ten-minute total budget, a 30-second per-test limit,
+and zero retries; its receipt must contain all 135 executed passes.
 Both inspect the actual default 4 GiB browser container limit. The 8.5 fixture
 also checks a real child OOM in an isolated browser-service container, including
 the original failed command exit and current-window cgroup evidence. This probe
