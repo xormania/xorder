@@ -1,0 +1,2 @@
+Image checks passed: offline runtime, stdio, published HTTP port, UID, retained directory.
+Native cloud registration, hook delivery and fresh-session reuse remain untested.

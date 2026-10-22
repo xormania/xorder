@@ -1,0 +1,19 @@
+{
+  "error_type": "ExceptionGroup",
+  "evidence_kind": "sdk-client",
+  "fixture_files_sha256": {
+    "manifest.json": "sha256:4115598f814b780ac4acdbeb289d9ef3aa4b6c7dc8c7d602430314e3c24d53ee",
+    "packet.md": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+    "probe.py": "sha256:4ba99c59f982a9ce79577bda7d3e6fce612437c3a567d652dba10daee3b42c03",
+    "requirements.lock": "sha256:c722903d974e58b9fa6f34099824f20a0c929f33c0d46cd1b5074e64b3af56ff",
+    "smoke.py": "sha256:7334c0d64d310af7711f9ebd4de87b659707f354a5dbc95a3b5f4ed49c4613b6"
+  },
+  "fresh_session_persistence": "not_tested",
+  "native_hook_delivery": "not_tested",
+  "observations": [],
+  "observed_at": "2026-10-20T10:05:32.356411+00:00",
+  "outer_session_registration": "not_tested",
+  "protocol_mode": "auto",
+  "schema_version": 1,
+  "status": "failed"
+}

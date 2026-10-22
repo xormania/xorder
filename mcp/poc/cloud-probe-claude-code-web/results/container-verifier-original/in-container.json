@@ -1,0 +1,95 @@
+{
+  "evidence_kind": "sdk-client",
+  "fixture_files_sha256": {
+    "manifest.json": "sha256:4115598f814b780ac4acdbeb289d9ef3aa4b6c7dc8c7d602430314e3c24d53ee",
+    "packet.md": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+    "probe.py": "sha256:4ba99c59f982a9ce79577bda7d3e6fce612437c3a567d652dba10daee3b42c03",
+    "requirements.lock": "sha256:c722903d974e58b9fa6f34099824f20a0c929f33c0d46cd1b5074e64b3af56ff",
+    "smoke.py": "sha256:7334c0d64d310af7711f9ebd4de87b659707f354a5dbc95a3b5f4ed49c4613b6"
+  },
+  "fresh_session_persistence": "not_tested",
+  "native_hook_delivery": "not_tested",
+  "observations": [
+    {
+      "caller": "SDK test client; not a cloud conversation",
+      "challenge": "4a85ba8aa3ab4ac7bd4bacfd7950036f",
+      "checks": [
+        "discovery",
+        "fresh-challenge",
+        "exact-packet",
+        "section-digest",
+        "unknown-identity-error",
+        "input-bound",
+        "diagnostic-error",
+        "receipt-retry"
+      ],
+      "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+      "protocol_version": "2026-07-28",
+      "server": {
+        "architecture": "x86_64",
+        "boot_id": "ced62105-b459-4c86-a4d3-4bd397536106",
+        "challenge": "4a85ba8aa3ab4ac7bd4bacfd7950036f",
+        "fixture_version": "0.1.0",
+        "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+        "platform": "Linux",
+        "python": "3.14.8",
+        "scope": "fixture-process; caller identity must be recorded separately",
+        "sdk": "mcp",
+        "sdk_version": "2.3.0",
+        "source_commit": "unrecorded",
+        "uid": 1000
+      },
+      "status": "passed",
+      "tools": [
+        "xorder_catalog_search",
+        "xorder_context_get",
+        "xorder_probe_check",
+        "xorder_probe_status"
+      ],
+      "transport": "stdio"
+    },
+    {
+      "caller": "SDK test client; not a cloud conversation",
+      "challenge": "175e1c92b0ad44f7b2a8eb678bb5eb75",
+      "checks": [
+        "discovery",
+        "fresh-challenge",
+        "exact-packet",
+        "section-digest",
+        "unknown-identity-error",
+        "input-bound",
+        "diagnostic-error",
+        "receipt-retry"
+      ],
+      "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+      "protocol_version": "2026-07-28",
+      "server": {
+        "architecture": "x86_64",
+        "boot_id": "2ec28acf-aace-4798-95df-c9f06dd61201",
+        "challenge": "175e1c92b0ad44f7b2a8eb678bb5eb75",
+        "fixture_version": "0.1.0",
+        "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+        "platform": "Linux",
+        "python": "3.14.8",
+        "scope": "fixture-process; caller identity must be recorded separately",
+        "sdk": "mcp",
+        "sdk_version": "2.3.0",
+        "source_commit": "7cbf2ed56dc6381d431d8b428999d06e0ecef6ba",
+        "uid": 1000
+      },
+      "status": "passed",
+      "tools": [
+        "xorder_catalog_search",
+        "xorder_context_get",
+        "xorder_probe_check",
+        "xorder_probe_status"
+      ],
+      "transport": "http-loopback"
+    }
+  ],
+  "observed_at": "2026-10-20T10:05:24.257755+00:00",
+  "outer_session_registration": "not_tested",
+  "protocol_mode": "auto",
+  "schema_version": 1,
+  "status": "passed"
+}

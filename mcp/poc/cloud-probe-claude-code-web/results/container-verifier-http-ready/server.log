@@ -1,0 +1,8 @@
+Invalid Host header: 127.0.0.1
+{"event": "fixture-call", "operation": "xorder_probe_status", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": "67200d503b254aefad863b3a267a4122"}
+{"event": "fixture-call", "operation": "xorder_catalog_search", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": null}
+{"event": "fixture-call", "operation": "xorder_context_get", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": null}
+{"event": "fixture-call", "operation": "xorder_context_get", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": null}
+{"event": "fixture-call", "operation": "xorder_context_get", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": null}
+{"event": "fixture-call", "operation": "xorder_probe_check", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": null}
+{"event": "fixture-call", "operation": "xorder_probe_check", "boot_id": "eb1f30c7-98b8-4d57-9629-4f5e286977b9", "challenge": null}

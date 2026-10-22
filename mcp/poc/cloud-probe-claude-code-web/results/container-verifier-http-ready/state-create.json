@@ -1,0 +1,1 @@
+{"observation": "file-read", "scope": "this path only; session persistence requires a later independent read", "sha256": "sha256:ab8b476b87c4d8400df15125343fa99c9b4dce2a6655e4310bb88f7a75ce8f18", "state": {"challenge": "container-restart", "fixture_version": "0.1.0", "marker": "b7458301-4122-4002-a136-be2feafff7ae", "schema_version": 1}}

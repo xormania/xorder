@@ -1,0 +1,57 @@
+{
+  "evidence_kind": "sdk-client",
+  "fixture_files_sha256": {
+    "manifest.json": "sha256:4115598f814b780ac4acdbeb289d9ef3aa4b6c7dc8c7d602430314e3c24d53ee",
+    "packet.md": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+    "probe.py": "sha256:4ba99c59f982a9ce79577bda7d3e6fce612437c3a567d652dba10daee3b42c03",
+    "requirements.lock": "sha256:c722903d974e58b9fa6f34099824f20a0c929f33c0d46cd1b5074e64b3af56ff",
+    "smoke.py": "sha256:7334c0d64d310af7711f9ebd4de87b659707f354a5dbc95a3b5f4ed49c4613b6"
+  },
+  "fresh_session_persistence": "not_tested",
+  "native_hook_delivery": "not_tested",
+  "observations": [
+    {
+      "caller": "SDK test client; not a cloud conversation",
+      "challenge": "e8286c4947714e2ab6ff1e0db83a3e72",
+      "checks": [
+        "discovery",
+        "fresh-challenge",
+        "exact-packet",
+        "section-digest",
+        "unknown-identity-error",
+        "input-bound",
+        "diagnostic-error",
+        "receipt-retry"
+      ],
+      "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+      "protocol_version": "2026-07-28",
+      "server": {
+        "architecture": "x86_64",
+        "boot_id": "351c7f5b-2965-4c27-ae23-1c01d15532a8",
+        "challenge": "e8286c4947714e2ab6ff1e0db83a3e72",
+        "fixture_version": "0.1.0",
+        "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+        "platform": "Linux",
+        "python": "3.14.8",
+        "scope": "fixture-process; caller identity must be recorded separately",
+        "sdk": "mcp",
+        "sdk_version": "2.3.0",
+        "source_commit": "7cbf2ed56dc6381d431d8b428999d06e0ecef6ba",
+        "uid": 1000
+      },
+      "status": "passed",
+      "tools": [
+        "xorder_catalog_search",
+        "xorder_context_get",
+        "xorder_probe_check",
+        "xorder_probe_status"
+      ],
+      "transport": "http-explicit-endpoint"
+    }
+  ],
+  "observed_at": "2026-10-20T10:06:12.608320+00:00",
+  "outer_session_registration": "not_tested",
+  "protocol_mode": "auto",
+  "schema_version": 1,
+  "status": "passed"
+}

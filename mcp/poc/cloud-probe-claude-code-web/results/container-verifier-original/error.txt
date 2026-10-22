@@ -1,0 +1,2 @@
+    | httpcore2.ReadError
+    | httpx2.ReadError

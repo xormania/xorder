@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "surface": "Claude Code on the web (claude.ai/code); session origin web_claude_ai; environment_kind anthropic_cloud; CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE cloud_default; one repository; Firecracker VM, Ubuntu 24.04 x86_64; running Claude Code 2.1.304 (pid 88 exe /opt/claude-code/bin/claude); auto permission mode",
+  "observed_at": "2026-10-20T10:02:52Z/2026-10-20T10:14:34Z",
+  "fixture_commit": "7cbf2ed56dc6381d431d8b428999d06e0ecef6ba (clean at build and smoke time; origin/feat/xorder-mcp, PR #80 merge; branch poc/mcp-cloud-capability-fixture no longer exists on origin)",
+  "image_id_or_digest": "sha256:51308f2c2c74cc41aab9cf264d6be743925d96727acea44fece0880a3e925944 (local xorder-cloud-probe:poc, linux/amd64, revision label 7cbf2ed; not published)",
+  "packet_sha256": "sha256:a7e9e45f5d0bd820eadf87b2ae62a66baf7ceb34ac09f740b92a4e11e88dc206",
+  "caller": "SDK client (smoke.py) started from the outer cloud session's Bash tool. No native MCP call by the outer cloud session was executed.",
+  "observations": {
+    "setup_install": {"status": "passed", "evidence": [
+      "Hash-locked venv install (mcp 2.3.0) on host Python 3.13.16; 4 fixture unit tests passed.",
+      "Docker client present but no daemon at session start; this session started dockerd 29.9.1 (overlayfs, cgroup v1).",
+      "README build command exactly as written: failed in pip, CERTIFICATE_VERIFY_FAILED self-signed certificate in chain (results/build-readme-exact-error.txt).",
+      "Same build with --secret id=xorder_ca,src=<session CA bundle>: passed; image id above."
+    ]},
+    "stdio_transport": {"status": "passed", "evidence": [
+      "SDK client, host: auto negotiated 2026-07-28 and legacy 2025-11-25 (results/native-sdk.json, results/native-sdk-legacy.json).",
+      "SDK client through mcp/poc/cloud-probe-claude-code-web/serve-native.sh (results/launcher-stdio-sdk.json).",
+      "Image: in-container offline run and host stdio client against docker run --network none; uid 1000 (results/container-verifier-original/)."
+    ]},
+    "http_transport": {"status": "partial", "evidence": [
+      "SDK client, host loopback HTTP: passed in auto and legacy modes.",
+      "verify-image.sh as committed: failed at the published-port HTTP check with httpx2.ReadError (results/container-verifier-original/error.txt).",
+      "Cause reproduced: the published port accepts TCP before the server listens, so the verifier's socket readiness check passes too early. Immediate smoke run failed; the same run after the server was up passed (results/http-readiness-race/).",
+      "Scratch verifier copy with an HTTP-response readiness check (fixture files unchanged): all image checks passed, including the retained directory across two containers (results/container-verifier-http-ready/)."
+    ]},
+    "outer_session_mcp_registration": {"status": "blocked", "evidence": [
+      "Documented route for a one-repository cloud session: a committed project .mcp.json, loaded at session start without an approval prompt. User or local claude mcp add does not reach cloud sessions (code.claude.com/docs/en/cloud-environments, /docs/en/mcp, read 2026-10-20).",
+      "This session started without .mcp.json; ~/.claude.json had no mcpServers.",
+      "The agent's write of /home/user/xorder/.mcp.json was denied by the auto-mode classifier as Self-Modification. Not worked around.",
+      "Even when written, loading it needs a new session cloned from a branch that contains it; reloading config mid-session is not documented for cloud sessions."
+    ]},
+    "native_diagnostic_delivery": {"status": "blocked", "evidence": [
+      "The agent's edit adding narrow PostToolUse/PostToolUseFailure hooks to .claude/settings.json was denied by the auto-mode classifier as Self-Modification.",
+      "Manual run of hook.py proves serialization only: PostToolUseFailure additionalContext with a per-call challenge and a log entry."
+    ]},
+    "diagnostic_retrieval_retry": {"status": "partial", "evidence": [
+      "SDK client only: diagnostic error, packet/section retrieval and receipt retry passed on stdio, loopback HTTP and the image.",
+      "Native agent behaviour not tested. This session has read packet.md and probe.py, so it is not a valid behavioural subject."
+    ]},
+    "process_restart": {"status": "passed", "evidence": [
+      "Each server process reported a distinct boot_id with the same packet_sha256 across host, launcher and container runs.",
+      "Marker created and read by two separate containers with the same bytes (container-verifier-http-ready/state-*.json)."
+    ]},
+    "fresh_session_reuse": {"status": "not_tested", "evidence": [
+      "The handoff and plans name no proposed persistent location. All candidate paths are on the same root disk (/dev/vda) and were created at session start.",
+      "Markers with challenge reuse-b1b544f60d were created at 2026-10-20T10:13:46Z in locations chosen by this session: /root/.xorder-probe-state (sha256:e00629ecad2a6d0bfe1bf092e9af0aff446213f1e12821906bb53a95d0952b80), /home/user/xorder-probe-state (sha256:b1231ee2c28af7e06f63f39e12528e3dccc05481f11353f4c8e9f9f82999acd6), /mnt/user-data/working/xorder-probe-state (sha256:34c8866b89eaa6983baa5733a77787716b67652fdea6cdb4a26a1c3fea86c1f4).",
+      "No new session has read them yet."
+    ]},
+    "host_egress": {"status": "passed", "evidence": [
+      "Targeted only: host pip reached PyPI; dockerd pulled the GHCR base digest through the session proxy."
+    ]},
+    "container_egress": {"status": "partial", "evidence": [
+      "Build container reached PyPI over an intercepted TLS path. It failed without the session CA and passed with the CA build secret.",
+      "Runtime container egress not tested; the verifier runs with --network none."
+    ]},
+    "authenticated_remote_registration": {"status": "not_tested", "evidence": []}
+  },
+  "next_decision": "blocked on access"
+}

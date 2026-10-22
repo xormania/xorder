@@ -1,0 +1,4 @@
+SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl
+13.11 ERROR: Could not find a version that satisfies the requirement annotated-types==0.8.0 (from versions: none)
+13.11 ERROR: No matching distribution found for annotated-types==0.8.0
+ERROR: failed to build: failed to solve: process "/bin/sh -c if [ -f /run/secrets/xorder_ca ]; then       cat /etc/ssl/certs/ca-certificates.crt /run/secrets/xorder_ca > /run/xorder-build-trust/ca.pem;       export PIP_CERT=/run/xorder-build-trust/ca.pem;     fi     && python3 -m venv /opt/xorder-cloud-probe/venv     && /opt/xorder-cloud-probe/venv/bin/python -m pip install        --no-cache-dir --require-hashes --only-binary=:all: -r requirements.lock" did not complete successfully: exit code: 1
