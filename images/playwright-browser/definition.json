@@ -29,7 +29,7 @@
   "lines": {
     "1.58-trixie": {
       "base": {
-        "digest": "sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa",
+        "digest": "sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf",
         "tag": "docker.io/library/node:22-trixie-slim"
       },
       "changes": [
@@ -41,7 +41,7 @@
         "linux/amd64"
       ],
       "playwright_version": "1.58.2",
-      "revision": "1.0.4",
+      "revision": "1.0.5",
       "runtime_line": "1.58"
     }
   },
