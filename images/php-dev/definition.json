@@ -57,7 +57,7 @@
   "lines": {
     "8.4-trixie": {
       "base": {
-        "digest": "sha256:1d2cf2b7d715b5b3aa959f0150ccbcc7b71e0181b637e443abf40a7fb56bf79a",
+        "digest": "sha256:9cf851bc2c1b37c3e59dfd677a3c3e56d485af5a47c93f629424bb039eafcb69",
         "tag": "docker.io/library/php:8.4-cli-trixie"
       },
       "changes": [
@@ -68,12 +68,12 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.3",
+      "revision": "1.2.4",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
       "base": {
-        "digest": "sha256:01a109229f4465bc9ef042d9198f09a4d9da7775a825dbd8572dcdbd8756c4d3",
+        "digest": "sha256:acaa95199b53a1d7c346dddc7bcfc367ef3bd21ab832bd178eac7f043ed5396c",
         "tag": "docker.io/library/php:8.5-cli-trixie"
       },
       "changes": [
@@ -84,7 +84,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.3",
+      "revision": "1.2.4",
       "runtime_line": "8.5"
     }
   },

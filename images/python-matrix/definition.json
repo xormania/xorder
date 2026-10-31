@@ -33,14 +33,14 @@
         "parent": "python-dev/3.14-trixie"
       },
       "changes": [
-        "Support optional build-time private CA trust for Python downloads through a BuildKit secret and temporary trust store."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible build fix. Local builds may supply CA_CERTIFICATE without persisting that CA in image layers; existing runtime pins remain valid.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.1",
+      "revision": "1.0.2",
       "runtime_line": "3.14"
     }
   },

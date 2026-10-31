@@ -1,12 +1,12 @@
 {
   "apcu_version": "5.1.28",
   "apt_indexes": {
-    "https://deb.debian.org/debian/dists/trixie-updates/Release": "10012cb384dc2613586d7b3d391d92a5637c9faa36017239739f2a6109a0d45f",
+    "https://deb.debian.org/debian/dists/trixie-updates/Release": "7b52592d46eb9bf694ffd99b90fb521064a6bfd1d0a9f69f22cabf31cb7ea38e",
     "https://deb.debian.org/debian/dists/trixie/Release": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
-    "https://security.debian.org/debian-security/dists/trixie-security/Release": "ecda93f2685edb274c26b06e354a2ffa9920ebd764225974bc5df506c63a6f61"
+    "https://security.debian.org/debian-security/dists/trixie-security/Release": "47c58873c9ab913878036c403e824a34d6afaf63613224e997340c811410763f"
   },
   "composer": {
-    "digest": "sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac",
+    "digest": "sha256:4ed71c38c6d788eb4e4e3747b5332f5b40d5b5a6fcadd5062a1a70986a118e0a",
     "tag": "docker.io/library/composer:2"
   },
   "infection": {
@@ -15,7 +15,7 @@
     "version": "0.35.8"
   },
   "node": {
-    "digest": "sha256:def2655045ff1ee91b28a48cb3ec84feafef6d128bda0ff6903e7847ed0b27b4",
+    "digest": "sha256:ead00acb9f552752e0fe17a428d692094ab5f9e021e7bb97202fa7b0cd702a04",
     "tag": "docker.io/library/node:22-trixie"
   },
   "pcov_version": "1.0.12",
@@ -32,7 +32,7 @@
     "version": "v4.3.3"
   },
   "uv": {
-    "digest": "sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336",
+    "digest": "sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0",
     "tag": "ghcr.io/astral-sh/uv:latest"
   },
   "xdebug_version": "3.5.3"
