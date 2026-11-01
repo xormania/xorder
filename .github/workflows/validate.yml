@@ -49,7 +49,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
           cache: pip
@@ -140,7 +140,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Exercise cold application on the host
@@ -216,7 +216,7 @@ jobs:
         with:
           persist-credentials: false
       - run: python -m pip install -r requirements-ci.txt
-      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
         with:
           extra_nix_config: |
             extra-substituters = https://devenv.cachix.org
@@ -244,14 +244,14 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Enable local PHP parents and cache export
-        if: startsWith(matrix.line, 'php-')
-        uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5
+      - name: Enable local parent images and cache export
+        if: startsWith(matrix.line, 'php-') || startsWith(matrix.line, 'python-')
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5
         with:
           daemon-config: '{"features":{"containerd-snapshotter":true}}'
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
-          driver: ${{ startsWith(matrix.line, 'php-') && 'docker' || 'docker-container' }}
+          driver: ${{ (startsWith(matrix.line, 'php-') || startsWith(matrix.line, 'python-')) && 'docker' || 'docker-container' }}
       - id: cache-key
         env:
           LINE: ${{ matrix.line }}

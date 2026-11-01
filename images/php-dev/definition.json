@@ -68,7 +68,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.4",
+      "revision": "1.2.5",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
@@ -84,7 +84,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.4",
+      "revision": "1.2.5",
       "runtime_line": "8.5"
     }
   },

@@ -45,7 +45,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.1",
+      "revision": "1.0.2",
       "runtime_line": "3.14"
     }
   },
