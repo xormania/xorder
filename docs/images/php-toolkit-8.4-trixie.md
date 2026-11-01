@@ -2,17 +2,17 @@
 
 Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.
 
-Available revision: **1.0.3**. Pin:
+Available revision: **1.0.4**. Pin:
 
 ```text
-ghcr.io/xormania/php-toolkit@sha256:7a658e512dd19d59f0cbf0b3ec158294f98a98dac101701a5432c172d86473af
+ghcr.io/xormania/php-toolkit@sha256:2fe87102264fc07b09ea79c142aa0180d044ef410c27966c5f089a7f97cd5b91
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:25:24.181283Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:25:50.176009Z.
 
 ## Measured inventory — linux/amd64
 
-Runtime: 8.4.26; OS: Debian GNU/Linux 13 (trixie).
+Runtime: 8.4.27; OS: Debian GNU/Linux 13 (trixie).
 
 | Tool | Version |
 | --- | --- |
@@ -25,7 +25,7 @@ Runtime: 8.4.26; OS: Debian GNU/Linux 13 (trixie).
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
-| php | PHP 8.4.26 (cli) (built: Oct  6 2026 01:25:39) (NTS) |
+| php | PHP 8.4.27 (cli) (built: Oct 21 2026 15:53:07) (NTS) |
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
@@ -37,19 +37,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 938.2 MiB (983,727,716 bytes) |
-| Build, cache export and image load | 12.00s |
-| Public-artifact behavior and inventory verification | 38.79s |
+| Local image size | 937.8 MiB (983,392,836 bytes) |
+| Build, cache export and image load | 11.98s |
+| Public-artifact behavior and inventory verification | 39.75s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:24:49.860081Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:25:21.555468Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
-External build cache at start: `restored`. This does not assert that every layer was a cache hit.
+External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.0.2, `ghcr.io/xormania/php-toolkit@sha256:8fa2f8103ade24533a69ef7bc8fc326ccc5c108b037c2a470b9e100a5776400e`; 936.8 MiB in the same image store. Change: **+0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:53:46.761154Z.
+Size baseline: v1.0.3, `ghcr.io/xormania/php-toolkit@sha256:7a658e512dd19d59f0cbf0b3ec158294f98a98dac101701a5432c172d86473af`; 938.2 MiB in the same image store. Change: **-0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:24:49.860081Z.
 
-[Release notes](../releases/php-toolkit-8.4-trixie-v1.0.3.md).
+[Release notes](../releases/php-toolkit-8.4-trixie-v1.0.4.md).
 
 Capabilities: `composer`, `mutation-testing`, `native-build`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `prepared-composer-dependencies`, `symfony`, `symfony-toolkit-baseline`, `ux-toolkit-validation`, `xdebug`.
 
