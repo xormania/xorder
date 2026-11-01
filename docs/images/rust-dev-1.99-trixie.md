@@ -2,13 +2,13 @@
 
 Rust 2024 native compilation, Clippy, formatting and wasm32-unknown-unknown builds.
 
-Available revision: **1.1.4**. Pin:
+Available revision: **1.1.5**. Pin:
 
 ```text
-ghcr.io/xormania/rust-dev@sha256:32642bd79d80e7ebdb36b4634dfa852db966aa8b71be4e52060f79603c61d557
+ghcr.io/xormania/rust-dev@sha256:846314820c3b22d0672564d3acff0f65d5213df6970e681f815c48cbed10abde
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:15:04.540768Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:16:50.483515Z.
 
 ## Measured inventory — linux/amd64
 
@@ -27,25 +27,25 @@ Runtime: 1.99.1; OS: Debian GNU/Linux 13 (trixie).
 | rg | ripgrep 14.1.1 |
 | rustc | rustc 1.99.1 (58cf8f9c3 2026-10-13) |
 | rustfmt | rustfmt 1.10.0-stable (58cf8f9c35 2026-10-13) |
-| rustup | rustup 1.29.1 (d95a37b6a 2026-08-13) |
+| rustup | rustup 1.29.2 (d8c92c676 2026-10-21) |
 
 ### Release measurements — linux/amd64
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,274.9 MiB (1,336,881,643 bytes) |
-| Build, cache export and image load | 52.51s |
-| Public-artifact behavior and inventory verification | 11.68s |
+| Local image size | 1,274.8 MiB (1,336,679,722 bytes) |
+| Build, cache export and image load | 54.34s |
+| Public-artifact behavior and inventory verification | 12.48s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:14:21.257126Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:16:00.969870Z.
 
 Plan about **3 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.1.3, `ghcr.io/xormania/rust-dev@sha256:a95105f8859f25ce4c50e8990dadfaff56afa3791056db9e4cf79438b7fb53d5`; 1,274.9 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/38518179175); 2026-10-14T05:46:34.058025Z.
+Size baseline: v1.1.4, `ghcr.io/xormania/rust-dev@sha256:32642bd79d80e7ebdb36b4634dfa852db966aa8b71be4e52060f79603c61d557`; 1,274.9 MiB in the same image store. Change: **-0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:14:21.257126Z.
 
-[Release notes](../releases/rust-dev-1.99-trixie-v1.1.4.md).
+[Release notes](../releases/rust-dev-1.99-trixie-v1.1.5.md).
 
 Capabilities: `rust`, `cargo`, `rustfmt`, `clippy`, `native-build`, `postgresql-client`, `wasm32-unknown-unknown`.
 
