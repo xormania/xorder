@@ -56,11 +56,22 @@ GIT
 chmod 755 "$work/bin/git"
 php "$policy" "$version" false
 if PATH="$work/bin:$PATH" COMPOSER_DISABLE_NETWORK=0 composer install --prefer-dist --no-cache --no-interaction --no-progress --no-scripts --no-plugins > "$work/dist-failure.log" 2>&1; then
+  cat "$work/dist-failure.log" >&2
   echo 'A missing dist archive did not fail' >&2
   exit 1
 fi
-test ! -s "$XORDER_FIXTURE_GIT_CLONES"
-grep -q 'Source fallback is disabled' "$work/dist-failure.log"
+if [ -s "$XORDER_FIXTURE_GIT_CLONES" ]; then
+  cat "$work/dist-failure.log" >&2
+  echo 'A missing dist archive attempted a Git source clone' >&2
+  exit 1
+fi
+# Composer 2.11 removed fallback entirely, including its old diagnostic text.
+# Bind the expected failure to our missing archive instead of upstream wording.
+if ! grep -Fq "$work/package.zip" "$work/dist-failure.log"; then
+  cat "$work/dist-failure.log" >&2
+  echo 'The failed install did not report the missing dist archive' >&2
+  exit 1
+fi
 mv "$work/package.saved.zip" "$work/package.zip"
 composer install --prefer-dist --no-interaction --no-progress --no-scripts --no-plugins
 # Composer labels even local Git transport as network; this sole source is a

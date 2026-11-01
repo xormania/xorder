@@ -34,7 +34,7 @@
   "lines": {
     "trixie": {
       "base": {
-        "digest": "sha256:0514bc76712d64f8bb48adcb95b1ab0d88c69fee95d62fe4c18ee948bee9b1e1",
+        "digest": "sha256:cd89c30eda26ee911a4611b18680086e0ea42e6f5f8cbe653d07fa7958c9cec8",
         "tag": "docker.io/library/python:3.14-slim-trixie"
       },
       "changes": [
@@ -45,7 +45,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.1",
+      "revision": "1.0.2",
       "runtime_line": "3.14"
     }
   },
