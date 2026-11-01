@@ -36,7 +36,7 @@ jobs:
         run: python scripts/checks.py --bandit-dashboard
       - name: Update existing Bandit code-scanning results
         if: ${{ !cancelled() && hashFiles('out/bandit-dashboard/bandit.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           sarif_file: out/bandit-dashboard/bandit.sarif
           category: .github/workflows/bandit.yml:bandit/
