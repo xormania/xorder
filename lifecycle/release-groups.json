@@ -371,11 +371,216 @@
       "state": "accepted",
       "support_ends_at": "2026-11-16T06:00:00Z",
       "warning_starts_at": "2026-11-09T06:00:00Z"
+    },
+    {
+      "accepted_at": "2026-10-26T06:00:00Z",
+      "id": "weekly-2026-10-26",
+      "reason": "scheduled",
+      "removal_eligible_at": "2026-12-07T06:00:00Z",
+      "replacement": null,
+      "resources": [
+        {
+          "identity": "ghcr.io/xormania/harness-live@sha256:247e7bd01adcfc0d6ee321906ada6ac182b72905a5deee3b20b952dd5af746d5",
+          "line_id": "harness-live/trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:247e7bd01adcfc0d6ee321906ada6ac182b72905a5deee3b20b952dd5af746d5",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.0"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-browser@sha256:ad37c8138c4aacdbba8c64f0436669104e0e57dd206aa6f5099c512440f65a3e",
+          "line_id": "php-browser/8.4-trixie",
+          "parent": "ghcr.io/xormania/php-dev@sha256:6a2455e84058b89b9589461d1183dc282d851d5f376a141f140e59de7a6419e7",
+          "platforms": [
+            {
+              "digest": "sha256:ad37c8138c4aacdbba8c64f0436669104e0e57dd206aa6f5099c512440f65a3e",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.2.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-browser@sha256:ee4d9e2c6f8d9f2122ac541967439c6dc5ad859107a092bffe87420853607192",
+          "line_id": "php-browser/8.5-trixie",
+          "parent": "ghcr.io/xormania/php-dev@sha256:43080f1e46b15f3b204f08f12abdb3f1a9aa16dd999450509d85d3aff4b97335",
+          "platforms": [
+            {
+              "digest": "sha256:ee4d9e2c6f8d9f2122ac541967439c6dc5ad859107a092bffe87420853607192",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.2.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-dev@sha256:6a2455e84058b89b9589461d1183dc282d851d5f376a141f140e59de7a6419e7",
+          "line_id": "php-dev/8.4-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:6a2455e84058b89b9589461d1183dc282d851d5f376a141f140e59de7a6419e7",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.2.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-dev@sha256:43080f1e46b15f3b204f08f12abdb3f1a9aa16dd999450509d85d3aff4b97335",
+          "line_id": "php-dev/8.5-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:43080f1e46b15f3b204f08f12abdb3f1a9aa16dd999450509d85d3aff4b97335",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.2.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-frankenphp@sha256:828f22b953b34b080e3c233a1402b38dc6d7cb242f6bdb1cbaf5a579a111a3ce",
+          "line_id": "php-frankenphp/8.4-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:828f22b953b34b080e3c233a1402b38dc6d7cb242f6bdb1cbaf5a579a111a3ce",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.1.4"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-frankenphp@sha256:c97b5c086dab63f3afba096bcaaae6f9f7134f6592d28d20fe979c75df2a5b80",
+          "line_id": "php-frankenphp/8.5-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:c97b5c086dab63f3afba096bcaaae6f9f7134f6592d28d20fe979c75df2a5b80",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.1.4"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-serena@sha256:a21a6d18ae9be3d528fb01f19446769904ca4898fdf19b6bd4176769de809e04",
+          "line_id": "php-serena/8.5-trixie",
+          "parent": "ghcr.io/xormania/php-dev@sha256:43080f1e46b15f3b204f08f12abdb3f1a9aa16dd999450509d85d3aff4b97335",
+          "platforms": [
+            {
+              "digest": "sha256:a21a6d18ae9be3d528fb01f19446769904ca4898fdf19b6bd4176769de809e04",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.1.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-toolkit@sha256:7a658e512dd19d59f0cbf0b3ec158294f98a98dac101701a5432c172d86473af",
+          "line_id": "php-toolkit/8.4-trixie",
+          "parent": "ghcr.io/xormania/php-dev@sha256:6a2455e84058b89b9589461d1183dc282d851d5f376a141f140e59de7a6419e7",
+          "platforms": [
+            {
+              "digest": "sha256:7a658e512dd19d59f0cbf0b3ec158294f98a98dac101701a5432c172d86473af",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/php-toolkit@sha256:3c25724c04a3b854e6a4d90098fbc08ff9ca15306d1e07373fce42ae3d8b185c",
+          "line_id": "php-toolkit/8.5-trixie",
+          "parent": "ghcr.io/xormania/php-dev@sha256:43080f1e46b15f3b204f08f12abdb3f1a9aa16dd999450509d85d3aff4b97335",
+          "platforms": [
+            {
+              "digest": "sha256:3c25724c04a3b854e6a4d90098fbc08ff9ca15306d1e07373fce42ae3d8b185c",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.3"
+        },
+        {
+          "identity": "ghcr.io/xormania/playwright-browser@sha256:b932c432efe06cb33cdd5e7cf859f73e68ef65dcee3e4a7baaaa60ae3be6534b",
+          "line_id": "playwright-browser/1.58-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:b932c432efe06cb33cdd5e7cf859f73e68ef65dcee3e4a7baaaa60ae3be6534b",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.4"
+        },
+        {
+          "identity": "ghcr.io/xormania/python-dev@sha256:b232a236f5c74402be7488aab9e0c98bbb76a647e9667ac37e0cdb98553af589",
+          "line_id": "python-dev/3.14-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:b232a236f5c74402be7488aab9e0c98bbb76a647e9667ac37e0cdb98553af589",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.1.4"
+        },
+        {
+          "identity": "ghcr.io/xormania/python-matrix@sha256:dc0da00ee10740bb20406e4a0544ed4672e6ed0fc82169c34a246ccd20f93662",
+          "line_id": "python-matrix/trixie",
+          "parent": "ghcr.io/xormania/python-dev@sha256:b232a236f5c74402be7488aab9e0c98bbb76a647e9667ac37e0cdb98553af589",
+          "platforms": [
+            {
+              "digest": "sha256:dc0da00ee10740bb20406e4a0544ed4672e6ed0fc82169c34a246ccd20f93662",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.1"
+        },
+        {
+          "identity": "ghcr.io/xormania/rust-dev@sha256:32642bd79d80e7ebdb36b4634dfa852db966aa8b71be4e52060f79603c61d557",
+          "line_id": "rust-dev/1.99-trixie",
+          "parent": null,
+          "platforms": [
+            {
+              "digest": "sha256:32642bd79d80e7ebdb36b4634dfa852db966aa8b71be4e52060f79603c61d557",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.1.4"
+        },
+        {
+          "identity": "ghcr.io/xormania/uxor-dev@sha256:ad891975441273af65c3a9ea441aaebe310454c82abd186bc01994727ebdb8f8",
+          "line_id": "uxor-dev/8.4-trixie",
+          "parent": "ghcr.io/xormania/php-frankenphp@sha256:828f22b953b34b080e3c233a1402b38dc6d7cb242f6bdb1cbaf5a579a111a3ce",
+          "platforms": [
+            {
+              "digest": "sha256:ad891975441273af65c3a9ea441aaebe310454c82abd186bc01994727ebdb8f8",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.2"
+        },
+        {
+          "identity": "ghcr.io/xormania/uxor-dev@sha256:050d3c3d693ed46cd8912c70fba8c7378c520deff81bb51f3ba96dd82d9154e2",
+          "line_id": "uxor-dev/8.5-trixie",
+          "parent": "ghcr.io/xormania/php-frankenphp@sha256:c97b5c086dab63f3afba096bcaaae6f9f7134f6592d28d20fe979c75df2a5b80",
+          "platforms": [
+            {
+              "digest": "sha256:050d3c3d693ed46cd8912c70fba8c7378c520deff81bb51f3ba96dd82d9154e2",
+              "platform": "linux/amd64"
+            }
+          ],
+          "version": "1.0.2"
+        }
+      ],
+      "schema_version": 1,
+      "state": "accepted",
+      "support_ends_at": "2026-11-23T06:00:00Z",
+      "warning_starts_at": "2026-11-16T06:00:00Z"
     }
   ],
   "legacy": {
     "enforce_after": "2026-11-11T08:00:00Z"
   },
-  "revision": 3,
+  "revision": 4,
   "schema_version": 1
 }
