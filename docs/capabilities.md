@@ -16,7 +16,7 @@ CLI development; unit and integration tests; project-owned lockfiles.
 | --- | --- | --- |
 | [image/php-dev/8.4-trixie](../docs/images/php-dev-8.4-trixie.md) | 1.2.4 | linux/amd64 |
 | [image/php-dev/8.5-trixie](../docs/images/php-dev-8.5-trixie.md) | 1.2.4 | linux/amd64 |
-| [image/python-dev/3.14-trixie](../docs/images/python-dev-3.14-trixie.md) | 1.1.5 | linux/amd64 |
+| [image/python-dev/3.14-trixie](../docs/images/python-dev-3.14-trixie.md) | 1.1.6 | linux/amd64 |
 | [image/rust-dev/1.99-trixie](../docs/images/rust-dev-1.99-trixie.md) | 1.1.5 | linux/amd64 |
 
 Pinned selections: [profile/php-base](../profiles/php-base.json), [profile/python-base](../profiles/python-base.json), [profile/rust-base](../profiles/rust-base.json).
