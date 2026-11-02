@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T01:33:06.136846Z",
+  "generated_at": "2026-11-02T20:22:10.265620Z",
   "groups": [
     {
       "applies_to": [
@@ -499,12 +499,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "1abb04cf5e2be368e96c56b60d1dfd18400bcd5cb4abc026d8f217d33f99fcf4",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/harness-live%2Ftrixie%2Fv1.0.1/assurance.json"
+        "receipt_sha256": "da811101b58cd87b90086dfc57c1653886f91682eb52bea602ea68f121e19ec8",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/harness-live%2Ftrixie%2Fv1.0.2/assurance.json"
       },
       "documentation": "docs/images/harness-live-trixie.md",
       "id": "image/harness-live/trixie",
-      "identity": "ghcr.io/xormania/harness-live@sha256:bb6f0b7ae9d5a0ad53d6525d76f93caa9b52f0f2b632f8933de8b94971c1b1da",
+      "identity": "ghcr.io/xormania/harness-live@sha256:e1575a8a24b61c6c79429e95ed7638e10c5910067f6805bd907281d229531d89",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -513,11 +513,11 @@
         ]
       },
       "purpose": "Opt-in live harness environment with persistent installation, explicit updates and private operator authentication.",
-      "release_record": "release-records/harness-live/trixie/1.0.1.json",
+      "release_record": "release-records/harness-live/trixie/1.0.2.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.1"
+      "version": "1.0.2"
     },
     {
       "assurance": {
@@ -752,12 +752,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "8f332a1ba8eb850ce235e918f603b71fc83a2536d3fb31a89408a3aa49c9c1ab",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-dev%2F3.14-trixie%2Fv1.1.5/assurance.json"
+        "receipt_sha256": "714d877dea85e32c8e88ae6850f743103a094a0bbb5a5e0e679ed4b47809b85e",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-dev%2F3.14-trixie%2Fv1.1.6/assurance.json"
       },
       "documentation": "docs/images/python-dev-3.14-trixie.md",
       "id": "image/python-dev/3.14-trixie",
-      "identity": "ghcr.io/xormania/python-dev@sha256:d6d61b3de04f1587a4a017b4fd1a6c2b80a827165115ec30ce2612c772c16120",
+      "identity": "ghcr.io/xormania/python-dev@sha256:0ecdf09af5352c4bb0762c254dcccd5d49f7dddfccb43a1cea82f080e4ff3518",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -766,11 +766,11 @@
         ]
       },
       "purpose": "Python development with uv, pip, venv, native compilation and PostgreSQL clients.",
-      "release_record": "release-records/python-dev/3.14-trixie/1.1.5.json",
+      "release_record": "release-records/python-dev/3.14-trixie/1.1.6.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.1.5"
+      "version": "1.1.6"
     },
     {
       "assurance": {
