@@ -39,15 +39,14 @@
         "parent": "php-dev/8.5-trixie"
       },
       "changes": [
-        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract.",
-        "Upgrade the hash-pinned setuptools build dependency from 83.0.0 to 84.1.0 to fix GHSA-xmj3-9gf7-h52w."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible build-tool security refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.6",
+      "revision": "1.1.7",
       "runtime_line": "8.5"
     }
   },

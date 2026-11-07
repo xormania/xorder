@@ -40,7 +40,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.3",
+      "revision": "1.0.4",
       "runtime_line": "3.14"
     }
   },
