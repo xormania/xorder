@@ -47,8 +47,38 @@ network_env=()
 for name in HTTP_PROXY HTTPS_PROXY NO_PROXY CA_CERTIFICATE; do
   if [[ -v "$name" ]]; then network_env+=("$name=${!name}"); fi
 done
+# Select the same engine before replacing Docker's config directory. Context
+# selection wins over DOCKER_HOST; only the resolved local endpoint crosses the
+# anonymous boundary, never registry auth, context files or TLS credentials.
+selected_docker_host=$(python3 - <<'PYDOCKER'
+import json
+import os
+import subprocess
+from urllib.parse import urlsplit
+
+context = os.environ.get("DOCKER_CONTEXT")
+endpoint = os.environ.get("DOCKER_HOST") if not context else None
+if not endpoint:
+    command = ["docker", "context", "inspect"] + ([context] if context else [])
+    try:
+        endpoint = json.loads(subprocess.check_output(
+            command + ["--format", "{{json .Endpoints.docker.Host}}"],
+            text=True, stderr=subprocess.PIPE, timeout=10))
+    except (OSError, subprocess.SubprocessError, ValueError):
+        raise SystemExit("Cannot resolve the selected Docker endpoint for anonymous browser parity") from None
+try:
+    parsed = urlsplit(endpoint) if isinstance(endpoint, str) else None
+except ValueError:
+    parsed = None
+if (parsed is None or parsed.scheme != "unix" or parsed.netloc
+        or not parsed.path.startswith("/") or parsed.query or parsed.fragment
+        or any(ord(character) < 32 or ord(character) == 127 for character in endpoint)):
+    raise SystemExit("Anonymous browser parity requires a local Unix Docker endpoint; select a local Docker context")
+print(endpoint)
+PYDOCKER
+)
 parity_runner() {
-  env -i PATH="$PATH" HOME="$work/home" DOCKER_CONFIG="$work/docker" \
+  env -i PATH="$PATH" HOME="$work/home" DOCKER_CONFIG="$work/docker" DOCKER_HOST="$selected_docker_host" \
     WORKSPACE="$WORKSPACE" IMAGE="$IMAGE" BROWSER_IMAGE="$BROWSER_IMAGE" \
     UXOR_PROJECT="$UXOR_PROJECT" HTTP_PORT="$HTTP_PORT" HTTPS_PORT="$HTTPS_PORT" HTTP3_PORT="$HTTP3_PORT" \
     XORDER_PARITY_FIXTURE=1 XORDER_SHARED_CACHE=0 \
