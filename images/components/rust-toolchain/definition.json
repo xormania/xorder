@@ -1,0 +1,18 @@
+{
+  "abi": "rust199-trixie-amd64",
+  "dockerfile": "images/components/rust-toolchain/Dockerfile",
+  "id": "rust-toolchain",
+  "image_bases": {
+    "BASE_IMAGE": "rust-dev/1.99-trixie"
+  },
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Rust formatter, Clippy and wasm target prepared independently of Debian package refreshes.",
+  "schema_version": 1,
+  "verify": [
+    "bash",
+    "-ec",
+    "cargo fmt --version && cargo clippy --version && rustup target list --installed | grep -Fx wasm32-unknown-unknown"
+  ]
+}

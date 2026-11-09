@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "mago-lsp",
+  "purpose": "Compiled patched Mago language server and Symfony extension backend; independent of PHP and browser images.",
+  "dockerfile": "images/components/mago-lsp/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-glibc",
+  "build_args": {
+    "MAGO_BUILD_JOBS": "4",
+    "MAGO_NATIVE_TESTS": "0"
+  }
+}

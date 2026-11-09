@@ -181,7 +181,8 @@ class BuildCacheTests(unittest.TestCase):
 
     def test_local_image_builder_imports_registry_without_exporting(self):
         imports = build_cache.plan("xormania/xorder", "dev", "master")["cache-from"]
-        with patch.dict(os.environ, {}, clear=True), patch.object(build.subprocess, "run") as run:
+        with patch.dict(os.environ, {}, clear=True), patch("components.arguments", return_value={}), \
+                patch.object(build.subprocess, "run") as run:
             build.build("python-dev/3.14-trixie", "local:test", "local", registry_imports=imports)
         command = run.call_args.args[0]
         imported = [command[i + 1] for i, item in enumerate(command) if item == "--cache-from"]

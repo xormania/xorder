@@ -1,19 +1,20 @@
 # syntax=docker/dockerfile:1
 ARG NODE_IMAGE
+ARG PYTHON_FOUNDATION_IMAGE
 ARG BASE_IMAGE
 FROM ${NODE_IMAGE} AS node
-FROM ${BASE_IMAGE}
+FROM ${PYTHON_FOUNDATION_IMAGE}
+ARG BASE_IMAGE
+RUN python3 /opt/xorder/components/python-foundation/verify_upstream.py "$BASE_IMAGE"
 ARG APT_REFRESH
-COPY images/shared/install.sh /tmp/install-common
-RUN test -n "$APT_REFRESH" && bash /tmp/install-common \
-    && apt-get update && apt-get install -y --no-install-recommends tmux gpgv \
-    && rm -rf /var/lib/apt/lists/* /tmp/install-common
-RUN chown -R 0:0 /home/dev
+RUN test -n "$APT_REFRESH" && apt-get update \
+    && apt-get install -y --no-install-recommends tmux gpgv \
+    && rm -rf /var/lib/apt/lists/* \
+    && chown -R 0:0 /home/dev
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-COPY images/shared/entrypoint.sh /usr/local/bin/library-entrypoint
 COPY images/harness-live/entrypoint.sh /usr/local/bin/harness-entrypoint
 COPY images/harness-live/session.sh /usr/local/bin/harness-session
 COPY images/harness-live/harnesses.py /usr/local/bin/harnesses

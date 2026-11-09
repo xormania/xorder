@@ -1,0 +1,20 @@
+{
+  "abi": "python-managed-trixie-amd64",
+  "dockerfile": "images/components/python-matrix-interpreters/Dockerfile",
+  "id": "python-matrix-interpreters",
+  "image_bases": {
+    "BASE_IMAGE": "python-dev/3.14-trixie"
+  },
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Pinned managed Python compatibility interpreters independent of application and tmux layers.",
+  "schema_version": 1,
+  "tool_args": {
+    "UV_IMAGE": "uv"
+  },
+  "verify": [
+    "python3",
+    "/opt/xorder/components/python-matrix-interpreters/verify.py"
+  ]
+}

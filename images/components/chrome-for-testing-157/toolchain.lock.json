@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "browser": {
+    "chrome_for_testing": "157.0.8103.38",
+    "platform": "linux64",
+    "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.38/linux64/chrome-linux64.zip",
+    "archive_sha256": "8cdeb344e9b2cefe59f4aea8d1d93d5d93054c03cde217665c16fc1f62e72a66",
+    "checksum_provenance": "SHA-256 measured by xorder from the versioned HTTPS URL above and independently matched to the consumer's cached archive. This is a locally acquired archive pin, not a vendor-published checksum.",
+    "checksum_policy": "The Chrome for Testing index supplies no checksum. Verify the locally pinned archive SHA-256 before extraction and record the installed executable SHA-256 in /opt/xorder/image-identity.json.",
+    "binary_sha256": "41ea350a7f209da77c14d1df3924d71ac66988623e71d44459b49a3dceb1c14e"
+  }
+}

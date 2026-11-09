@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "mago-baseline",
+  "purpose": "Hash-verified upstream Mago1.58.2 comparison release and notices.",
+  "dockerfile": "images/components/mago-release/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-glibc",
+  "build_args": {
+    "MAGO_VERSION": "1.58.2",
+    "MAGO_SHA256": "80b6e6ed3cd2fe2da348f9cd83d23e638f2ccd44988d48bebd766c20ccd30dc2"
+  }
+}

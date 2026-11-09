@@ -1,0 +1,17 @@
+[project]
+name = "mago-serena-poc"
+version = "0.1.0"
+requires-python = "==3.12.*"
+dependencies = [
+  "serena-agent @ git+https://github.com/oraios/serena.git@ede329aaf0c824bea75455a2926f01420d7aa620",
+  "serena-mago-adapter",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["adapter"]
+
+[tool.uv.sources]
+serena-mago-adapter = { workspace = true }

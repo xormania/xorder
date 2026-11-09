@@ -136,11 +136,49 @@ def validate_inventory(definition, inventory):
                 raise AssertionError("SQLite version must be measured")
         if not (re.fullmatch(r"tmux 3\.[0-9]+[a-z]?", inventory["tools"]["tmux"])):
             raise AssertionError()
-    if definition["family"] == "php-browser":
+    if definition["family"] in ("php-browser", "php-mago-serena", "php-chrome-dev"):
         browser = re.search(r"\d+", inventory["tools"]["chromium"])[0]
         driver = re.search(r"\d+", inventory["tools"]["chromedriver"])[0]
         if not (browser == driver):
             raise AssertionError("Chromium and driver major versions differ")
+    if definition["family"] in ("php-mago-serena", "php-chrome-dev"):
+        identity = inventory["image_identity"]
+        required = {"php", "composer", "node", "chrome_for_testing", "chromium_base", "symfony_cli",
+                    "mago", "mago_binary_sha256", "mago_baseline", "mago_baseline_binary_sha256",
+                    "mago_native", "mago_native_binary_sha256",
+                    "mago_source_sha", "mago_patch_sha256", "mago_cargo_lock_sha256", "mago_rust_version",
+                    "python", "uv", "serena", "serena_facade_sha256", "serena_uv_lock_sha256",
+                    "chrome_binary_sha256", "chrome_devtools_mcp"}
+        if not required <= set(identity):
+            raise AssertionError("Image identity record is incomplete")
+        if not re.fullmatch(r"[a-f0-9]{40}", identity["mago_source_sha"]):
+            raise AssertionError("Mago source revision is not measured")
+        for key in ("mago_binary_sha256", "mago_baseline_binary_sha256", "mago_native_binary_sha256", "mago_patch_sha256",
+                    "mago_cargo_lock_sha256", "serena_facade_sha256", "serena_uv_lock_sha256"):
+            if not re.fullmatch(r"[a-f0-9]{64}", identity[key]):
+                raise AssertionError(f"Image identity requires SHA256: {key}")
+        if not isinstance(identity["serena"], dict) or not identity["serena"]:
+            raise AssertionError("Serena patch application evidence is missing")
+        if not identity["python"].startswith("Python 3.12."):
+            raise AssertionError("Mago-backed Serena requires Python 3.12")
+        for key in ("mago", "mago_baseline", "mago_native", "python", "uv"):
+            tool_key = {"mago_baseline": "mago-baseline", "mago_native": "mago-native"}.get(key, key)
+            if identity[key] != inventory["tools"][tool_key]:
+                raise AssertionError(f"Installed tool disagrees with image identity: {key}")
+        for key, measured in inventory["installed_binary_sha256"].items():
+            if identity.get(key) != measured:
+                raise AssertionError(f"Installed binary disagrees with image identity: {key}")
+        measured_keys = {"mago_binary_sha256", "mago_baseline_binary_sha256", "mago_native_binary_sha256", "serena_facade_sha256", "serena_uv_lock_sha256"}
+        if definition["family"] == "php-chrome-dev":
+            measured_keys.add("chrome_binary_sha256")
+            if not re.fullmatch(r"[a-f0-9]{64}", identity["chrome_binary_sha256"]):
+                raise AssertionError("Chrome binary SHA256 is missing")
+            if identity["chrome_for_testing"] != inventory["tools"]["chrome"]:
+                raise AssertionError("Installed Chrome disagrees with image identity")
+            if identity["chrome_devtools_mcp"] != inventory["tools"]["chrome-devtools-mcp"]:
+                raise AssertionError("Installed Chrome MCP disagrees with image identity")
+        if not measured_keys <= set(inventory["installed_binary_sha256"]):
+            raise AssertionError("Installed binary identity measurements are incomplete")
     if definition["family"] == "php-toolkit":
         projects = inventory["prepared_projects"]
         if not (set(projects) == {"validator", "symfony-7.4"}):
@@ -424,6 +462,8 @@ def generated(root=ROOT):
             text += "[Toolkit validation and fresh-app recipe](../php-toolkit.md) · "
         if d["family"] == "php-serena":
             text += "[Serena MCP and Symfony recipe](../serena.md) · "
+        if d["family"] in ("php-mago-serena", "php-chrome-dev"):
+            text += "[Mago, Serena and Chrome development recipe](../mago-chrome.md) · "
         if d["family"] == "python-matrix":
             text += "[Python matrix and tmux recipe](../python-matrix.md) · "
         text += "[Usage](../usage.md) · [Selection](../selection.md) · [Compatibility evidence](../compatibility.md)\n\n"

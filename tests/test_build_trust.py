@@ -26,6 +26,13 @@ spec.loader.exec_module(installer)
 
 
 class BuildTrustTests(unittest.TestCase):
+    def setUp(self):
+        # These tests isolate the final image command and CA boundary. Component
+        # preparation has its own tests and must never perform network I/O here.
+        component_arguments = patch("components.arguments", return_value={})
+        component_arguments.start()
+        self.addCleanup(component_arguments.stop)
+
     def test_ca_is_a_buildkit_file_secret_and_never_a_build_argument(self):
         with tempfile.TemporaryDirectory() as temporary:
             ca = Path(temporary) / 'CA, with "quotes" and spaces.pem'

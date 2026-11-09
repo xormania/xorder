@@ -51,7 +51,9 @@ class ImageSelectionTests(unittest.TestCase):
 
     def test_parent_recipe_checks_all_consuming_descendants(self):
         expected = ["php-browser/8.4-trixie", "php-browser/8.5-trixie",
+                    "php-chrome-dev/8.4-trixie",
                     "php-dev/8.4-trixie", "php-dev/8.5-trixie",
+                    "php-mago-serena/8.4-trixie",
                     "php-serena/8.5-trixie",
                     "php-toolkit/8.4-trixie", "php-toolkit/8.5-trixie"]
         self.assertEqual(self.selected("images/php-dev/Dockerfile"), expected)
@@ -103,9 +105,9 @@ class ImageSelectionTests(unittest.TestCase):
         del previous["lines"]["8.5-trixie"]
         self.assertEqual(self.selected(path, previous_definitions={path: previous}), expected)
         previous["purpose"] = "A changed common contract"
-        self.assertEqual(len(self.selected(path, previous_definitions={path: previous})), 7)
+        self.assertEqual(len(self.selected(path, previous_definitions={path: previous})), 9)
         # An entirely new definition has no prior value: check every authored line.
-        self.assertEqual(len(self.selected(path, previous_definitions={})), 7)
+        self.assertEqual(len(self.selected(path, previous_definitions={})), 9)
 
     def test_tool_pins_check_exact_consumers_and_their_descendants(self):
         previous = json.loads((ROOT / "images/tools.json").read_text())
@@ -211,7 +213,7 @@ class ImageSelectionTests(unittest.TestCase):
         suites = affected_suites(paths, self.defs, ROOT)
         full = {"php-dev/8.4-trixie", "php-dev/8.5-trixie", "php-browser/8.4-trixie",
                 "php-browser/8.5-trixie", "php-toolkit/8.4-trixie", "php-toolkit/8.5-trixie",
-                "php-serena/8.5-trixie"}
+                "php-serena/8.5-trixie", "php-mago-serena/8.4-trixie", "php-chrome-dev/8.4-trixie"}
         self.assertEqual({line for line, selected in suites.items() if selected == ["full"]}, full)
         self.assertEqual(suites["uxor-dev/8.5-trixie"], ["trust"])
         for order in (paths, list(reversed(paths))):

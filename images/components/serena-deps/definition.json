@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "serena-deps",
+  "purpose": "Frozen Python3.12 Serena dependencies; project configuration and adapter source are applied by consumers.",
+  "dockerfile": "images/components/serena-deps/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-py312-trixie",
+  "build_args": {},
+  "tool_args": {
+    "APT_REFRESH": "apt_indexes"
+  }
+}

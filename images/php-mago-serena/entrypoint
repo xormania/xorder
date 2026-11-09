@@ -1,0 +1,15 @@
+#!/bin/sh
+# library-entrypoint invokes this after PUID/PGID mapping and privilege drop.
+set -eu
+# The first-stage entrypoint already installed this CA in Debian's trust store.
+# uv defaults to bundled roots; preserve every explicit caller TLS choice.
+if [ -n "${LIBRARY_CA_FILE:-}" ] &&
+   [ -z "${UV_SYSTEM_CERTS+x}" ] && [ -z "${UV_NATIVE_TLS+x}" ] &&
+   [ -z "${SSL_CERT_FILE+x}" ] && [ -z "${SSL_CERT_DIR+x}" ]; then
+    export UV_SYSTEM_CERTS=true
+fi
+mkdir -p "$SERENA_HOME"
+if [ ! -e "$SERENA_HOME/serena_config.yml" ]; then
+    cp "${XORDER_SERENA_CONFIG:-/opt/xorder/serena/config/serena_config.yml}" "$SERENA_HOME/serena_config.yml"
+fi
+exec "$@"
