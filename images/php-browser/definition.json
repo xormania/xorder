@@ -29,7 +29,7 @@
   "input_fingerprint_version": 2,
   "limitations": [
     "Chromium may need --no-sandbox where the host prohibits sandbox namespaces. Use only for trusted development content.",
-    "Node is not included; request a separate capability when the project requires it."
+    "The php-browser parent itself does not include Node; derived image lines may add it."
   ],
   "lines": {
     "8.4-trixie": {

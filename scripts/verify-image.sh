@@ -30,8 +30,8 @@ if [[ "${#suites[@]}" = 0 ]]; then suites=(full); fi
 for suite in "${suites[@]}"; do
   case "$suite:$family" in
     full:*) [[ "${#suites[@]}" = 1 ]] || { echo 'Full verification cannot be combined with partial suites' >&2; exit 64; } ;;
-    trust:php-dev|trust:php-browser|trust:php-toolkit|trust:php-serena|trust:php-frankenphp|trust:uxor-dev|trust:python-dev|trust:rust-dev|trust:harness-live|trust:python-matrix) ;;
-    native:php-dev|native:php-browser|native:php-toolkit|native:php-serena|native:php-frankenphp|native:uxor-dev|native:python-dev|native:rust-dev) ;;
+    trust:php-dev|trust:php-browser|trust:php-toolkit|trust:php-serena|trust:php-mago-serena|trust:php-chrome-dev|trust:php-frankenphp|trust:uxor-dev|trust:python-dev|trust:rust-dev|trust:harness-live|trust:python-matrix) ;;
+    native:php-dev|native:php-browser|native:php-toolkit|native:php-serena|native:php-mago-serena|native:php-chrome-dev|native:php-frankenphp|native:uxor-dev|native:python-dev|native:rust-dev) ;;
     *) echo "Unsupported verification suite for $family: $suite" >&2; exit 64 ;;
   esac
 done
@@ -65,7 +65,7 @@ if [[ "$family" = harness-live ]]; then
   exit 0
 fi
 kind=${family%-dev}
-case "$family" in php-browser|php-toolkit|php-serena|php-frankenphp|uxor-dev) kind=php ;; esac
+case "$family" in php-browser|php-toolkit|php-serena|php-mago-serena|php-chrome-dev|php-frankenphp|uxor-dev) kind=php ;; esac
 work=$(mktemp -d)
 project="image-check-${RANDOM}-${RANDOM}"
 cp -a "$root/tests/fixtures/$kind/." "$work/"
@@ -132,5 +132,10 @@ if [[ "$family" = php-toolkit ]]; then
 fi
 if [[ "$family" = php-serena ]]; then
   python3 "$root/tests/fixtures/serena/check.py" "$image"
+fi
+if [[ "$family" = php-mago-serena || "$family" = php-chrome-dev ]]; then
+  extra=()
+  if [[ "$family" = php-chrome-dev ]]; then extra+=(--chrome); fi
+  python3 "$root/tests/fixtures/mago-serena/check.py" "$image" "${extra[@]}"
 fi
 printf 'Behavioral recipe completed in %ss for %s\n' "$((SECONDS-start))" "$line"

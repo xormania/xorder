@@ -194,7 +194,11 @@ class DiscoveryTests(unittest.TestCase):
         defs = definitions()
         accepted = []
         import hashlib
-        for line, d in sorted(defs.items(), key=lambda item: bool(item[1]["base"].get("parent"))):
+        from graphlib import TopologicalSorter
+        dependencies = {line: {d["base"]["parent"]} if d["base"].get("parent") else set()
+                        for line, d in defs.items()}
+        for line in TopologicalSorter(dependencies).static_order():
+            d = defs[line]
             r = record(line, d["revision"])
             fp = fingerprint(d)
             if d["base"].get("parent"):

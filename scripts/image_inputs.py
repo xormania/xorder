@@ -15,6 +15,9 @@ TOOL_KEYS = {
     "rust-dev": ("apt_indexes",),
     "php-browser": ("apt_indexes",),
     "php-serena": ("node",),
+    # These toolchains intentionally pin their stages in the Dockerfile.
+    "php-mago-serena": (),
+    "php-chrome-dev": (),
     "playwright-browser": ("apt_indexes",),
 }
 

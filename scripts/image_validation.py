@@ -38,7 +38,7 @@ METADATA_SCHEMAS = {
 # checks; otherwise it conservatively receives the full recipe.
 NATIVE_FAMILIES = {
     "php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp",
-    "uxor-dev", "python-dev", "rust-dev",
+    "uxor-dev", "python-dev", "rust-dev", "php-mago-serena", "php-chrome-dev",
 }
 TRUST_FAMILIES = NATIVE_FAMILIES | {"harness-live", "python-matrix"}
 KNOWN_FAMILIES = TRUST_FAMILIES | {"playwright-browser"}
@@ -121,9 +121,14 @@ def _full_affected_lines(changed, defs, root, previous_tools=None, previous_defi
             elif path.startswith("tests/fixtures/harness-live/"):
                 families = {"harness-live"}
             elif path.startswith(("tests/fixtures/php/", "tests/fixtures/mutation/")):
-                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev"}
+                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev",
+                            "php-mago-serena", "php-chrome-dev"}
             elif path.startswith(("examples/php-toolkit/", "tests/fixtures/php-toolkit/")):
                 families = {"php-toolkit"}
+            elif path.startswith("tests/fixtures/mago-serena/"):
+                families = {"php-mago-serena", "php-chrome-dev"}
+            elif path.startswith("tests/fixtures/chrome-dev/"):
+                families = {"php-chrome-dev"}
             elif path.startswith(("examples/serena/", "tests/fixtures/serena/")):
                 families = {"php-serena"}
             elif path.startswith("tests/fixtures/playwright/consumers/"):
@@ -139,7 +144,8 @@ def _full_affected_lines(changed, defs, root, previous_tools=None, previous_defi
             elif path.startswith(("examples/uxor/", "tests/fixtures/uxor/")):
                 families = {"uxor-dev"}
             elif path.startswith("examples/php/"):
-                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev", "python-dev"}
+                families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev", "python-dev",
+                            "php-mago-serena", "php-chrome-dev"}
             elif path.startswith("tests/fixtures/python/"):
                 families = {"python-dev"}
             elif path.startswith("tests/fixtures/python-matrix/"):

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "images": {
+    "node": "docker.io/library/node:22-trixie@sha256:77d0c7953e80648137a237496c8edbcb3a14bedc5c5298b93a6d0dfa6c3e1271"
+  },
+  "browser": {
+    "chrome_for_testing": "157.0.8103.38",
+    "platform": "linux64",
+    "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.38/linux64/chrome-linux64.zip",
+    "checksum_policy": "The Chrome for Testing index supplies no checksum. Record the installed executable SHA-256 in /opt/xorder/image-identity.json."
+  },
+  "mcp": {
+    "chrome_devtools_mcp": "1.12.0",
+    "node_engines": "^20.19.0 || ^22.12.0 || >=23",
+    "npm_lock": "package-lock.json"
+  }
+}

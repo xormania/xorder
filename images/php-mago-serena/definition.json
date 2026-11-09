@@ -1,0 +1,65 @@
+{
+  "capabilities": [
+    "mago",
+    "mago-lsp-extensions",
+    "mago-sdk-compatible",
+    "python-3.12",
+    "uv",
+    "serena-v2-repl",
+    "serena-mago-adapter",
+    "chromium"
+  ],
+  "companions": [],
+  "execution": {
+    "cache_paths": [
+      "/home/dev/.cache"
+    ],
+    "default_gid": 1000,
+    "default_uid": 1000,
+    "gid_env": "PGID",
+    "home": "/home/dev",
+    "uid_env": "PUID",
+    "workspace": "/workspace"
+  },
+  "extensions": [],
+  "family": "php-mago-serena",
+  "input_fingerprint_version": 2,
+  "limitations": [
+    "Serena uses the Mago SolidLSP adapter; the separate php-serena line uses PHPactor.",
+    "Mago 1.58.2 and SDK revision 46df50c96d93d0ac3655c116c375574277cf0b30 use MANA 2.1; Mago 1.59 and MANA 2.2 are incompatible with this pin.",
+    "The Mago LSP extension is a repository patch, not an upstream API. The PoC recorded an external-edit span defect with a restart workaround.",
+    "mago-baseline is the upstream release binary, not a local unpatched build.",
+    "Python 3.12 is supplied in /usr/local for Serena; Debian Python remains in /usr/bin.",
+    "The consumer owns Composer dependencies, project configuration and mounted workspaces. No daemons, Docker socket or credentials are installed.",
+    "Linux amd64 only. Rebuild binary hashes are recorded; byte equality across builders is not required."
+  ],
+  "lines": {
+    "8.4-trixie": {
+      "base": {
+        "parent": "php-browser/8.4-trixie"
+      },
+      "changes": [
+        "Add the pinned Mago release, patched Mago language server, Python 3.12, uv and Serena v2 with the Mago adapter.",
+        "Seed Serena configuration after PUID/PGID privilege mapping and retain installed binary and source identity."
+      ],
+      "migration": "First release of this line. Adopt its verified digest only after the consumer identity, Mago/Serena and browser smoke checks pass; retain the previous image for rollback.",
+      "os": "debian-trixie",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "revision": "1.0.0",
+      "runtime_line": "8.4"
+    }
+  },
+  "purpose": "Prepared PHP 8.4 Mago analyzer and patched language server with Python 3.12, Serena v2 REPL and the Mago SolidLSP adapter.",
+  "schema_version": 1,
+  "tools": [
+    "mago",
+    "mago-baseline",
+    "python",
+    "uv",
+    "serena",
+    "chromium",
+    "chromedriver"
+  ]
+}

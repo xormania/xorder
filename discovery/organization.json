@@ -76,7 +76,8 @@
       "resources": [
         "image/php-browser/8.4-trixie",
         "image/php-browser/8.5-trixie",
-        "image/playwright-browser/1.58-trixie"
+        "image/playwright-browser/1.58-trixie",
+        "image/php-chrome-dev/8.4-trixie"
       ],
       "profiles": [],
       "usage": "docs/usage.md"
@@ -108,7 +109,8 @@
         "PHP language-server navigation"
       ],
       "resources": [
-        "image/php-serena/8.5-trixie"
+        "image/php-serena/8.5-trixie",
+        "image/php-mago-serena/8.4-trixie"
       ],
       "profiles": [],
       "usage": "docs/serena.md"
