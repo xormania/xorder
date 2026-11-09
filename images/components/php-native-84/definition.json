@@ -1,0 +1,24 @@
+{
+  "abi": "php-cli-8.4-trixie",
+  "components": {
+    "BASE_IMAGE": "php-cli-foundation-84"
+  },
+  "dockerfile": "images/components/php-native/Dockerfile",
+  "id": "php-native-84",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Internal PHP 8.4 development extensions, compiled against the exact matching CLI foundation.",
+  "schema_version": 1,
+  "tool_args": {
+    "APT_REFRESH": "apt_indexes",
+    "PCOV_VERSION": "pcov_version",
+    "REDIS_VERSION": "redis_version",
+    "XDEBUG_VERSION": "xdebug_version"
+  },
+  "verify": [
+    "php",
+    "-r",
+    "foreach (['intl','mbstring','curl','zip','bcmath','dom','xml','pdo_pgsql','pgsql','pdo_mysql','mysqli','pdo_sqlite','gd','redis','sockets','pcntl','xdebug','pcov'] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, $extension . ' missing' . PHP_EOL); exit(1); } }"
+  ]
+}

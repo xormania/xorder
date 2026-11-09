@@ -1,0 +1,17 @@
+{
+  "abi": "debian-python3.13-php-cli-8.5-trixie",
+  "components": {
+    "BASE_IMAGE": "php-native-85"
+  },
+  "dockerfile": "images/components/php-serena-python-85/Dockerfile",
+  "id": "php-serena-python-85",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Retained existing Serena v2 Python environment and dependency-only security patch, prepared against the same Debian Python/native PHP donor as the PHP 8.5 compatibility image.",
+  "schema_version": 1,
+  "verify": [
+    "/opt/serena-env/bin/serena",
+    "--version"
+  ]
+}

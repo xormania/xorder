@@ -1,0 +1,17 @@
+{
+  "abi": "node22-trixie-linux-amd64",
+  "dockerfile": "images/components/php-serena-javascript/Dockerfile",
+  "id": "php-serena-javascript",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Retained existing Node 22 and locked TypeScript language-server payload for the php-serena compatibility image, independent of Python and PHPactor.",
+  "schema_version": 1,
+  "tool_args": {
+    "NODE_IMAGE": "node"
+  },
+  "verify": [
+    "/opt/xorder/serena/javascript/node_modules/.bin/typescript-language-server",
+    "--version"
+  ]
+}

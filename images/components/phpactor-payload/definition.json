@@ -1,0 +1,20 @@
+{
+  "abi": "phpactor-phar",
+  "build_args": {
+    "DOWNLOAD_PYTHON_IMAGE": "docker.io/library/python:3.14-slim-trixie@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d",
+    "PHPACTOR_SHA256": "53bbe9625cd9b5e9b394bc2f595fbad13dbbe6dfc96950c56dea3b5d9a246cc3",
+    "PHPACTOR_URL": "https://github.com/phpactor/phpactor/releases/download/2025.12.21.1/phpactor.phar"
+  },
+  "dockerfile": "images/components/phpactor-payload/Dockerfile",
+  "id": "phpactor-payload",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Retained checksum-pinned PHPactor PHAR for the existing php-serena compatibility image; independent of Node/npm and runtime package refreshes.",
+  "schema_version": 1,
+  "verify": [
+    "python3",
+    "-c",
+    "import stat; from pathlib import Path; payload=Path('/payload/phpactor.phar'); assert payload.stat().st_size > 0 and stat.S_IMODE(payload.stat().st_mode) == 0o644"
+  ]
+}

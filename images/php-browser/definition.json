@@ -37,14 +37,14 @@
         "parent": "php-dev/8.4-trixie"
       },
       "changes": [
-        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+        "Use the decomposed PHP development parent while preserving this image\u2019s existing runtime contract."
       ],
-      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.6",
+      "revision": "1.2.7",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
@@ -52,14 +52,14 @@
         "parent": "php-dev/8.5-trixie"
       },
       "changes": [
-        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+        "Use the decomposed PHP development parent while preserving this image\u2019s existing runtime contract."
       ],
-      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.6",
+      "revision": "1.2.7",
       "runtime_line": "8.5"
     }
   },
