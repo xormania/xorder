@@ -12,6 +12,12 @@ import refresh_browser
 
 
 class BrowserRefreshTests(unittest.TestCase):
+    @staticmethod
+    def copy_build_inputs(root):
+        for name in ("images", "schemas", "scripts", "examples"):
+            shutil.copytree(ROOT / name, root / name)
+        shutil.copyfile(ROOT / ".dockerignore", root / ".dockerignore")
+
     def accepted_catalog(self, path):
         catalog = json.loads(path.read_text())
         catalog["resources"].append({"id": "image/uxor-dev/8.5-trixie", "version": "1.0.0",
@@ -44,12 +50,7 @@ class BrowserRefreshTests(unittest.TestCase):
     def test_new_line_does_not_change_existing_artifacts_or_select_other_lines(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            shutil.copytree(ROOT / "images", root / "images")
-            # Transitive build components may copy shared scripts and prepared
-            # fixtures; hash the same complete input closure as a real checkout.
-            for name in ("scripts", "examples", "schemas"):
-                shutil.copytree(ROOT / name, root / name)
-            shutil.copyfile(ROOT / ".dockerignore", root / ".dockerignore")
+            self.copy_build_inputs(root)
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
             self.accepted_catalog(root / "catalog-v2.json")
             before = {line: fingerprint(d, root) for line, d in definitions(root).items()}
@@ -81,6 +82,12 @@ class BrowserRefreshTests(unittest.TestCase):
                 self.assertEqual(fingerprint(current[line], root), before[line], line)
             self.assertEqual((root / "images/playwright-browser/lines/1.58-trixie/package-lock.json").read_bytes(), old_lock)
             self.assertEqual(current["playwright-browser/1.64-trixie"]["revision"], "1.0.0")
+            payload_id = current["playwright-browser/1.64-trixie"]["build_components"]["PLAYWRIGHT_IMAGE"]
+            self.assertEqual(payload_id, "playwright-1-64-payload")
+            payload = json.loads((root / "images/components" / payload_id / "definition.json").read_text())
+            recipe = (root / payload["dockerfile"]).read_text()
+            self.assertIn("images/playwright-browser/lines/1.64-trixie/package-lock.json", recipe)
+            self.assertNotIn("images/playwright-browser/lines/1.58-trixie/", recipe)
             changes = [path, "images/playwright-browser/lines/1.64-trixie/package-lock.json",
                        "tests/fixtures/playwright/consumers/1.64-trixie.json"]
             self.assertEqual(affected_lines(changes, current, root, previous_definitions={path: old_definition}),
@@ -89,12 +96,7 @@ class BrowserRefreshTests(unittest.TestCase):
     def test_lock_version_mismatch_does_not_publish_a_definition_or_parity_pin(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            shutil.copytree(ROOT / "images", root / "images")
-            # Transitive build components may copy shared scripts and prepared
-            # fixtures; hash the same complete input closure as a real checkout.
-            for name in ("scripts", "examples", "schemas"):
-                shutil.copytree(ROOT / name, root / name)
-            shutil.copyfile(ROOT / ".dockerignore", root / ".dockerignore")
+            self.copy_build_inputs(root)
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
             self.accepted_catalog(root / "catalog-v2.json")
             definition = root / "images/playwright-browser/definition.json"

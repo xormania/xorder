@@ -51,10 +51,10 @@
     },
     {
       "path": "images/playwright-browser/Dockerfile",
-      "line": 8,
+      "line": 10,
       "rule": "DL3008",
-      "code_sha256": "fecbb1ecb1dcec04207b0faa2dc4722aa26340f3f0532c787b88a82ef2bc87c5",
-      "file_sha256": "add3fd68ba8a8d75867f833695d3d6dbd0711973353bfe2607260b71e925bd21",
+      "code_sha256": "02ab4d82656a0cd25c279ba69e1ccfb68a8239f624c597b222b6eb60f05dba04",
+      "file_sha256": "68a542a64cf42ca3240f097769052c826adf4436585d5c5d1c184953c80b629f",
       "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
     },
     {
