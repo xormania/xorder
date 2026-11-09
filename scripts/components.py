@@ -176,7 +176,7 @@ def image_inputs(definition, root=ROOT):
     return result
 
 
-def affected_components(changed, root=ROOT, previous_tools=None):
+def affected_components(changed, root=ROOT, previous_tools=None, previous_definitions=None):
     root = Path(root)
     defs = definitions(root)
     chosen = set()
@@ -194,9 +194,16 @@ def affected_components(changed, root=ROOT, previous_tools=None):
             elif path in {
                     "scripts/components.py", "schemas/component.schema.json", "scripts/artifact_identity.py"}:
                 chosen.add(name)
-            elif any(path == f"images/{line.split('/', 1)[0]}/definition.json"
-                     for line in item.get("image_bases", {}).values()):
-                chosen.add(name)
+            else:
+                for line in item.get("image_bases", {}).values():
+                    family, variant = line.split("/", 1)
+                    if path != f"images/{family}/definition.json":
+                        continue
+                    current = _read(root / path)["lines"][variant]["base"]
+                    previous = (previous_definitions or {}).get(path)
+                    old_base = (previous or {}).get("lines", {}).get(variant, {}).get("base")
+                    if previous is None or old_base != current:
+                        chosen.add(name)
     while True:
         consumers = {name for name, item in defs.items()
                      if set(item.get("components", {}).values()).intersection(chosen)}
@@ -206,8 +213,8 @@ def affected_components(changed, root=ROOT, previous_tools=None):
     return sorted(chosen)
 
 
-def affected_images(changed, image_defs, root=ROOT, previous_tools=None):
-    chosen = set(affected_components(changed, root, previous_tools))
+def affected_images(changed, image_defs, root=ROOT, previous_tools=None, previous_definitions=None):
+    chosen = set(affected_components(changed, root, previous_tools, previous_definitions))
     return {line for line, definition in image_defs.items()
             if chosen.intersection(definition.get("build_components", {}).values())}
 

@@ -20,6 +20,9 @@ class RuntimeComponentTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         shutil.copytree(ROOT / "images", self.root / "images", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(ROOT / "schemas", self.root / "schemas")
+        # Component selection inspects every donor's authored COPY closure.
+        for name in ("scripts", "examples"):
+            shutil.copytree(ROOT / name, self.root / name, ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copyfile(ROOT / ".dockerignore", self.root / ".dockerignore")
         import components
         self.components = components
