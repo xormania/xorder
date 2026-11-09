@@ -1,16 +1,18 @@
 diff --git a/pyproject.toml b/pyproject.toml
-index 05cfe4cf..9c079c97 100644
+index 05cfe4cf..16f913bb 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -41,6 +41,7 @@ dependencies = [
+@@ -41,6 +41,9 @@ dependencies = [
    "pystray==0.19.5",
    "pygls==2.1.1", # used to implement an msl language server
    "lsprotocol==2025.0.0",
 +  "anyio==4.14.2", # xorder release scan: CVE-2026-63374
++  "certifi==2026.10.23", # xorder release scan: GHSA-6q48-6c7w-9gw2
++  "pillow==13.0.0", # xorder release scan: Pillow 13 security fixes
    # Transitive deps pinned for security (dependabot alerts).
    # Exact pins because uvx installs from git, ignoring the lock file.
    "urllib3==2.7.0",
-@@ -92,7 +93,7 @@ dev = [
+@@ -92,7 +95,7 @@ dev = [
    "tornado==6.5.7",
    "wheel==0.46.3",
    "pyasn1==0.6.4",

@@ -98,12 +98,29 @@ def install_consumer(image, checkout):
 def main():
     image = sys.argv[1]
     packages = tomllib.loads((ROOT / "images/php-serena/security-uv.lock").read_text())["package"]
-    expected = {item["name"]: item["version"] for item in packages if item["name"] in ("anyio", "pyjwt")}
+    expected = {item["name"]: item["version"] for item in packages
+                if item["name"] in ("anyio", "pyjwt", "certifi", "pillow")}
+    probe = """import io
+import json
+import ssl
+from importlib.metadata import version
+import certifi
+from PIL import Image
+
+context = ssl.create_default_context(cafile=certifi.where())
+assert context.cert_store_stats()['x509_ca'] > 0
+image = Image.new('RGB', (2, 2), (17, 34, 51))
+buffer = io.BytesIO()
+image.save(buffer, format='PNG')
+buffer.seek(0)
+with Image.open(buffer) as decoded:
+    decoded.load()
+    assert decoded.size == (2, 2) and decoded.getpixel((0, 0)) == (17, 34, 51)
+print(json.dumps({name: version(name) for name in ('anyio', 'pyjwt', 'certifi', 'pillow')}))
+"""
     measured = json.loads(subprocess.check_output([
         "docker", "run", "--rm", "--network=none", "--read-only", "--user=1000:1000",
-        "--entrypoint=/opt/serena-env/bin/python", image, "-c",
-        "import json; from importlib.metadata import version; "
-        "print(json.dumps({name: version(name) for name in ('anyio', 'pyjwt')}))"], text=True))
+        "--entrypoint=/opt/serena-env/bin/python", image, "-c", probe], text=True))
     assert measured == expected, {"expected_security_dependencies": expected, "installed": measured}
     fixture = json.loads(Path(__file__).with_name("consumer.json").read_text())
     with tempfile.TemporaryDirectory(prefix="xorder-serena-proof-") as directory:
@@ -127,7 +144,8 @@ def main():
         }))
         original_settings = settings.read_bytes()
         evidence = {"consumer": fixture, "image": image, "security_dependencies": measured,
-                    "checks": ["installed-security-dependencies-match-effective-lock"]}
+                    "checks": ["installed-security-dependencies-match-effective-lock",
+                               "certifi-ca-store-loads", "pillow-png-encode-decode"]}
         log_path = Path(directory) / "mcp.log"
         client = None
         try:
