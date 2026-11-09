@@ -34,6 +34,10 @@ class ImageSelectionTests(unittest.TestCase):
                                        'schemas/release-groups.schema.json',
                                        '.github/workflows/release-groups.yml'), [])
 
+    def test_ci_tool_download_setup_does_not_rebuild_runtime_images(self):
+        self.assertEqual(self.selected("scripts/setup_checks.py",
+                                       ".github/workflows/fast-checks.yml"), [])
+
     def test_child_recipe_and_fixture_skip_parent_and_siblings(self):
         for path in ("images/php-toolkit/Dockerfile", "tests/fixtures/php-toolkit/run.sh",
                      "examples/php-toolkit/validator/composer.lock"):

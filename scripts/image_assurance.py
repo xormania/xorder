@@ -15,6 +15,7 @@ from pathlib import Path
 
 from library import ROOT, encoded, read, validate_record
 from xorder.transport import download
+from xorder.download_cache import cached_download
 
 IDENTITY = "https://github.com/xormania/xorder/.github/workflows/publish.yml@refs/heads/master"
 ISSUER = "https://token.actions.githubusercontent.com"
@@ -25,6 +26,11 @@ TRIVY = {
     "version": "0.75.0",
     "url": "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz",
     "sha256": "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f",
+}
+COSIGN = {
+    "version": "3.1.3",
+    "url": "https://github.com/sigstore/cosign/releases/download/v3.1.3/cosign-linux-amd64",
+    "sha256": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71",
 }
 
 
@@ -53,20 +59,31 @@ def anonymous_registry_environment(config):
 def install_scanner(directory):
     """Install checksum-pinned bytes, never execute a mutable upstream installer."""
     directory.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="xorder-trivy-") as temporary:
-        archive_path = Path(temporary) / "trivy.tar.gz"
-        download(TRIVY["url"], archive_path, TRIVY["sha256"])
-        with tarfile.open(archive_path) as archive:
-            matches = [m for m in archive.getmembers() if m.name == "trivy" and m.isfile()]
-            if len(matches) != 1:
-                raise ValueError("Pinned scanner archive has no unique regular trivy executable")
-            with archive.extractfile(matches[0]) as source:
-                (directory / "trivy").write_bytes(source.read())
-        (directory / "trivy").chmod(0o755)
+    archive_path = cached_download(TRIVY["url"], TRIVY["sha256"])
+    with tarfile.open(archive_path) as archive:
+        matches = [m for m in archive.getmembers() if m.name == "trivy" and m.isfile()]
+        if len(matches) != 1:
+            raise ValueError("Pinned scanner archive has no unique regular trivy executable")
+        with archive.extractfile(matches[0]) as source:
+            (directory / "trivy").write_bytes(source.read())
+    (directory / "trivy").chmod(0o755)
     if os.environ.get("GITHUB_PATH"):
         with open(os.environ["GITHUB_PATH"], "a") as stream:
             stream.write(str(directory.resolve()) + "\n")
     return directory / "trivy"
+
+
+def install_signer(directory):
+    """Reuse the same hash-pinned signer bytes across publication attempts."""
+    directory.mkdir(parents=True, exist_ok=True)
+    source = cached_download(COSIGN["url"], COSIGN["sha256"])
+    target = directory / "cosign"
+    target.write_bytes(source.read_bytes())
+    target.chmod(0o755)
+    if os.environ.get("GITHUB_PATH"):
+        with open(os.environ["GITHUB_PATH"], "a") as stream:
+            stream.write(str(directory.resolve()) + "\n")
+    return target
 
 
 def scan_summary(report):
@@ -301,6 +318,8 @@ if __name__ == "__main__":
     commands = parser.add_subparsers(dest="action", required=True)
     install = commands.add_parser("install-scanner")
     install.add_argument("--directory", type=Path, required=True)
+    signer = commands.add_parser("install-signer")
+    signer.add_argument("--directory", type=Path, required=True)
     check = commands.add_parser("verify")
     check.add_argument("record", type=Path)
     check.add_argument("--output", type=Path, required=True)
@@ -316,6 +335,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.action == "install-scanner":
         print(install_scanner(args.directory))
+    elif args.action == "install-signer":
+        print(install_signer(args.directory))
     elif args.action == "smoke-record":
         print("assurance_smoke_record=" + smoke_record(args.base))
     elif args.action == "assure-existing":

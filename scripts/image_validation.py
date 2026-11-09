@@ -11,7 +11,7 @@ METADATA_SCRIPTS = {
     "scripts/catalog_checks.py", "scripts/catalog_summary.py",
     "scripts/refresh_browser.py", "scripts/browser_release.py",
     "scripts/image_assurance.py", "scripts/agent_eval.py",
-    "scripts/claude_prompt_clock.py",
+    "scripts/claude_prompt_clock.py", "scripts/setup_checks.py", "scripts/fetch_build_input.py",
     "scripts/release_groups.py", "scripts/group_writeback.py",
     "scripts/retention.py", "scripts/publication_attempt.py",
     "examples/shared/failure_hooks.py", "examples/jev/failure_triage.py",
@@ -21,7 +21,7 @@ METADATA_WORKFLOWS = {
     ".github/workflows/publish.yml", ".github/workflows/refresh.yml",
     ".github/workflows/aliases.yml", ".github/workflows/catalog.yml",
     ".github/workflows/browser-refresh.yml",
-    ".github/workflows/release-groups.yml",
+    ".github/workflows/release-groups.yml", ".github/workflows/fast-checks.yml",
 }
 METADATA_SCHEMAS = {
     "schemas/definition.schema.json", "schemas/release-record.schema.json",
