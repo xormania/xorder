@@ -44,14 +44,14 @@
         "SERENA_PYTHON_IMAGE": "php-serena-python-85"
       },
       "changes": [
-        "Compose the same pinned Serena/PHPactor compatibility backend from the updated PHP parent and retained Python/PHPactor inputs; Node/npm refreshes do not reinstall Python dependencies."
+        "Update only the pinned Serena Python dependency closure to certifi 2026.10.23 and Pillow 13.0.0 for the publication scan's fixable critical findings. Retain the same Serena/PHPactor backend and all other dependency versions."
       ],
       "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.8",
+      "revision": "1.1.9",
       "runtime_line": "8.5"
     }
   },
