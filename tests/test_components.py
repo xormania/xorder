@@ -160,6 +160,74 @@ class ComponentTests(unittest.TestCase):
                 recipe.write_text(original + f"COPY \\\n --chown=0:0 \\\n --from={donor} \\\n /tool /tool\n")
                 self.assertEqual(len(components.build_key("base", self.root)), 64)
 
+    def test_heredoc_body_cannot_declare_a_fake_component_donor(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = recipe.read_text()
+        for opener in (
+            "RUN cat <<EOF > /example\n",
+            "RUN cat <<'EOF' > /example\n",
+            'RUN cat <<-"EOF" > /example\n',
+            "RUN \\\n cat <<EOF > /example\n",
+            "RUN cat <\\\n<EOF > /example\n",
+            "RUN cat <\\\n\n<EOF > /example\n",
+            "RUN cat <\\\n \t\n<EOF > /example\n",
+            "RUN cat <\\\n# continuation comment\n\n<EOF > /example\n",
+            "RUN cat <\\\n# continuation comment\n \t\n<EOF > /example\n",
+            "RUN cat <\\ \t\n # continuation comment\n <EOF > /example\n",
+            "RUN cat <<EOF <<SECOND > /example\n",
+        ):
+            with self.subTest(opener=opener):
+                body = "FROM scratch \\\n# body comment\nAS example/tool:latest\nEOF\n"
+                if "SECOND" in opener:
+                    body += "second body\nSECOND\n"
+                recipe.write_text(original + opener + body + "COPY --from=example/tool:latest /tool /tool\n")
+                with self.assertRaisesRegex(ValueError, "heredoc"):
+                    components.build_key("base", self.root)
+
+    def test_nondefault_escape_cannot_hide_a_split_heredoc_marker(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = recipe.read_text()
+        for prefix in ("", "\ufeff"):
+            with self.subTest(prefix=prefix):
+                recipe.write_text(prefix + "# escape=`\n" + original + "RUN cat <`\n<EOF > /example\n"
+                                  "FROM scratch \\\n# body comment\nAS example/tool:latest\nEOF\n"
+                                  "COPY --from=example/tool:latest /tool /tool\n")
+                with self.assertRaisesRegex(ValueError, "escape"):
+                    components.build_key("base", self.root)
+
+    def test_non_docker_line_separators_cannot_create_fake_component_stages(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = recipe.read_bytes()
+        for separator in ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029", "\r"):
+            with self.subTest(separator=separator):
+                attack = ("RUN echo " + separator + "FROM scratch \\\n# body comment\nAS example/tool:latest\n"
+                          "COPY --from=example/tool:latest /tool /tool\n")
+                recipe.write_bytes(original + attack.encode())
+                with self.assertRaisesRegex(ValueError, "line separator"):
+                    components.build_key("base", self.root)
+
+    def test_crlf_dockerfiles_remain_supported(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        recipe.write_bytes(recipe.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertEqual(len(components.build_key("base", self.root)), 64)
+
+    def test_heredoc_markers_in_full_line_comments_are_ignored(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = recipe.read_text()
+        for prefix in ("", "\ufeff"):
+            with self.subTest(prefix=prefix):
+                recipe.write_text(prefix + "# escape=\\\n# documentation: <<EOF\n" + original)
+                self.assertEqual(len(components.build_key("base", self.root)), 64)
+
+    def test_conservative_marker_policy_also_rejects_quoted_and_json_literals(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = recipe.read_text()
+        for instruction in ("RUN echo '<<EOF'\n", 'RUN ["echo", "<<EOF"]\n', 'COPY ["<<EOF", "/example"]\n'):
+            with self.subTest(instruction=instruction):
+                recipe.write_text(original + instruction)
+                with self.assertRaisesRegex(ValueError, "heredoc"):
+                    components.build_key("base", self.root)
+
     def test_copy_comment_boundaries_preserve_local_input_hashing_and_selection(self):
         recipe = self.root / "images/components/base/Dockerfile"
         original = recipe.read_text()

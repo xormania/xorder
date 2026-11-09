@@ -146,7 +146,7 @@ def build_inputs(component_id, root=ROOT, platform="linux/amd64", tools=None):
         if platform not in item["platforms"]:
             raise ValueError(f"Unsupported component platform: {name}/{platform}")
         recipe_path = _path(item["dockerfile"])
-        recipe = (root / recipe_path).read_text()
+        recipe = (root / recipe_path).read_bytes().decode("utf-8-sig")
         arguments = _arguments(item, root, tools)
         _recipe_inputs(recipe, arguments, item.get("components", {}))
         files = _files_current(root.resolve(), recipe_path, recipe,
@@ -190,7 +190,7 @@ def affected_components(changed, root=ROOT, previous_tools=None, previous_defini
                     chosen.add(name)
             elif (path == manifest or path in snapshot["files"]
                   or any(_matches(path, source) for source in _sources(
-                      (root / item["dockerfile"]).read_text(), snapshot["build_arguments"].get("IMAGE_LINE", name)))):
+                      (root / item["dockerfile"]).read_bytes().decode("utf-8-sig"), snapshot["build_arguments"].get("IMAGE_LINE", name)))):
                 chosen.add(name)
             elif path in {
                     "scripts/components.py", "schemas/component.schema.json", "scripts/artifact_identity.py"}:

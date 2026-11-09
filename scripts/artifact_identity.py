@@ -72,8 +72,20 @@ def apt_refresh(tools):
 
 
 def _instructions(recipe):
+    recipe = recipe.removeprefix("\ufeff")
+    if re.search(r"[\v\f\x1c-\x1e\x85\u2028\u2029]|\r(?!\n)", recipe):
+        raise ValueError("Unsupported Dockerfile line separator; use LF or CRLF")
+    for line in recipe.splitlines():
+        escape = re.match(r"^\s*#\s*escape\s*=\s*(.*)$", line, re.I)
+        if escape and escape[1].strip() != "\\":
+            raise ValueError("Unsupported Dockerfile escape directive; use the default backslash")
     # Docker removes full-line comments before joining continued instructions.
     recipe = "\n".join(line for line in recipe.splitlines() if not line.lstrip().startswith("#"))
+    # Fail closed before treating heredoc data as Dockerfile instructions. Check
+    # concatenated continuations too: '<\\\n<EOF' can form an opener in BuildKit.
+    continued = "\n".join(line for line in recipe.splitlines() if line.strip())
+    if "<<" in re.sub(r"\\[ \t]*\n[ \t]*", "", continued):
+        raise ValueError("Unsupported Dockerfile heredoc marker; COPY an authored script instead")
     return recipe.replace("\\\n", " ").splitlines()
 
 
@@ -193,7 +205,7 @@ def _files_historical(root, source, recipe_path, line):
         if int(_git(root, "cat-file", "-s", oid)) > MAX_BYTES:
             raise ValueError("Historical build input byte limit exceeded")
         return _git(root, "cat-file", "blob", oid, binary=True)
-    recipe = content(recipe_path).decode()
+    recipe = content(recipe_path).decode("utf-8-sig")
     ignore = content(".dockerignore").decode().splitlines()
     selected = {recipe_path, ".dockerignore"}
     for pattern in _sources(recipe, line):
@@ -261,7 +273,7 @@ def build_inputs(definition, root=ROOT, parent=None, tools=None):
     root = Path(root).resolve()
     family, line = definition["family"], definition["line"]
     recipe_path = _path(f"images/{family}/Dockerfile")
-    recipe = (root / recipe_path).read_text()
+    recipe = (root / recipe_path).read_bytes().decode("utf-8-sig")
     ignore = (root / ".dockerignore").read_text().splitlines()
     files = _files_current(root, recipe_path, recipe, line, ignore)
     if tools is None:

@@ -62,6 +62,19 @@ class ArtifactIdentityTests(unittest.TestCase):
                                input_fingerprint_version=2)
         self.assertEqual(before, self.key())
 
+    def test_raw_carriage_returns_cannot_create_current_or_historical_instructions(self):
+        self.recipe.write_bytes(self.recipe.read_bytes() + b"RUN echo \rFROM scratch\n")
+        with self.assertRaisesRegex(ValueError, "line separator"):
+            self.key()
+        record = self.historical_record()
+        with self.assertRaisesRegex(ValueError, "line separator"):
+            identity.recorded_build_key(record, self.root)
+
+    def test_crlf_and_initial_bom_preserve_current_and_historical_identity(self):
+        self.recipe.write_bytes(b"\xef\xbb\xbf" + self.recipe.read_bytes().replace(b"\n", b"\r\n"))
+        record = self.historical_record()
+        self.assertEqual(self.key(), identity.recorded_build_key(record, self.root))
+
     def test_input_snapshot_has_explicit_hashes_and_modes(self):
         snapshot = identity.build_inputs(self.definition, self.root)
         self.assertEqual(snapshot["build_key_version"], 1)
