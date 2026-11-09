@@ -20,7 +20,7 @@
       "test_id": "B108",
       "code_sha256": "237b1bcd62d2121503587c3bddb1491d1397c8a4262220cebc3fe429defb0082",
       "reason": "The uv cache lives only inside the isolated root-owned Docker build filesystem and is removed after installation; this is not a shared host temporary directory.",
-      "file_sha256": "8cce2bbc9343380df3a027a80d174b745a9351fdbe7d0c9e8e9022e2b19616c5"
+      "file_sha256": "4879b43ebe68694faf3eeac1615251ee7b9dffa468d896529366e3fac2029dbc"
     },
     {
       "path": "tests/test_agent_feedback.py",

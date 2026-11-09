@@ -1,0 +1,18 @@
+{
+  "version": "26.2.2",
+  "certifi_min_version": "2026.10.19",
+  "url": "https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl",
+  "sha256": "fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70",
+  "replacements": {
+    "3.10.22": {
+      "version": "23.0.1",
+      "module_sha256": "bbe1521987ab1f959481f5b35ec5121c6b09d3a48bbcd9f62ffb16454239d85e",
+      "wheel_sha256": "236bcb61156d76c4b8a05821b988c7b8c35bf0da28a4b614e8d6ab5212c25c6f"
+    },
+    "3.14.8": {
+      "version": "26.2.1",
+      "module_sha256": "18bdd155b4cdf3d6d667a98f9ab7a21782e33600b92c4e73d641eaca80e9afa9",
+      "wheel_sha256": "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
+    }
+  }
+}

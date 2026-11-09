@@ -10,6 +10,7 @@ RUN test -n "$APT_REFRESH" \
 COPY --from=interpreters /opt/xorder/python /opt/xorder/python
 COPY --from=interpreters /opt/xorder/python-bin /opt/xorder/python-bin
 COPY --from=interpreters /opt/xorder/python-matrix/versions.json /opt/xorder/python-matrix/versions.json
+COPY --from=interpreters /opt/xorder/python-matrix/pip-bootstrap.json /opt/xorder/python-matrix/pip-bootstrap.json
 ENV UV_PYTHON_INSTALL_DIR=/opt/xorder/python UV_PYTHON_DOWNLOADS=never \
     PATH=/opt/xorder/python-bin:${PATH}
 ARG SOURCE_COMMIT

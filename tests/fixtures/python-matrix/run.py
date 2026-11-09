@@ -53,6 +53,24 @@ def command(*args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
 
+def pip_check(executable, pin):
+    """Measure the pip that this interpreter or newly created venv executes."""
+    facts = json.loads(subprocess.check_output([
+        str(executable), "-I", "-c",
+        "import ensurepip,json,pip,ssl; import pip._vendor.certifi as certifi; "
+        "context=ssl.create_default_context(cafile=certifi.where()); "
+        "print(json.dumps(dict(pip=pip.__version__, ensurepip=ensurepip.version(), "
+        "certifi=certifi.__version__, ca_count=context.cert_store_stats()['x509_ca'])))"], text=True))
+    def version(value):
+        return tuple(map(int, value.split(".")))
+    if (version(facts["pip"]) < version(pin["version"])
+            or version(facts["ensurepip"]) < version(pin["version"])
+            or version(facts["certifi"]) < version(pin["certifi_min_version"])
+            or facts["ca_count"] <= 0):
+        raise RuntimeError(f"Python pip/bootstrap security floor failed: {facts}")
+    return facts
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sqlite-only", metavar="PYTHON_LINE")
@@ -63,6 +81,7 @@ def main():
     fixture = Path(__file__).resolve().parent
     consumer = json.loads((fixture / "consumer.json").read_text())
     versions = json.loads(Path("/opt/xorder/python-matrix/versions.json").read_text())
+    bootstrap = json.loads(Path("/opt/xorder/python-matrix/pip-bootstrap.json").read_text())
     output = Path("/evidence")
     evidence = {"consumer": consumer, "network": "none", "interpreters": {}}
     for line in consumer["python_lines"]:
@@ -75,11 +94,14 @@ def main():
             raise RuntimeError(f"Python {line} does not match its build pin: {facts}")
         if Path(executable).resolve().is_relative_to(Path("/home/dev")):
             raise RuntimeError("Interpreter was installed in the persistent home volume")
+        facts["installed_pip"] = pip_check(executable, bootstrap)
         with tempfile.TemporaryDirectory(prefix="xorder-venv-" + line + "-") as directory:
             venv = Path(directory) / "venv"
             command(executable, "-m", "venv", str(venv))
             command(str(venv / "bin/python"), "-m", "pip", "--version")
+            facts["fresh_venv_pip"] = pip_check(venv / "bin/python", bootstrap)
         facts["checks"].append("offline-venv-with-pip")
+        facts["checks"].extend(["installed-pip-vendored-certifi", "offline-venv-security-floor"])
         # Temporary selection/report paths cannot accidentally reuse a preceding
         # interpreter's run. sys.executable propagates into consumer subprocesses.
         with tempfile.TemporaryDirectory(prefix="xorder-contracts-" + line + "-") as directory:
