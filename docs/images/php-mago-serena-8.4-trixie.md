@@ -23,5 +23,6 @@ Workspace `/workspace`, HOME `/home/dev`, default UID/GID 1000; configure `PUID`
 - The Mago LSP extension is a repository patch, not an upstream API. The PoC recorded an external-edit span defect with a restart workaround.
 - The consumer owns Composer dependencies, project configuration and mounted workspaces. No daemons, Docker socket or credentials are installed.
 - The php-browser parent itself does not include Node; derived image lines may add it.
+- Use trusted checkouts: starting patched Mago or Serena can execute mago.toml extension-host commands as the mapped user, with the container's mounts, environment and network access. Image identity verifies the toolchain, not project worker code.
 - Xdebug is off by default; enable with XDEBUG_MODE=coverage or debug.
 - mago-baseline is the upstream release binary, not a local unpatched build.

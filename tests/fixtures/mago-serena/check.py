@@ -16,6 +16,9 @@ import uuid
 from pathlib import Path
 
 
+_OMITTED = object()
+
+
 class RpcClient:
     """Deadline-bound stdio JSON-RPC, supporting MCP lines and LSP byte framing."""
 
@@ -77,12 +80,18 @@ class RpcClient:
         self.process.stdin.write(payload)
         self.process.stdin.flush()
 
-    def notify(self, method, params=None):
-        self._send({"jsonrpc": "2.0", "method": method, "params": params or {}})
+    def notify(self, method, params=_OMITTED):
+        message = {"jsonrpc": "2.0", "method": method}
+        if params is not _OMITTED:
+            message["params"] = params
+        self._send(message)
 
-    def call(self, method, params=None):
+    def call(self, method, params=_OMITTED):
         self.serial += 1
-        self._send({"jsonrpc": "2.0", "id": self.serial, "method": method, "params": params or {}})
+        message = {"jsonrpc": "2.0", "id": self.serial, "method": method}
+        if params is not _OMITTED:
+            message["params"] = params
+        self._send(message)
         deadline = time.monotonic() + self.timeout
         while True:
             remaining = deadline - time.monotonic()
@@ -170,7 +179,7 @@ def verify_mago(project):
         })
         assert result.get("serverInfo", {}).get("name") == "mago-server", result
         assert result["capabilities"].get("experimental", {}).get("symbolReferencesProvider") is True, result
-        client.notify("initialized")
+        client.notify("initialized", {})
         uri = (project / "Example.php").as_uri()
         client.notify("textDocument/didOpen", {"textDocument": {
             "uri": uri, "languageId": "php", "version": 1, "text": (project / "Example.php").read_text()}})

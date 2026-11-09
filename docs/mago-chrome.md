@@ -37,8 +37,10 @@ The adapter checks the Mago executable against the identity before startup.
 The release tarball is verified by its locked SHA-256 and installed as
 `mago-baseline`; `mago` is the patched source build. Cross-builder binary
 equality with the PoC is not required. Chrome for Testing publishes no artifact
-checksum in its index: its exact version URL and measured executable hash are
-retained, without claiming an independently published checksum.
+checksum in its index. xorder pins a locally acquired SHA-256 of the versioned
+archive, checks it before extraction, and retains the measured executable hash.
+The archive pin was matched against a fresh HTTPS download and the consumer's
+cached archive; it is not a vendor-published checksum.
 
 ## Runtime
 
@@ -49,6 +51,13 @@ existing configuration. `SERENA_HOME` defaults to `/home/dev/serena`.
 The default command is `bash`; consumers can override it with their HTTP server.
 The project template is `/opt/xorder/serena/config/project.yml`; the consumer
 owns its `.serena/project.yml` and Composer dependencies.
+
+Run these tools against trusted checkouts. Starting patched Mago or Serena
+can execute extension-host commands configured by the project's `mago.toml`,
+as the mapped user with the container's mounts, environment and network
+access. Image identity checks verify the toolchain, not project worker code.
+Consumers choose which directories, credentials and network access to expose
+to those workers; the image starts no language server or project worker by itself.
 
 Use the accepted digest from the catalog as `IMAGE`, then run the full readiness
 recipe on a Docker-capable Linux amd64 host:

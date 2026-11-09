@@ -22,7 +22,7 @@
   "input_fingerprint_version": 2,
   "limitations": [
     "Chrome for Testing is installed alongside Debian Chromium; Panther continues to use the inherited Debian browser.",
-    "Chrome for Testing publishes no checksum. The version URL and installed binary SHA-256 are retained as provenance.",
+    "The Chrome for Testing index publishes no checksum. xorder verifies its locally acquired archive SHA-256 before extraction and records the installed executable hash.",
     "Chrome may require --no-sandbox where user namespaces are unavailable. Use shm_size: 1gb or --disable-dev-shm-usage.",
     "Browser built-in AI APIs require an eligible device and model download; this headless container does not establish their availability.",
     "Chrome DevTools MCP usage statistics and update checks are disabled by default; CI also sets CI=1."

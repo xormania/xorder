@@ -18,6 +18,7 @@ RUN --mount=type=secret,id=xorder_ca \
     if [ -s /run/secrets/xorder_ca ]; then export CURL_CA_BUNDLE=/run/secrets/xorder_ca; fi; \
     chrome_url="$(python3 -c 'import json; print(json.load(open("/opt/xorder/chrome-toolchain.lock.json"))["browser"]["url"])')"; \
     curl --fail --location --retry 3 --output /tmp/chrome.zip "$chrome_url" \
+    && python3 -c 'import hashlib, json, sys; expected = json.load(open("/opt/xorder/chrome-toolchain.lock.json"))["browser"]["archive_sha256"]; actual = hashlib.file_digest(open("/tmp/chrome.zip", "rb"), "sha256").hexdigest(); sys.exit(0 if actual == expected else "Chrome for Testing archive SHA-256 mismatch")' \
     && unzip -q /tmp/chrome.zip -d /opt \
     && rm /tmp/chrome.zip \
     && ln -s /opt/chrome-linux64/chrome /usr/local/bin/chrome \

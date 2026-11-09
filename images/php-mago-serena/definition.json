@@ -31,7 +31,8 @@
     "mago-baseline is the upstream release binary, not a local unpatched build.",
     "Python 3.12 is supplied in /usr/local for Serena; Debian Python remains in /usr/bin.",
     "The consumer owns Composer dependencies, project configuration and mounted workspaces. No daemons, Docker socket or credentials are installed.",
-    "Linux amd64 only. Rebuild binary hashes are recorded; byte equality across builders is not required."
+    "Linux amd64 only. Rebuild binary hashes are recorded; byte equality across builders is not required.",
+    "Use trusted checkouts: starting patched Mago or Serena can execute mago.toml extension-host commands as the mapped user, with the container's mounts, environment and network access. Image identity verifies the toolchain, not project worker code."
   ],
   "lines": {
     "8.4-trixie": {

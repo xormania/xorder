@@ -230,6 +230,101 @@ class SerenaSmokeSemanticsTests(unittest.TestCase):
 
 
 class MagoRpcClientTests(unittest.TestCase):
+    @staticmethod
+    def echo_server():
+        # This independent process validates the wire, including absent keys;
+        # the client cannot satisfy these checks by changing Python defaults.
+        return r"""
+import json, sys
+framing = sys.argv[1]
+def receive():
+    if framing == 'lines':
+        body = sys.stdin.buffer.readline()
+    else:
+        headers = {}
+        while True:
+            line = sys.stdin.buffer.readline()
+            if not line:
+                return None
+            if line in (b'\r\n', b'\n'):
+                break
+            key, value = line.decode().split(':', 1)
+            headers[key.lower()] = value.strip()
+        body = sys.stdin.buffer.read(int(headers['content-length']))
+    return json.loads(body) if body else None
+
+def respond(message):
+    body = json.dumps(message).encode()
+    if framing == 'lsp':
+        sys.stdout.buffer.write(('Content-Length: %d\r\n\r\n' % len(body)).encode() + body)
+    else:
+        sys.stdout.buffer.write(body + b'\n')
+    sys.stdout.buffer.flush()
+
+last_notification = None
+while True:
+    request = receive()
+    if request is None:
+        break
+    if request['method'] == 'exit':
+        sys.exit(23 if 'params' in request else 0)
+    if 'id' not in request:
+        last_notification = request
+        continue
+    response = {'jsonrpc': '2.0', 'id': request['id']}
+    if request['method'] == 'shutdown':
+        if 'params' in request:
+            response['error'] = {'code': -32602, 'message': 'shutdown takes no parameters'}
+        else:
+            response['result'] = None
+    else:
+        response['result'] = last_notification if request['method'] == 'last-notification' else request
+    respond(response)
+"""
+
+    def test_parameterless_shutdown_and_exit_work_with_strict_servers(self):
+        module = rpc_module()
+        for framing in ('lines', 'lsp'):
+            with self.subTest(framing=framing):
+                with module.RpcClient([sys.executable, '-u', '-c', self.echo_server(), framing],
+                                      framing=framing, timeout=3) as client:
+                    self.assertIsNone(client.call('shutdown'))
+                    client.notify('exit')
+                    self.assertEqual(client.process.wait(timeout=3), 0)
+
+    def test_parameterless_exit_notification_has_no_params_member(self):
+        module = rpc_module()
+        for framing in ('lines', 'lsp'):
+            with self.subTest(framing=framing):
+                with module.RpcClient([sys.executable, '-u', '-c', self.echo_server(), framing],
+                                      framing=framing, timeout=3) as client:
+                    client.notify('exit')
+                    self.assertEqual(client.process.wait(timeout=3), 0)
+
+    def test_explicit_falsey_call_parameters_retain_json_value_and_type(self):
+        module = rpc_module()
+        for framing in ('lines', 'lsp'):
+            with module.RpcClient([sys.executable, '-u', '-c', self.echo_server(), framing],
+                                  framing=framing, timeout=3) as client:
+                for params in ({}, [], 0, False, '', None):
+                    with self.subTest(framing=framing, params=params):
+                        observed = client.call('echo', params)
+                        self.assertIn('params', observed)
+                        self.assertEqual(json.dumps(observed['params']), json.dumps(params))
+
+    def test_explicit_falsey_notification_parameters_retain_json_value_and_type(self):
+        module = rpc_module()
+        for framing in ('lines', 'lsp'):
+            with module.RpcClient([sys.executable, '-u', '-c', self.echo_server(), framing],
+                                  framing=framing, timeout=3) as client:
+                for params in ({}, [], 0, False, '', None):
+                    with self.subTest(framing=framing, params=params):
+                        client.notify('notifications/echo', params)
+                        observed = client.call('last-notification')
+                        self.assertNotIn('id', observed)
+                        self.assertIn('params', observed)
+                        self.assertEqual(json.dumps(observed['params']), json.dumps(params))
+
     def test_newline_mcp_ignores_notifications_and_matches_response_id(self):
         module = rpc_module()
         program = """
