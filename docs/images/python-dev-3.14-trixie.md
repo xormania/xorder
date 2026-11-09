@@ -2,13 +2,13 @@
 
 Python development with uv, pip, venv, native compilation and PostgreSQL clients.
 
-Available revision: **1.1.6**. Pin:
+Available revision: **1.1.7**. Pin:
 
 ```text
-ghcr.io/xormania/python-dev@sha256:0ecdf09af5352c4bb0762c254dcccd5d49f7dddfccb43a1cea82f080e4ff3518
+ghcr.io/xormania/python-dev@sha256:3fbc574e177b40689afe5e58271f73f002b9dc8e4e04fafe2fc335e5fdfa7e4e
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/41517804597); 2026-11-02T20:20:34.831392Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:21:00.876888Z.
 
 ## Measured inventory — linux/amd64
 
@@ -25,25 +25,25 @@ Runtime: 3.14.10; OS: Debian GNU/Linux 13 (trixie).
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | python | Python 3.14.10 |
 | rg | ripgrep 14.1.1 |
-| uv | uv 0.13.6 (x86_64-unknown-linux-musl) |
+| uv | uv 0.13.7 (x86_64-unknown-linux-musl) |
 
 ### Release measurements — linux/amd64
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 582.5 MiB (610,820,826 bytes) |
-| Build, cache export and image load | 43.60s |
-| Public-artifact behavior and inventory verification | 31.08s |
+| Local image size | 582.8 MiB (611,106,558 bytes) |
+| Build, cache export and image load | 43.06s |
+| Public-artifact behavior and inventory verification | 21.97s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/41517804597); 2026-11-02T20:20:00.829097Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:20:29.742643Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.1.4, `ghcr.io/xormania/python-dev@sha256:b232a236f5c74402be7488aab9e0c98bbb76a647e9667ac37e0cdb98553af589`; 583.7 MiB in the same image store. Change: **-0.2%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:14:42.480412Z.
+Size baseline: v1.1.6, `ghcr.io/xormania/python-dev@sha256:0ecdf09af5352c4bb0762c254dcccd5d49f7dddfccb43a1cea82f080e4ff3518`; 582.5 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/41517804597); 2026-11-02T20:20:00.829097Z.
 
-[Release notes](../releases/python-dev-3.14-trixie-v1.1.6.md).
+[Release notes](../releases/python-dev-3.14-trixie-v1.1.7.md).
 
 Capabilities: `python`, `uv`, `pip`, `venv`, `native-build`, `postgresql-client`.
 
