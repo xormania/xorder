@@ -113,6 +113,69 @@ class FastCheckTests(unittest.TestCase):
             self.assertEqual(findings[0]["RuleID"], "generic-api-key")
             self.assertNotIn(token, report.read_text())
 
+    @staticmethod
+    def scan_secret_canary(root):
+        report = root / "report.json"
+        completed = subprocess.run(
+            ["gitleaks", "dir", ".", f"--config={checks.ROOT / '.gitleaks.toml'}", "--redact=100",
+             "--no-banner", "--report-format=json", f"--report-path={report}"],
+            cwd=root, capture_output=True, text=True, timeout=15)
+        return completed.returncode, json.loads(report.read_text())
+
+    @unittest.skipUnless(shutil.which("gitleaks"), "Gitleaks canary runs with the fast-check tools installed")
+    def test_component_identity_hashes_are_allowed_in_managed_catalog_and_image_records(self):
+        digest = hashlib.sha256(b"xorder synthetic component identity").hexdigest()
+        document = {"build_components": {"COMPONENT_IMAGE": {"key": digest}},
+                    "tools": {"serena": {"installed_lsp_api_sha256": digest}}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("catalog.json", "release-records/php-dev/8.5-trixie/1.2.7.json"):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(document, indent=2))
+            self.assertEqual(self.scan_secret_canary(root), (0, []))
+
+    @unittest.skipUnless(shutil.which("gitleaks"), "Gitleaks canary runs with the fast-check tools installed")
+    def test_component_identity_exceptions_do_not_apply_to_unmanaged_paths(self):
+        digest = hashlib.sha256(b"xorder synthetic component identity").hexdigest()
+        document = {"key": digest, "installed_lsp_api_sha256": digest}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = ("settings.json", "catalog-v2.json", "nested/catalog.json", "release-records/data.json",
+                     "release-records/php-dev/8.5-trixie/not-a-revision.json")
+            for name in paths:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(document, indent=2))
+            code, findings = self.scan_secret_canary(root)
+            self.assertEqual(code, 1)
+            self.assertEqual(sorted(finding["File"] for finding in findings), sorted(paths * 2))
+            self.assertTrue(all(finding["RuleID"] == "generic-api-key" for finding in findings))
+
+    @unittest.skipUnless(shutil.which("gitleaks"), "Gitleaks canary runs with the fast-check tools installed")
+    def test_component_identity_exceptions_reject_other_fields_and_credential_values(self):
+        # Synthetic credential-shaped entropy; these values never authenticate anywhere.
+        digest = hashlib.sha256(b"xorder synthetic credential canary").hexdigest()
+        cases = (("api_key", digest), ("component_key", digest),
+                 ("key", "z9A_" + digest), ("installed_lsp_api_sha256", "z9A_" + digest),
+                 ("key", digest[:-1]), ("key", digest + "a"), ("key", digest.upper()),
+                 ("key", digest[:-1] + "g"), ("key", "ghp_" + digest[:36]))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = []
+            for index, (field, value) in enumerate(cases):
+                path = root / f"release-records/canary/trixie/0.0.{index}.json"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({field: value}, indent=2))
+                paths.append(str(path.relative_to(root)))
+            code, findings = self.scan_secret_canary(root)
+            self.assertEqual(code, 1)
+            self.assertEqual({finding["File"] for finding in findings}, set(paths))
+            self.assertTrue(all(finding["RuleID"] == "generic-api-key" for finding in findings
+                                if finding["File"] != paths[-1]))
+            self.assertIn("github-pat", {finding["RuleID"] for finding in findings if finding["File"] == paths[-1]})
+            self.assertNotIn(digest, json.dumps(findings))
+
     @unittest.skipUnless(shutil.which("bandit"), "Bandit canary runs with the fast-check tools installed")
     def test_bandit_tuning_preserves_risk_detection_and_limits_test_exemptions(self):
         with tempfile.TemporaryDirectory() as directory:
