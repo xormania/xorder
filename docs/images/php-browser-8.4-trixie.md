@@ -2,13 +2,13 @@
 
 PHP and Symfony development plus real Chromium and Panther browser tests.
 
-Available revision: **1.2.4**. Pin:
+Available revision: **1.2.7**. Pin:
 
 ```text
-ghcr.io/xormania/php-browser@sha256:628021c4e31dbd226183aefb2186b363849475bcba8a5e176e684e7491054ee7
+ghcr.io/xormania/php-browser@sha256:e0c5fed248b3a9a1f13e73bf747bd4f4559bc0ca37bd76a1a8f1422b2d7f342f
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:23:15.381023Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:24:19.371745Z.
 
 ## Measured inventory — linux/amd64
 
@@ -17,17 +17,17 @@ Runtime: 8.4.27; OS: Debian GNU/Linux 13 (trixie).
 | Tool | Version |
 | --- | --- |
 | bash | GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-gnu) |
-| chromedriver | ChromeDriver 156.0.8078.73 (2f9a11097447f226133bc1a31c787291a5eeab98-refs/branch-heads/8078@{#1612}) |
-| chromium | Chromium 156.0.8078.73 built on Debian GNU/Linux 13 (trixie) |
-| composer | Composer version 2.10.3 2026-08-27 13:34:23 |
+| chromedriver | ChromeDriver 156.0.8078.79 (a21ce95c24ce3964416f09ae1862f53f319eb4d0-refs/branch-heads/8078@{#1704}) |
+| chromium | Chromium 156.0.8078.79 built on Debian GNU/Linux 13 (trixie) |
+| composer | Composer version 2.11.1 2026-10-30 14:52:10 |
 | curl | curl 8.14.1 (x86_64-pc-linux-gnu) libcurl/8.14.1 OpenSSL/3.5.7 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10 |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
-| infection | Infection - PHP Mutation Testing Framework version 0.35.8 |
+| infection | Infection - PHP Mutation Testing Framework version 0.35.9 |
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
-| php | PHP 8.4.27 (cli) (built: Oct 21 2026 15:53:07) (NTS) |
+| php | PHP 8.4.27 (cli) (built: Nov  5 2026 07:23:05) (NTS) |
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
@@ -39,19 +39,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,621.7 MiB (1,700,463,285 bytes) |
-| Build, cache export and image load | 64.36s |
-| Public-artifact behavior and inventory verification | 32.55s |
+| Local image size | 1,621.2 MiB (1,699,933,278 bytes) |
+| Build, cache export and image load | 63.53s |
+| Public-artifact behavior and inventory verification | 31.52s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:22:35.140913Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:23:50.471310Z.
 
 Plan about **4 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.2.3, `ghcr.io/xormania/php-browser@sha256:ad37c8138c4aacdbba8c64f0436669104e0e57dd206aa6f5099c512440f65a3e`; 1,620.2 MiB in the same image store. Change: **+0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:22:03.457341Z.
+Size baseline: v1.2.4, `ghcr.io/xormania/php-browser@sha256:628021c4e31dbd226183aefb2186b363849475bcba8a5e176e684e7491054ee7`; 1,621.7 MiB in the same image store. Change: **-0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:22:35.140913Z.
 
-[Release notes](../releases/php-browser-8.4-trixie-v1.2.4.md).
+[Release notes](../releases/php-browser-8.4-trixie-v1.2.7.md).
 
 Capabilities: `browser`, `composer`, `mutation-testing`, `native-build`, `panther`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `symfony`, `xdebug`.
 
@@ -63,7 +63,7 @@ Workspace `/workspace`, HOME `/home/dev`, default UID/GID 1000; configure `PUID`
 
 - Chromium may need --no-sandbox where the host prohibits sandbox namespaces. Use only for trusted development content.
 - No PHP-FPM, web server daemon, or Node toolchain is supplied.
-- Node is not included; request a separate capability when the project requires it.
 - PCOV is disabled by default. library-php-coverage pcov isolates Xdebug for each CLI process; library-php-tests uses project-locked PHPUnit and PHPStan, not global test packages.
 - Project PHP dependencies come from Composer lockfiles.
+- The php-browser parent itself does not include Node; derived image lines may add it.
 - Xdebug is off by default; enable with XDEBUG_MODE=coverage or debug.

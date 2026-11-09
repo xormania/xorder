@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-02T20:22:10.265620Z",
+  "generated_at": "2026-11-09T11:03:22.756871Z",
   "groups": [
     {
       "applies_to": [
@@ -54,7 +54,8 @@
       "resources": [
         "image/php-browser/8.4-trixie",
         "image/php-browser/8.5-trixie",
-        "image/playwright-browser/1.58-trixie"
+        "image/playwright-browser/1.58-trixie",
+        "image/php-chrome-dev/8.4-trixie"
       ],
       "title": "Browser test execution",
       "usage": "docs/usage.md"
@@ -86,7 +87,8 @@
       "layer": "task",
       "profiles": [],
       "resources": [
-        "image/php-serena/8.5-trixie"
+        "image/php-serena/8.5-trixie",
+        "image/php-mago-serena/8.4-trixie"
       ],
       "title": "PHP/Symfony code navigation with Serena",
       "usage": "docs/serena.md"
@@ -499,12 +501,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "da811101b58cd87b90086dfc57c1653886f91682eb52bea602ea68f121e19ec8",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/harness-live%2Ftrixie%2Fv1.0.2/assurance.json"
+        "receipt_sha256": "49fd309fc239847c35e8d0d66780f93429909be48ff0335000d09998f4a284a6",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/harness-live%2Ftrixie%2Fv1.0.4/assurance.json"
       },
       "documentation": "docs/images/harness-live-trixie.md",
       "id": "image/harness-live/trixie",
-      "identity": "ghcr.io/xormania/harness-live@sha256:e1575a8a24b61c6c79429e95ed7638e10c5910067f6805bd907281d229531d89",
+      "identity": "ghcr.io/xormania/harness-live@sha256:7cd2dba80df2c9fe39f6be511bf06ddfadac666d8fc940b40ee2a2d3f1b70811",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -513,21 +515,21 @@
         ]
       },
       "purpose": "Opt-in live harness environment with persistent installation, explicit updates and private operator authentication.",
-      "release_record": "release-records/harness-live/trixie/1.0.2.json",
+      "release_record": "release-records/harness-live/trixie/1.0.4.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.2"
+      "version": "1.0.4"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "387e52a9ee981614e584e34335dd5314acb6e7020d0694b69f67120a3f86ca0d",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-browser%2F8.4-trixie%2Fv1.2.4/assurance.json"
+        "receipt_sha256": "37a27df2afd091a76048bdd7bb7b62df7ab5e7b0a97869587e8c99b3e9395cc3",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-browser%2F8.4-trixie%2Fv1.2.7/assurance.json"
       },
       "documentation": "docs/images/php-browser-8.4-trixie.md",
       "id": "image/php-browser/8.4-trixie",
-      "identity": "ghcr.io/xormania/php-browser@sha256:628021c4e31dbd226183aefb2186b363849475bcba8a5e176e684e7491054ee7",
+      "identity": "ghcr.io/xormania/php-browser@sha256:e0c5fed248b3a9a1f13e73bf747bd4f4559bc0ca37bd76a1a8f1422b2d7f342f",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -536,21 +538,21 @@
         ]
       },
       "purpose": "PHP and Symfony development plus real Chromium and Panther browser tests.",
-      "release_record": "release-records/php-browser/8.4-trixie/1.2.4.json",
+      "release_record": "release-records/php-browser/8.4-trixie/1.2.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.2.4"
+      "version": "1.2.7"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "46ca0b02290723e6da6823bbd85e612f37ea5770e2d5c8624bd3437e63b3ed1c",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-browser%2F8.5-trixie%2Fv1.2.4/assurance.json"
+        "receipt_sha256": "fb222a76e824dee72d0a6efbd4409e61abe3edee0cc7453b692d0c78e0a3b855",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-browser%2F8.5-trixie%2Fv1.2.7/assurance.json"
       },
       "documentation": "docs/images/php-browser-8.5-trixie.md",
       "id": "image/php-browser/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-browser@sha256:86e074a244a0d283d9ca2180703846a90e864ca06183054e88f72954c37da427",
+      "identity": "ghcr.io/xormania/php-browser@sha256:7d563a60793d5022473f5ca1a54dfb7660a2cb63cdff56d754637c90f99e69d1",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -559,21 +561,44 @@
         ]
       },
       "purpose": "PHP and Symfony development plus real Chromium and Panther browser tests.",
-      "release_record": "release-records/php-browser/8.5-trixie/1.2.4.json",
+      "release_record": "release-records/php-browser/8.5-trixie/1.2.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.2.4"
+      "version": "1.2.7"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "697963e4ac32d39679e436902996df701924ba67c954ca8dc4c4763027343ff2",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-dev%2F8.4-trixie%2Fv1.2.4/assurance.json"
+        "receipt_sha256": "38ff1d76a0dfeb645e70809271ec3df081986ddd4fa96042209b9583caa49183",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-chrome-dev%2F8.4-trixie%2Fv1.0.0/assurance.json"
+      },
+      "documentation": "docs/images/php-chrome-dev-8.4-trixie.md",
+      "id": "image/php-chrome-dev/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-chrome-dev@sha256:7850d077feda5b07f9eee244cd85d91ec3ae35197dd8a672756a9ce2f278ac93",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "PHP 8.4 Mago/Serena development plus Node 22, Chrome for Testing and Chrome DevTools MCP.",
+      "release_record": "release-records/php-chrome-dev/8.4-trixie/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "642616cf985457979a708ef8e2f2d78b1bb93a60411a7205283708037496767b",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-dev%2F8.4-trixie%2Fv1.2.7/assurance.json"
       },
       "documentation": "docs/images/php-dev-8.4-trixie.md",
       "id": "image/php-dev/8.4-trixie",
-      "identity": "ghcr.io/xormania/php-dev@sha256:af3cf2730a901f9dbca5eb50e4d01b48bdf749a0ff1bb829d296bcb6656c24d6",
+      "identity": "ghcr.io/xormania/php-dev@sha256:437e6e38f41b88aa10bde916c0dd01a27465f86205cdb9de0a819cea9e9ae5c6",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -582,21 +607,21 @@
         ]
       },
       "purpose": "Loaded PHP and Symfony development, CLI tasks, unit and PostgreSQL integration tests.",
-      "release_record": "release-records/php-dev/8.4-trixie/1.2.4.json",
+      "release_record": "release-records/php-dev/8.4-trixie/1.2.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.2.4"
+      "version": "1.2.7"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "3dddc545ed1d28f4cf606ee7791f604daab4e96416cedad08c6fd253430604f3",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-dev%2F8.5-trixie%2Fv1.2.4/assurance.json"
+        "receipt_sha256": "03c502f63cc07af23835670465b276dab0a0ea9f581bf828b6170fe18f44c82a",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-dev%2F8.5-trixie%2Fv1.2.7/assurance.json"
       },
       "documentation": "docs/images/php-dev-8.5-trixie.md",
       "id": "image/php-dev/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-dev@sha256:5f3e3b7337cae950064f82b0ef0a0b20100860f74688ed2e8916ddb65ae1254b",
+      "identity": "ghcr.io/xormania/php-dev@sha256:4324fbf6e2424ac7e575e813d5862543c7026611f334c3e1423b676062e1536f",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -605,21 +630,21 @@
         ]
       },
       "purpose": "Loaded PHP and Symfony development, CLI tasks, unit and PostgreSQL integration tests.",
-      "release_record": "release-records/php-dev/8.5-trixie/1.2.4.json",
+      "release_record": "release-records/php-dev/8.5-trixie/1.2.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.2.4"
+      "version": "1.2.7"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "6bc1eb77a3eb88bcb6b08332130928e0b5592599b83dcaa21c56d8b07749a2c5",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-frankenphp%2F8.4-trixie%2Fv1.1.5/assurance.json"
+        "receipt_sha256": "8b2a2c9e5a9d843f6e6370b42b628ea203e28977e78f62079cf5afdbd7f7f495",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-frankenphp%2F8.4-trixie%2Fv1.1.7/assurance.json"
       },
       "documentation": "docs/images/php-frankenphp-8.4-trixie.md",
       "id": "image/php-frankenphp/8.4-trixie",
-      "identity": "ghcr.io/xormania/php-frankenphp@sha256:20772c9f93bfd1c4a3d4d07419617335b155d075e964cadd2f84fdff0853fa9f",
+      "identity": "ghcr.io/xormania/php-frankenphp@sha256:ed4c8554c5dbdf3057a2da8402d9c453d40368ac99862affadad12a11a14fcdd",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -628,21 +653,21 @@
         ]
       },
       "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
-      "release_record": "release-records/php-frankenphp/8.4-trixie/1.1.5.json",
+      "release_record": "release-records/php-frankenphp/8.4-trixie/1.1.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.1.5"
+      "version": "1.1.7"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "7bea9e810ce4c92cfe7d252c592f814eaa6ebae5d98a8d08c3c4c3ab299f3f04",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-frankenphp%2F8.5-trixie%2Fv1.1.5/assurance.json"
+        "receipt_sha256": "29adbd069107dae9bf9c3a43b08b303cc63eae7a7de69a6b1c3101edee9f3912",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-frankenphp%2F8.5-trixie%2Fv1.1.7/assurance.json"
       },
       "documentation": "docs/images/php-frankenphp-8.5-trixie.md",
       "id": "image/php-frankenphp/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-frankenphp@sha256:d816d2a805f3d90ed10ffbdbe5e8494bc097407af54236a4ae52553a0ceefe94",
+      "identity": "ghcr.io/xormania/php-frankenphp@sha256:840f9f96aebc86bcc0bbe994e668d68e204036212ef5f223f0736f3ba52433af",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -651,11 +676,34 @@
         ]
       },
       "purpose": "Loaded PHP/Symfony development with FrankenPHP, Caddy and worker-mode HTTP execution.",
-      "release_record": "release-records/php-frankenphp/8.5-trixie/1.1.5.json",
+      "release_record": "release-records/php-frankenphp/8.5-trixie/1.1.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.1.5"
+      "version": "1.1.7"
+    },
+    {
+      "assurance": {
+        "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
+        "receipt_sha256": "7a5d1939f41f24895aa918be2620b796ce51070efb199e5b5b01974ad6e5023f",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-mago-serena%2F8.4-trixie%2Fv1.0.0/assurance.json"
+      },
+      "documentation": "docs/images/php-mago-serena-8.4-trixie.md",
+      "id": "image/php-mago-serena/8.4-trixie",
+      "identity": "ghcr.io/xormania/php-mago-serena@sha256:7ec4859f1844a109f014730f2de306dbaf49073fbd92092c40ae0f586227316c",
+      "kind": "image",
+      "lifecycle": "available",
+      "prerequisites": {
+        "commands": [
+          "docker"
+        ]
+      },
+      "purpose": "Composable PHP Symfony development with latest selected native Mago, current Serena REPL, matched patched Mago LSP/SDK, and reusable Symfony/AI Mate project preparation.",
+      "release_record": "release-records/php-mago-serena/8.4-trixie/1.0.0.json",
+      "targets": [
+        "linux/amd64"
+      ],
+      "version": "1.0.0"
     },
     {
       "assurance": {
@@ -683,12 +731,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "425a44e185c81d055b317ecd94ff465b59cf44ec8c5b29d349908821c30fab6f",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-toolkit%2F8.4-trixie%2Fv1.0.4/assurance.json"
+        "receipt_sha256": "c102dadb392c9ba6002a1e775f660af51a9ce9100c9c2ccb0d1ca9e32878ab34",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-toolkit%2F8.4-trixie%2Fv1.0.7/assurance.json"
       },
       "documentation": "docs/images/php-toolkit-8.4-trixie.md",
       "id": "image/php-toolkit/8.4-trixie",
-      "identity": "ghcr.io/xormania/php-toolkit@sha256:2fe87102264fc07b09ea79c142aa0180d044ef410c27966c5f089a7f97cd5b91",
+      "identity": "ghcr.io/xormania/php-toolkit@sha256:b7f45a34538f87d28be96c69d392fcd1f6b4b509a55048c50e492c0da8f0c9cd",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -697,11 +745,11 @@
         ]
       },
       "purpose": "Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.",
-      "release_record": "release-records/php-toolkit/8.4-trixie/1.0.4.json",
+      "release_record": "release-records/php-toolkit/8.4-trixie/1.0.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.4"
+      "version": "1.0.7"
     },
     {
       "assurance": {
@@ -752,12 +800,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "714d877dea85e32c8e88ae6850f743103a094a0bbb5a5e0e679ed4b47809b85e",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-dev%2F3.14-trixie%2Fv1.1.6/assurance.json"
+        "receipt_sha256": "799a5dab3a7df4872e8db633280357992cf3acbd8cf330dd2ff12b1c6a825ca6",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-dev%2F3.14-trixie%2Fv1.1.8/assurance.json"
       },
       "documentation": "docs/images/python-dev-3.14-trixie.md",
       "id": "image/python-dev/3.14-trixie",
-      "identity": "ghcr.io/xormania/python-dev@sha256:0ecdf09af5352c4bb0762c254dcccd5d49f7dddfccb43a1cea82f080e4ff3518",
+      "identity": "ghcr.io/xormania/python-dev@sha256:a1bd1bfd06fb15348c541f6538bdb98425e9d1ab1116b4941e660c7c5ea0d8ed",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -766,11 +814,11 @@
         ]
       },
       "purpose": "Python development with uv, pip, venv, native compilation and PostgreSQL clients.",
-      "release_record": "release-records/python-dev/3.14-trixie/1.1.6.json",
+      "release_record": "release-records/python-dev/3.14-trixie/1.1.8.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.1.6"
+      "version": "1.1.8"
     },
     {
       "assurance": {
@@ -798,12 +846,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "91fa3db47cc7da42b100107a2d68a77dcd7c8cec4a203555c048ff510d1bc564",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/rust-dev%2F1.99-trixie%2Fv1.1.5/assurance.json"
+        "receipt_sha256": "b9a99acb905b6119ee63b0277278e59691d09d26bfcd0d4f189d31cf252e47b8",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/rust-dev%2F1.99-trixie%2Fv1.1.8/assurance.json"
       },
       "documentation": "docs/images/rust-dev-1.99-trixie.md",
       "id": "image/rust-dev/1.99-trixie",
-      "identity": "ghcr.io/xormania/rust-dev@sha256:846314820c3b22d0672564d3acff0f65d5213df6970e681f815c48cbed10abde",
+      "identity": "ghcr.io/xormania/rust-dev@sha256:5ec55f521953900bacff4211a9238ff341891d97886539118c6150989b582307",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -812,21 +860,21 @@
         ]
       },
       "purpose": "Rust 2024 native compilation, Clippy, formatting and wasm32-unknown-unknown builds.",
-      "release_record": "release-records/rust-dev/1.99-trixie/1.1.5.json",
+      "release_record": "release-records/rust-dev/1.99-trixie/1.1.8.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.1.5"
+      "version": "1.1.8"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "63d3c9e97209b74b8e23e7378f848a4143ebd7f1bdf675ba6ebf56ec4c57af3f",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.4-trixie%2Fv1.0.3/assurance.json"
+        "receipt_sha256": "fca3297925ecea783df8cf3b865634536debe4e7e7d609fbe498fa7885e502b9",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.4-trixie%2Fv1.0.5/assurance.json"
       },
       "documentation": "docs/images/uxor-dev-8.4-trixie.md",
       "id": "image/uxor-dev/8.4-trixie",
-      "identity": "ghcr.io/xormania/uxor-dev@sha256:dee7bad6852f2b22960535e3ddb3d64675719b42ea766e8151b008477c5d6143",
+      "identity": "ghcr.io/xormania/uxor-dev@sha256:7a3da062ccdee24173f8a6042264cd3231ea0d7cf258da575356886229476365",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -835,21 +883,21 @@
         ]
       },
       "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
-      "release_record": "release-records/uxor-dev/8.4-trixie/1.0.3.json",
+      "release_record": "release-records/uxor-dev/8.4-trixie/1.0.5.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.3"
+      "version": "1.0.5"
     },
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "7925987077809a70ed3d37974edb4a16ff2f1723e99e3d0b7d4a94c8ef722f9a",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.5-trixie%2Fv1.0.3/assurance.json"
+        "receipt_sha256": "31c32b1c86076973e1c1eb27923e20bf9faead75115852cc6c6baec8658911c8",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/uxor-dev%2F8.5-trixie%2Fv1.0.5/assurance.json"
       },
       "documentation": "docs/images/uxor-dev-8.5-trixie.md",
       "id": "image/uxor-dev/8.5-trixie",
-      "identity": "ghcr.io/xormania/uxor-dev@sha256:28af54394cf26d6ff6fcb6f54ce85cfd4784d6cf867cd77b5187c5e1ddf9214b",
+      "identity": "ghcr.io/xormania/uxor-dev@sha256:64f1b5331de0cd52f958f4f233c4eaf7a0626f68e80fc48273d884de224fdc92",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -858,11 +906,11 @@
         ]
       },
       "purpose": "FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.",
-      "release_record": "release-records/uxor-dev/8.5-trixie/1.0.3.json",
+      "release_record": "release-records/uxor-dev/8.5-trixie/1.0.5.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.3"
+      "version": "1.0.5"
     }
   ],
   "schema_version": 1
