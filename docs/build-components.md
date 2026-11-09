@@ -13,6 +13,14 @@ Unknown arguments, mutable external image donors and dependency cycles fail
 before building. Verification runs when an existing donor is loaded as well as
 when a new donor is built.
 
+Build-input inspection supports full-line comments and default backslash line
+continuations with LF or CRLF physical lines. Other line separators are rejected;
+an initial UTF-8 BOM is accepted without changing the hashed source bytes.
+Here-document markers (`<<`, including quoted literal forms) and
+nondefault `escape` directives are conservatively rejected before instruction
+inspection. Copy an authored script into the build instead of embedding a heredoc;
+this keeps script bytes in the component's tracked input closure.
+
 The existing publication workflow calls a singleton prepared-input publisher on
 real trusted master push events. Each completed target is verified and published
 immediately by content key into the repository-derived GHCR cache package. Later
