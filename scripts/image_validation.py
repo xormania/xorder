@@ -81,7 +81,7 @@ def _full_affected_lines(changed, defs, root, previous_tools=None, previous_defi
     """Propagate changed artifact inputs; keep fixture-only checks on their consumers."""
     selected, inputs = set(), set()
     from components import affected_images
-    inputs.update(affected_images(changed, defs, root, previous_tools))
+    inputs.update(affected_images(changed, defs, root, previous_tools, previous_definitions))
     for path in changed:
         if path.startswith("images/components/"):
             # Component COPY inputs were selected before metadata filtering.

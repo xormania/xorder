@@ -80,6 +80,28 @@ class ComponentTests(unittest.TestCase):
         self.assertEqual(changed, {"base", "child"})
         self.assertEqual(components.affected_components(["images/tools.json"], self.root, old_tools), ["base", "child"])
 
+    def test_image_base_selection_ignores_other_lines_and_revision_only_edits(self):
+        self.component("other")
+        for name, line in (("base", "8.4-trixie"), ("other", "8.5-trixie")):
+            self.mutate(lambda item, line=line: (item.pop("build_args"), item.update(image_bases={"BASE_IMAGE": "php-dev/" + line})), name)
+        family = self.root / "images/php-dev/definition.json"
+        family.parent.mkdir(parents=True)
+        authored = {"family": "php-dev", "purpose": "test runtime", "lines": {
+            line: {"base": {"tag": "docker.io/library/php:" + line, "digest": "sha256:" + digest * 64},
+                   "revision": "1.0.0", "build_components": {"INPUT_IMAGE": component}}
+            for line, digest, component in (("8.4-trixie", "a", "base"), ("8.5-trixie", "b", "other"))}}
+        previous = json.loads(json.dumps(authored))
+        authored["lines"]["8.5-trixie"]["revision"] = "1.0.1"
+        family.write_text(json.dumps(authored))
+        images = {"php-dev/" + line: {"family": "php-dev", "line": line, "platforms": ["linux/amd64"], **entry}
+                  for line, entry in authored["lines"].items()}
+        path = "images/php-dev/definition.json"
+        self.assertEqual(affected_suites([path], images, self.root, previous_definitions={path: previous}),
+                         {"php-dev/8.5-trixie": ["full"]})
+        authored["lines"]["8.5-trixie"]["base"]["digest"] = "sha256:" + "e" * 64
+        family.write_text(json.dumps(authored))
+        self.assertEqual(components.affected_components([path], self.root, previous_definitions={path: previous}), ["other"])
+
     def test_deleted_directory_copy_member_selects_component_and_image(self):
         self.component("child", "base")
         before = components.build_key("child", self.root)
