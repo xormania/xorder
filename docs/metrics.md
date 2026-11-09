@@ -13,9 +13,9 @@ Generated from the verified release ledger. Sizes describe local Docker images, 
 | [php-frankenphp/8.4-trixie](images/php-frankenphp-8.4-trixie.md) | 1.1.7 | linux/amd64 | 964.9 | 963.9 (v1.1.5) | +0.1% | 165.58 | 27.31 |
 | [php-frankenphp/8.5-trixie](images/php-frankenphp-8.5-trixie.md) | 1.1.7 | linux/amd64 | 994.6 | 993.6 (v1.1.5) | +0.1% | 195.97 | 28.43 |
 | [php-mago-serena/8.4-trixie](images/php-mago-serena-8.4-trixie.md) | 1.0.0 | linux/amd64 | 1,870.2 | — | — | 33.24 | 54.03 |
-| [php-serena/8.5-trixie](images/php-serena-8.5-trixie.md) | 1.1.3 | linux/amd64 | 1,245.1 | 1,243.7 (v1.1.2) | +0.1% | 39.42 | 91.34 |
+| [php-serena/8.5-trixie](images/php-serena-8.5-trixie.md) | 1.1.9 | linux/amd64 | 1,243.7 | 1,245.1 (v1.1.3) | -0.1% | 98.46 | 101.78 |
 | [php-toolkit/8.4-trixie](images/php-toolkit-8.4-trixie.md) | 1.0.7 | linux/amd64 | 937.3 | 937.8 (v1.0.4) | -0.1% | 16.61 | 38.25 |
-| [php-toolkit/8.5-trixie](images/php-toolkit-8.5-trixie.md) | 1.0.3 | linux/amd64 | 968.0 | 966.6 (v1.0.2) | +0.1% | 13.12 | 32.11 |
+| [php-toolkit/8.5-trixie](images/php-toolkit-8.5-trixie.md) | 1.0.7 | linux/amd64 | 967.1 | 968.0 (v1.0.3) | -0.1% | 17.67 | 39.64 |
 | [playwright-browser/1.58-trixie](images/playwright-browser-1.58-trixie.md) | 1.0.4 | linux/amd64 | 2,213.9 | 2,213.9 (v1.0.3) | +0.0% | Not measured | 165.35 |
 | [python-dev/3.14-trixie](images/python-dev-3.14-trixie.md) | 1.1.8 | linux/amd64 | 584.1 | 582.5 (v1.1.6) | +0.3% | 28.67 | 23.73 |
 | [python-matrix/trixie](images/python-matrix-trixie.md) | 1.0.1 | linux/amd64 | 852.4 | 852.4 (v1.0.0) | +0.0% | 44.12 | 93.79 |

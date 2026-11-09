@@ -73,7 +73,7 @@ Serena v2 REPL; PHP language-server navigation.
 
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
-| [image/php-serena/8.5-trixie](../docs/images/php-serena-8.5-trixie.md) | 1.1.3 | linux/amd64 |
+| [image/php-serena/8.5-trixie](../docs/images/php-serena-8.5-trixie.md) | 1.1.9 | linux/amd64 |
 | [image/php-mago-serena/8.4-trixie](../docs/images/php-mago-serena-8.4-trixie.md) | 1.0.0 | linux/amd64 |
 
 ### Isolated Symfony UX Toolkit validation
@@ -85,7 +85,7 @@ locked kit validation; fresh Symfony recipe installation.
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
 | [image/php-toolkit/8.4-trixie](../docs/images/php-toolkit-8.4-trixie.md) | 1.0.7 | linux/amd64 |
-| [image/php-toolkit/8.5-trixie](../docs/images/php-toolkit-8.5-trixie.md) | 1.0.3 | linux/amd64 |
+| [image/php-toolkit/8.5-trixie](../docs/images/php-toolkit-8.5-trixie.md) | 1.0.7 | linux/amd64 |
 
 Pinned selections: [profile/php-toolkit](../profiles/php-toolkit.json).
 
