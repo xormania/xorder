@@ -34,15 +34,18 @@
         "digest": "sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d",
         "tag": "docker.io/library/python:3.14-slim-trixie"
       },
+      "build_components": {
+        "PYTHON_FOUNDATION_IMAGE": "python-foundation"
+      },
       "changes": [
-        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+        "Reuse independently published runtime capability components without changing executable paths, permissions or readiness behavior."
       ],
-      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "migration": "Compatible build decomposition. Update the exact digest only after normal image readiness checks; retain the prior release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.7",
+      "revision": "1.1.8",
       "runtime_line": "3.14"
     }
   },

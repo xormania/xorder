@@ -3,10 +3,10 @@
   "exceptions": [
     {
       "path": "images/harness-live/Dockerfile",
-      "line": 8,
+      "line": 10,
       "rule": "DL3008",
-      "code_sha256": "184bf7ac7a684bc00fa243575b900568d862d5cb0cb6279acd875821db531d00",
-      "file_sha256": "4a1cf0a929559d51b5c0976b551c6d1ae2fcc4e8871260dd6be5fc4f6280258b",
+      "code_sha256": "ffa05d6743feac4cd7b8f17d5f608096fda65f1cc813f78da19abbf58e3d36e1",
+      "file_sha256": "8334f7b0aa3276b65e0d6ff3d0d2b140087bb26a0b65036a1ea271af79567475",
       "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
     },
     {
@@ -62,7 +62,7 @@
       "line": 7,
       "rule": "DL3008",
       "code_sha256": "02ab4d82656a0cd25c279ba69e1ccfb68a8239f624c597b222b6eb60f05dba04",
-      "file_sha256": "a8a8ccaa85f968896640315fc2bed40918e617eebc1380dd5dcf8f1c2f041812",
+      "file_sha256": "b45dcfee83900da6d4b2d9babdb40d4265b95e8138e96befe28e49112979a3eb",
       "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
     },
     {
