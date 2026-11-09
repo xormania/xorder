@@ -70,6 +70,20 @@ class AuthenticatedRedirectTests(unittest.TestCase):
         self.assertIsNone(token_request.get_header("Authorization"))
         self.assert_redirect_drops_authentication(manifest_request, "Bearer synthetic-pull-token")
 
+    def test_authenticated_registry_read_requests_no_push_scope(self):
+        with patch.dict(os.environ, {"GITHUB_ACTOR": "example", "GH_TOKEN": "synthetic-login-token"  # nosec B105 # synthetic credential test canary
+                }, clear=True), patch.object(registry.urllib.request, "urlopen", side_effect=[
+                    Response(b'{"token":"synthetic-registry-token"}'),
+                    Response(b'{}', {"Docker-Content-Digest": "sha256:synthetic"}),
+                ]) as open_url:
+            registry.resolve("ghcr.io/example/image:v1", authenticated=True, pull_only=True)
+        token, manifest = [call.args[0] for call in open_url.call_args_list]
+        self.assertIn("scope=repository%3Aexample%2Fimage%3Apull", token.full_url)
+        self.assertNotIn("push", token.full_url)
+        expected = "Basic " + base64.b64encode(b"example:synthetic-login-token").decode()
+        self.assert_redirect_drops_authentication(token, expected)
+        self.assert_redirect_drops_authentication(manifest, "Bearer synthetic-registry-token")
+
     def test_only_a_manifest_404_is_an_absent_tag(self):
         for code in (401, 403, 404, 429, 503):
             failure = urllib.error.HTTPError("https://ghcr.io/v2/example/image/manifests/v1", code,
