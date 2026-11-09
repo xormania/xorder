@@ -48,3 +48,23 @@ publication or a verified final image.
 The existing UXor and FrankenPHP definitions, scripts and qualified image pins
 are unchanged by this decomposition. Their later configuration migration is a
 separate consumer change.
+## Matrix pip security closure
+
+The interpreter patches remain Python 3.10.22, 3.12.15 and 3.14.8. Their
+standalone payloads are prepared independently of the final image. The
+3.10/3.14 payloads originally installed pip 26.2.1 with vulnerable certifi;
+3.10 also bundled an older pip for fresh virtual environments.
+
+`images/python-matrix/pip-bootstrap.json` pins the official pip 26.2.2 wheel
+and its SHA-256. The installer verifies each affected original ensurepip
+module and wheel, replaces only its pip packaging version/wheel, and upgrades
+installed pip from that wheel with the supported build-only
+`--break-system-packages` override. uv's `EXTERNALLY-MANAGED` marker remains
+intact, so runtime global installations stay guarded. The setuptools wheel and all
+interpreter patch pins are preserved. Python 3.12's already fixed payload
+is unchanged. No vendored library or upstream SBOM is edited.
+
+Acceptance measures pip, ensurepip and actual vendored certifi for every
+installed interpreter and a fresh offline virtual environment, then runs
+the existing 145 contracts on each line, SQLite, native compiler and tmux
+checks. The fixed certifi floor is 2026.10.19, as shipped in the pinned wheel.

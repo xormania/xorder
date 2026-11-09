@@ -46,7 +46,7 @@
       "line": 7,
       "rule": "DL3008",
       "code_sha256": "02ab4d82656a0cd25c279ba69e1ccfb68a8239f624c597b222b6eb60f05dba04",
-      "file_sha256": "b45dcfee83900da6d4b2d9babdb40d4265b95e8138e96befe28e49112979a3eb",
+      "file_sha256": "9493e564d6051a89de363916b5a657c291f5328e50cf07566e8215ed8305494b",
       "reason": "xorder intentionally observes current Debian package feeds through APT_REFRESH and records the packages actually installed in verified release inventory. Its refresh/release contract does not claim a frozen apt snapshot; explicit package-version pins would conflict with that existing update policy."
     },
     {
