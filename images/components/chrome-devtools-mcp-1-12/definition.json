@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "chrome-devtools-mcp-1-12",
+  "purpose": "Integrity-locked Chrome DevTools MCP 1.12.0 npm closure on its retained Node donor.",
+  "dockerfile": "images/components/chrome-devtools-mcp-1-12/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-trixie",
+  "components": {
+    "NODE_IMAGE": "node-chrome-22"
+  },
+  "verify": [
+    "node",
+    "/opt/xorder/chrome-devtools/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js",
+    "--version"
+  ]
+}

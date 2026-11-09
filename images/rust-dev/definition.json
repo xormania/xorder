@@ -32,7 +32,7 @@
   "lines": {
     "1.99-trixie": {
       "base": {
-        "digest": "sha256:b8e062b1c3a80183df83d9ba187cadd2b5ab84bc78d453dbfeb2fccd5f982247",
+        "digest": "sha256:7eab7ce19273ce785e0ca7578bdf7bc1fcbae621775a8197379a04c9f6e03cd5",
         "tag": "docker.io/library/rust:1.99-slim-trixie"
       },
       "changes": [
@@ -43,7 +43,7 @@
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.6",
+      "revision": "1.1.7",
       "runtime_line": "1.99"
     }
   },

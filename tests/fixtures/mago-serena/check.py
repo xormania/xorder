@@ -238,6 +238,8 @@ def inside(chrome):
     identity = json.loads(Path("/opt/xorder/image-identity.json").read_text())
     assert identity["mago"] == "mago 1.58.2" and identity["mago_baseline"] == "mago 1.58.2"
     assert identity["mago_binary_sha256"] == digest("/usr/local/bin/mago")
+    assert identity["mago_native"] == "mago 1.59.0"
+    assert identity["mago_native_binary_sha256"] == digest("/usr/local/bin/mago-native")
     assert identity["mago_baseline_binary_sha256"] == digest("/usr/local/bin/mago-baseline")
     assert subprocess.check_output(["python3", "--version"], text=True).strip() == "Python 3.12.12"
     subprocess.run(["/opt/venv/bin/python", "-c", "import serena_mago"], check=True)

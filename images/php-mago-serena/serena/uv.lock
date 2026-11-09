@@ -481,7 +481,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "serena-agent", git = "https://github.com/oraios/serena.git?rev=9e1cced0c34ed48d668e179f7c56c77b4d14a3e3" },
+    { name = "serena-agent", git = "https://github.com/oraios/serena.git?rev=ede329aaf0c824bea75455a2926f01420d7aa620" },
     { name = "serena-mago-adapter", editable = "adapter" },
 ]
 
@@ -1054,7 +1054,7 @@ wheels = [
 [[package]]
 name = "serena-agent"
 version = "2.1.1.dev0"
-source = { git = "https://github.com/oraios/serena.git?rev=9e1cced0c34ed48d668e179f7c56c77b4d14a3e3#9e1cced0c34ed48d668e179f7c56c77b4d14a3e3" }
+source = { git = "https://github.com/oraios/serena.git?rev=ede329aaf0c824bea75455a2926f01420d7aa620#ede329aaf0c824bea75455a2926f01420d7aa620" }
 dependencies = [
     { name = "anthropic" },
     { name = "beautifulsoup4" },

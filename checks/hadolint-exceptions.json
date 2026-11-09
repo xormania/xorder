@@ -72,6 +72,14 @@
       "code_sha256": "97b04a611992c6a0e1bf7e8d3ae2b5e43cba2790db470f98a98a619f7086397c",
       "file_sha256": "aaa95c40577449b007463d1c026315786e317f8427c68092a14c596c6a114579",
       "reason": "The only pipeline in this RUN sends an echo-generated pinned SHA-256 record to sha256sum --check. The verifier is the last process and its failure stops the && chain; this is not a download-to-shell pipeline or a pipeline hiding a fetch failure."
+    },
+    {
+      "path": "images/components/serena-deps/Dockerfile",
+      "line": 7,
+      "rule": "DL3008",
+      "code_sha256": "ad7c35ff339e74f21fc2ba01c4ba53b314f12998b1cad30fa44c6ea3f2b2ee42",
+      "file_sha256": "b31d021e6f2edf2fd7d63aa5af44b596a9fc8cfb05434c80ac330efdabfbe09a",
+      "reason": "This dependency-only component uses xorder\u2019s observed APT_REFRESH package-index identity. Git is resolved from the current Debian feed and its installed package is confined to the build stage; Python and Serena payloads are copied into the final composition. Exact package version pins would bypass the existing observed-feed refresh contract."
     }
   ]
 }

@@ -208,7 +208,7 @@ def _files_historical(root, source, recipe_path, line):
     return recipe, result
 
 
-def _inputs(definition, recipe, files, tools, parent, *, historical=False):
+def _inputs(definition, recipe, files, tools, parent, *, historical=False, components=None):
     family, line = definition["family"], definition["line"]
     if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]*", family) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]*", line):
         raise ValueError("Build identity requires a safe family and line")
@@ -225,7 +225,7 @@ def _inputs(definition, recipe, files, tools, parent, *, historical=False):
     arguments = set(re.findall(r"^\s*ARG\s+([A-Z_][A-Z0-9_]*)(?:\s|=|$)", recipe, re.M))
     pins = {}
     for argument, (key, field) in ARG_TO_TOOL.items():
-        if argument not in arguments:
+        if argument not in arguments or argument in definition.get("build_components", {}):
             continue
         try:
             value = tools[key][field] if field else tools[key]
@@ -240,9 +240,14 @@ def _inputs(definition, recipe, files, tools, parent, *, historical=False):
         # Early releases did not record the feed. They cannot match a release
         # whose package feed is explicitly tracked; do not invent an observation.
         pins["APT_REFRESH"] = None if historical and "apt_indexes" not in tools else apt_refresh(tools)
-    return {"build_key_version": KEY_VERSION, "line_id": family + "/" + line,
+    if historical and definition.get("build_components"):
+        raise ValueError("Component image records require their explicit build key")
+    result = {"build_key_version": KEY_VERSION, "line_id": family + "/" + line,
             "platforms": sorted(definition["platforms"]), "resolved_base": resolved,
             "parent_line": base.get("parent"), "files": files, "build_arguments": pins}
+    if components:
+        result["components"] = components
+    return result
 
 
 def build_inputs(definition, root=ROOT, parent=None, tools=None):
@@ -255,7 +260,9 @@ def build_inputs(definition, root=ROOT, parent=None, tools=None):
     files = _files_current(root, recipe_path, recipe, line, ignore)
     if tools is None:
         tools = json.loads((root / "images/tools.json").read_text())
-    return _inputs(definition, recipe, files, tools, parent)
+    from components import image_inputs
+    component_inputs = image_inputs(definition, root) if definition.get("build_components") else None
+    return _inputs(definition, recipe, files, tools, parent, components=component_inputs)
 
 
 def build_key(definition, root=ROOT, parent=None, tools=None):

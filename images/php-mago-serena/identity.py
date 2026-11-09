@@ -26,6 +26,8 @@ def collect():
         "chromium_base": version("/usr/bin/chromium", "--version"),
         "symfony_cli": version("symfony", "version", "--no-ansi"),
         "mago": version("mago", "--version"),
+        "mago_native": version("mago-native", "--version"),
+        "mago_native_binary_sha256": sha("/usr/local/bin/mago-native"),
         "mago_binary_sha256": sha("/usr/local/bin/mago"),
         "mago_baseline": version("mago-baseline", "--version"),
         "mago_baseline_binary_sha256": sha("/usr/local/bin/mago-baseline"),
@@ -41,6 +43,14 @@ def collect():
         "chrome_binary_sha256": None,
         "chrome_devtools_mcp": None,
     }
+    if record["mago_native"] != "mago " + lock["native_mago"]["version"]:
+        raise RuntimeError("Native Mago executable differs from the selected release")
+    if record["mago_source_sha"] != lock["mago"]["sdk"]["source_rev"]:
+        raise RuntimeError("Experimental Mago backend and PHP SDK source revisions differ")
+    if record["serena"]["source"] != lock["serena"]["source_rev"]:
+        raise RuntimeError("Installed Serena source differs from the selected revision")
+    if record["serena_uv_lock_sha256"] != lock["serena"]["effective_uv_lock_sha256"]:
+        raise RuntimeError("Installed Serena dependency lock differs from the selected inputs")
     # These tools are absent on the slow line; null keeps one explicit schema.
     chrome_lock = Path("/opt/xorder/chrome-toolchain.lock.json")
     if chrome_lock.is_file():

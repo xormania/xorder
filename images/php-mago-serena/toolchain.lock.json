@@ -41,12 +41,54 @@
     }
   },
   "serena": {
-    "source_rev": "9e1cced0c34ed48d668e179f7c56c77b4d14a3e3",
+    "source_rev": "ede329aaf0c824bea75455a2926f01420d7aa620",
     "patch": "tools/serena/patches/serena-symbol-references.patch",
     "patch_sha256": "57385a9e49d8a490e696f49b3c62d16e8685703d9531899372a3c41a28270051",
     "adapter": "tools/serena/adapter (serena-mago-adapter 0.1.0)",
     "python": "3.12.12",
     "vendored_from": "xormania/mago-serena_v2-poc@b6dbec8378338e39fe51489bc28f9ad578e4f3ab",
-    "note": "pyproject keeps the PoC root project name mago-serena-poc so uv.lock stays valid under --frozen."
+    "note": "pyproject keeps the PoC root project name mago-serena-poc so uv.lock stays valid under --frozen.",
+    "donor_source_rev": "9e1cced0c34ed48d668e179f7c56c77b4d14a3e3",
+    "upstream_manifest_blob": "d182433e952f978675d3a50298cee707983938cd",
+    "upstream_facade_blob": "4a35f68837bacdc7befd73307dc4d5c0ee4ccc2a",
+    "donor_uv_lock_sha256": "af281bd04479b299b685ec295f0e9517f4539e2394fd16b809ffa66118babfde",
+    "effective_uv_lock_sha256": "243a9c748f5cf784a0d692ffb8d2ccf34ad773b017d8ecf8395276b6850b028f"
+  },
+  "targets": {
+    "php": "8.4",
+    "symfony": "8.2.0-BETA1"
+  },
+  "mate": {
+    "version": "1.0.0-BETA1",
+    "extensions": [
+      "symfony/ai-symfony-mate-extension 1.0.0-BETA1",
+      "symfony/ai-monolog-mate-extension 1.0.0-BETA1"
+    ],
+    "context": "inspection-dev"
+  },
+  "native_mago": {
+    "version": "1.59.0",
+    "binary": "/usr/local/bin/mago-native",
+    "asset": "mago-1.59.0-x86_64-unknown-linux-gnu.tar.gz",
+    "sha256": "46809992b8afb54f4fdb87b55a39b8c269eac5dbf9de49956810ae55e7015d65",
+    "url": "https://github.com/carthage-software/mago/releases/download/1.59.0/mago-1.59.0-x86_64-unknown-linux-gnu.tar.gz"
+  },
+  "refresh": {
+    "channel": "prerelease-latest",
+    "observed_at": "2026-11-09T00:00:00Z",
+    "selected_as_exact_inputs": true,
+    "sources": {
+      "mago": "https://api.github.com/repos/carthage-software/mago/releases",
+      "serena": "https://api.github.com/repos/oraios/serena/branches/main",
+      "symfony": "https://api.github.com/repos/symfony/symfony/releases",
+      "mate": "https://api.github.com/repos/symfony/ai/releases"
+    },
+    "compatibility_hold": {
+      "component": "mago-lsp",
+      "selected_source": "46df50c96d93d0ac3655c116c375574277cf0b30",
+      "observed_latest_source": "b14416abde9e07ebe6103fde791b9bb8ecbf67f8",
+      "reason": "Latest source tree removes crates/server and src/language_server, which the PoC patch extends; independent latest native CLI is selected separately. The LSP/extension backend remains matched to its MANA2.1 PHP SDK until its port passes runtime verification.",
+      "evidence": "https://github.com/carthage-software/mago/tree/b14416abde9e07ebe6103fde791b9bb8ecbf67f8/src"
+    }
   }
 }

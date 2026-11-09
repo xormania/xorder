@@ -42,6 +42,8 @@ elif family.startswith("php") or family == "uxor-dev":
         commands.update({"chromium": ["chromium", "--version"], "chromedriver": ["chromedriver", "--version"]})
     if family in ("php-mago-serena", "php-chrome-dev"):
         commands.update({"mago": ["mago", "--version"], "mago-baseline": ["mago-baseline", "--version"],
+                         "mago-native": ["mago-native", "--version"],
+                         "library-symfony-mago": ["library-symfony-mago", "--version"],
                          "python": ["python3", "--version"], "uv": ["uv", "--version"],
                          "serena": ["serena", "--version"]})
     if family == "php-chrome-dev":
@@ -80,6 +82,7 @@ if family in ("php-mago-serena", "php-chrome-dev"):
     result["image_identity"] = json.loads(Path("/opt/xorder/image-identity.json").read_text())
     paths = {"mago_binary_sha256": "/usr/local/bin/mago",
              "mago_baseline_binary_sha256": "/usr/local/bin/mago-baseline",
+             "mago_native_binary_sha256": "/usr/local/bin/mago-native",
              "serena_uv_lock_sha256": "/opt/xorder/serena/uv.lock"}
     facades = list(Path("/opt/venv/lib").glob("python*/site-packages/serena/repl/api/lsp_api.py"))
     if len(facades) != 1:

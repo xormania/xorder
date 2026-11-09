@@ -12,6 +12,14 @@ from unittest.mock import patch
 import tempfile
 
 
+def copy_image_inputs(root):
+    """Retain real authored component sources in isolated fingerprint fixtures."""
+    import shutil
+    shutil.copytree(ROOT / "images", root / "images")
+    shutil.copytree(ROOT / "scripts", root / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copy(ROOT / ".dockerignore", root / ".dockerignore")
+
+
 def record(line, revision="1.0.0", digest="a"):
     d = copy.deepcopy(definitions()[line]); d["revision"] = revision
     inv = {"platform": "linux/amd64", "runtime_version": d["runtime_line"] + ".1",
@@ -98,8 +106,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_unrelated_tool_pins_do_not_change_release_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            import shutil
-            shutil.copytree(ROOT / "images", root / "images")
+            copy_image_inputs(root)
             defs = definitions(root)
             before = {line: fingerprint(d, root) for line, d in defs.items()}
             path = root / "images/tools.json"
@@ -112,10 +119,9 @@ class DiscoveryTests(unittest.TestCase):
                 self.assertEqual(before[line], after[line])
 
     def test_shared_php_inputs_leave_other_images_and_their_caches_unchanged(self):
-        import shutil
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            shutil.copytree(ROOT / "images", root / "images")
+            copy_image_inputs(root)
             defs = definitions(root)
             before = {line: fingerprint(d, root) for line, d in defs.items()}
             for name in ("php-tests.py", "install-infection.sh"):
@@ -166,7 +172,7 @@ class DiscoveryTests(unittest.TestCase):
         import shutil
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            shutil.copytree(ROOT / "images", root / "images")
+            copy_image_inputs(root)
             shutil.copytree(ROOT / "examples/php-toolkit", root / "examples/php-toolkit")
             defs = definitions(root)
             for relative in ("validator/composer.lock", "symfony-7.4/composer.json", "symfony-7.4/config/services.yaml"):
@@ -179,8 +185,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_tailwind_checksum_changes_only_the_project_profiles(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            import shutil
-            shutil.copytree(ROOT / "images", root / "images")
+            copy_image_inputs(root)
             defs = definitions(root)
             before = {line: fingerprint(d, root) for line, d in defs.items()}
             path = root / "images/tools.json"
@@ -249,8 +254,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_node_input_and_inventory_are_scoped_to_the_project_profile(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            import shutil
-            shutil.copytree(ROOT / "images", root / "images")
+            copy_image_inputs(root)
             defs = definitions(root)
             before = {line: fingerprint(d, root) for line, d in defs.items()}
             path = root / "images/tools.json"

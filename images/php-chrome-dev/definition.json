@@ -34,7 +34,8 @@
       },
       "changes": [
         "Add the separately pinned Node 22, Chrome for Testing 157.0.8103.38 and Chrome DevTools MCP 1.12.0 toolchain.",
-        "Preserve inherited Mago/Serena identity and record Chrome and MCP versions and installed browser hash."
+        "Preserve inherited Mago/Serena identity and record Chrome and MCP versions and installed browser hash.",
+        "Compose independently retained Node, Chrome for Testing and MCP payloads without downloading them during final image assembly."
       ],
       "migration": "First release of this line. Adopt its verified digest only after the consumer identity, Mago/Serena and browser smoke checks pass; retain the previous image for rollback.",
       "os": "debian-trixie",
@@ -42,7 +43,12 @@
         "linux/amd64"
       ],
       "revision": "1.0.0",
-      "runtime_line": "8.4"
+      "runtime_line": "8.4",
+      "build_components": {
+        "NODE_IMAGE": "node-chrome-22",
+        "CHROME_IMAGE": "chrome-for-testing-157",
+        "MCP_IMAGE": "chrome-devtools-mcp-1-12"
+      }
     }
   },
   "purpose": "PHP 8.4 Mago/Serena development plus Node 22, Chrome for Testing and Chrome DevTools MCP.",

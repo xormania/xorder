@@ -69,6 +69,8 @@ class MagoChromeRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(ROOT / "images", root / "images", ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copytree(ROOT / "scripts", root / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copytree(ROOT / "schemas", root / "schemas")
             shutil.copyfile(ROOT / ".dockerignore", root / ".dockerignore")
             definition = self.defs[MAGO]
             initial = artifact_identity.build_key(definition, root, parent=PARENT)

@@ -1,0 +1,8 @@
+project_name: symfony-project
+language_servers: [mago]
+agent_interface: REPL
+encoding: utf-8
+ignore_all_files_in_gitignore: true
+ignored_paths: [var, .serena, .phpunit.cache, node_modules]
+read_only: false
+included_apis: [lsp.restart_language_server, lsp.get_diagnostics_for_file]

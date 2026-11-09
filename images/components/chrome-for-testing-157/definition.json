@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "chrome-for-testing-157",
+  "purpose": "Hash-verified Chrome for Testing 157.0.8103.38 payload independent of PHP, Node and MCP.",
+  "dockerfile": "images/components/chrome-for-testing-157/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-trixie",
+  "build_args": {
+    "PYTHON_IMAGE": "docker.io/library/python:3.12.12-slim-trixie@sha256:f3fa41d74a768c2fce8016b98c191ae8c1bacd8f1152870a3f9f87d350920b7c"
+  },
+  "verify": [
+    "python3",
+    "-c",
+    "import hashlib,json,pathlib,sys; p=pathlib.Path('/opt/chrome-linux64/chrome'); expected=json.loads(pathlib.Path('/opt/xorder/components/chrome-for-testing-157.lock.json').read_text())['browser']['binary_sha256']; actual=hashlib.file_digest(p.open('rb'),'sha256').hexdigest(); sys.exit(0 if actual==expected and p.stat().st_mode & 0o111 else 'Chrome payload identity mismatch')"
+  ]
+}

@@ -137,5 +137,6 @@ if [[ "$family" = php-mago-serena || "$family" = php-chrome-dev ]]; then
   extra=()
   if [[ "$family" = php-chrome-dev ]]; then extra+=(--chrome); fi
   python3 "$root/tests/fixtures/mago-serena/check.py" "$image" "${extra[@]}"
+  python3 "$root/tests/fixtures/symfony-mago/check.py" "$image"
 fi
 printf 'Behavioral recipe completed in %ss for %s\n' "$((SECONDS-start))" "$line"

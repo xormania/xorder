@@ -9,14 +9,17 @@ this page do not establish image availability; consult the generated catalog.
 
 | Line | Parent | Additional tools |
 | --- | --- | --- |
-| `php-mago-serena/8.4-trixie` | `php-browser/8.4-trixie` | Mago 1.58.2 release and patched LSP, Python 3.12.12, uv 0.12.8, pinned Serena v2 and Mago SolidLSP adapter |
+| `php-mago-serena/8.4-trixie` | `php-browser/8.4-trixie` | Native Mago 1.59.0, patched Mago 1.58.2 LSP/backend, Python 3.12.12, uv 0.12.8, current Serena v2 and Symfony/AI Mate project preparation |
 | `php-chrome-dev/8.4-trixie` | `php-mago-serena/8.4-trixie` | Node 22, Chrome for Testing 157.0.8103.38, Chrome DevTools MCP 1.12.0 |
 
-The separate lines keep the Rust compilation and frozen Python environment in
-the parent when browser tools change. Rust source, build caches and compiler
-stay in the build stage. Debian Chromium and chromedriver remain available for
-Panther. This Serena variant uses Mago; `php-serena/8.5-trixie` uses PHPactor
-and has its own dependency pins and verification.
+The separate lines compose independently reusable compiled Mago, upstream native
+release and frozen Python dependency payloads. Config and adapter changes do not
+reinstall dependencies; browser tools change independently. Rust source, build
+caches and compiler stay in the build stage. Debian Chromium and chromedriver
+remain available for Panther. This Serena variant uses Mago;
+`php-serena/8.5-trixie` uses PHPactor and has its own pins and verification.
+See [the Symfony composition](symfony-mago.md) for the complete selected tuple,
+new-project commands, and prerelease refresh path.
 
 ## Provenance and identity
 
@@ -35,12 +38,23 @@ Chrome executable hash. Browser-specific fields are null in the Mago parent.
 The adapter checks the Mago executable against the identity before startup.
 
 The release tarball is verified by its locked SHA-256 and installed as
-`mago-baseline`; `mago` is the patched source build. Cross-builder binary
+`mago-baseline`; `mago` is the patched source build. `mago-native` is the latest
+selected upstream release for ordinary quality commands, with its own version
+and executable hash in identity. Cross-builder binary
 equality with the PoC is not required. Chrome for Testing publishes no artifact
 checksum in its index. xorder pins a locally acquired SHA-256 of the versioned
 archive, checks it before extraction, and retains the measured executable hash.
 The archive pin was matched against a fresh HTTPS download and the consumer's
 cached archive; it is not a vendor-published checksum.
+
+The browser child composes three independently retained build inputs: its exact
+Node donor, the hash-verified Chrome for Testing payload, and the integrity-locked
+MCP npm closure. The Chrome archive pin belongs to the browser component's own
+lock; the MCP version belongs to its npm manifest and lock. Final assembly expands
+those component pins into `/opt/xorder/chrome-toolchain.lock.json` before writing
+the common identity record. Changing MCP or the PHP parent therefore reuses the
+completed Chrome payload. Node's donor remains the qualified consumer pin,
+independent of other image families' Node refreshes.
 
 ## Runtime
 
@@ -102,14 +116,15 @@ python3 scripts/build.py php-dev/8.4-trixie image-library-check:dev \
 ```
 
 Use `--build-arg MAGO_NATIVE_TESTS=1` in an explicit Docker build of the
-Mago parent to run its external-analyzer Rust regression test. The normal
+`images/components/mago-lsp/Dockerfile` payload to run its external-analyzer Rust regression test. The normal
 publication build retains the default `MAGO_NATIVE_TESTS=0`.
 Normal publication uses the shared verified release workflow. No release
 record or selectable catalog entry is authored in advance.
 
 Mago/Serena updates require deliberate pin changes, revalidation of both patches
 and the adapter, and a fresh compatible image revision. Browser updates change
-the child pins and revision, retaining the stable parent when its inputs match.
+the browser component's own lock and the child revision. MCP updates change its
+npm closure, retaining the browser payload and stable parent when their inputs match.
 Shared parent changes still propagate through the existing release dependency
 graph. The compressed-image size target is under 2.5 GB for the Chrome child;
 actual size and timings must be measured by publication.
@@ -128,9 +143,11 @@ patches and Python lock from the consumer only after its live Mago, enriched
 analysis, Serena and Chrome checks pass against the published image. Update
 the consumer lock and `FROM` together, retaining its downstream support check.
 
-The Mago PHP SDK must match source revision
-`46df50c96d93d0ac3655c116c375574277cf0b30` and MANA 2.1. Mago 1.59's MANA
-2.2 is incompatible with this tuple. The LSP patch is a repository extension;
+The Mago PHP SDK for the experimental extension/LSP backend must match source
+revision `46df50c96d93d0ac3655c116c375574277cf0b30` and MANA 2.1.
+Mago 1.59 native quality commands are supplied independently. The latest source
+removes the experimental server tree; port and verify the LSP/extension tuple
+before advancing that backend. The LSP patch is a repository extension;
 the PoC's external-edit span defect requires restarting the language server.
 Browser built-in AI APIs require eligible hardware and model downloads;
 headless container checks do not establish their availability. These lines
