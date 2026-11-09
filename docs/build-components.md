@@ -29,6 +29,21 @@ also live in the existing Actions directory cache. Generation keys with input an
 line restore prefixes preserve partial completed trees without sealing an
 incomplete immutable cache key forever.
 
+Repository pull-request image jobs can read private prepared components without
+making the cache package public. Only a PR whose head repository matches the
+current repository logs in to GHCR with a job token restricted to `packages: read`.
+The build step explicitly enables `XORDER_COMPONENTS_READ_AUTH=1`; component
+resolution checks the real PR event and requests a pull-only registry token.
+The resolver's `GH_TOKEN` binding is limited to that build step, and the login
+action removes its Docker credentials during job cleanup. Publishers retain
+their existing pull/push scope.
+
+Local builds, fork PRs, and runs without the explicit read opt-in keep anonymous
+resolution and authored-input fallback. They do not receive the read token or
+registry export permission. An unavailable optional cache still permits a source
+build. Prepared-input memoization distinguishes these authentication modes, so a
+previous anonymous local result cannot hide an available private donor.
+
 New final-image release records retain the exact component digest references.
 Candidate image labels carry those facts so interrupted publication reads actual
 candidate provenance. `resolved_base` retains the authored upstream/runtime-parent

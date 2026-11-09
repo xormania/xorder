@@ -107,6 +107,10 @@ anonymous local and fork imports are intended. Packages start private; GitHub
 documents [authentication and package association](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
 Private readers need separately authorized read access; public readers need no
 registry credentials. Do not provide publishing credentials to fork builds.
+The repository's own PR image jobs use the read-only GHCR login described in
+[prepared build components](build-components.md), so their private-cache reuse
+does not require a manual public-visibility change. Local and fork readers keep
+the anonymous cold-build fallback.
 
 For the first trusted push, retain the build log showing successful cache export,
 inspect its manifest, and verify a subsequent build imports it. A missing cache
