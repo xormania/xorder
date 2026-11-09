@@ -1,0 +1,20 @@
+{
+  "abi": "php-cli-8.5-trixie",
+  "dockerfile": "images/components/php-cli-foundation/Dockerfile",
+  "id": "php-cli-foundation-85",
+  "image_bases": {
+    "BASE_IMAGE": "php-dev/8.5-trixie"
+  },
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Internal PHP 8.5 CLI and common Debian workstation foundation.",
+  "schema_version": 1,
+  "tool_args": {
+    "APT_REFRESH": "apt_indexes"
+  },
+  "verify": [
+    "php",
+    "--version"
+  ]
+}

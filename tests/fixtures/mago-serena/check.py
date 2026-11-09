@@ -227,7 +227,8 @@ def verify_chrome(chrome_binary="/usr/local/bin/chrome", mcp_binary="chrome-devt
         names = {entry["name"] for entry in client.call("tools/list")["tools"]}
         assert {"list_pages", "list_3p_developer_tools", "execute_3p_developer_tool"} <= names, names
         pages = tool(client, "list_pages")
-        assert re.search(r"\b\d+:.*(?:about:blank|https?://)", json.dumps(pages)), pages
+        page_text = "\n".join(entry.get("text", "") for entry in pages.get("content", []) if entry.get("type") == "text")
+        assert re.search(r"(?m)^\s*\d+:\s+(?:about:blank|https?://)", page_text), pages
 
 
 def inside(chrome):

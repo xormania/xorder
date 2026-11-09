@@ -176,7 +176,7 @@ def image_inputs(definition, root=ROOT):
     return result
 
 
-def affected_components(changed, root=ROOT, previous_tools=None):
+def affected_components(changed, root=ROOT, previous_tools=None, previous_definitions=None):
     root = Path(root)
     defs = definitions(root)
     chosen = set()
@@ -194,9 +194,16 @@ def affected_components(changed, root=ROOT, previous_tools=None):
             elif path in {
                     "scripts/components.py", "schemas/component.schema.json", "scripts/artifact_identity.py"}:
                 chosen.add(name)
-            elif any(path == f"images/{line.split('/', 1)[0]}/definition.json"
-                     for line in item.get("image_bases", {}).values()):
-                chosen.add(name)
+            else:
+                for line in item.get("image_bases", {}).values():
+                    family, variant = line.split("/", 1)
+                    if path != f"images/{family}/definition.json":
+                        continue
+                    current = _read(root / path)["lines"][variant]["base"]
+                    previous = (previous_definitions or {}).get(path)
+                    old_base = (previous or {}).get("lines", {}).get(variant, {}).get("base")
+                    if previous is None or old_base != current:
+                        chosen.add(name)
     while True:
         consumers = {name for name, item in defs.items()
                      if set(item.get("components", {}).values()).intersection(chosen)}
@@ -206,8 +213,8 @@ def affected_components(changed, root=ROOT, previous_tools=None):
     return sorted(chosen)
 
 
-def affected_images(changed, image_defs, root=ROOT, previous_tools=None):
-    chosen = set(affected_components(changed, root, previous_tools))
+def affected_images(changed, image_defs, root=ROOT, previous_tools=None, previous_definitions=None):
+    chosen = set(affected_components(changed, root, previous_tools, previous_definitions))
     return {line for line, definition in image_defs.items()
             if chosen.intersection(definition.get("build_components", {}).values())}
 
@@ -241,24 +248,42 @@ def _trusted_publication(env):
             and event.get("repository", {}).get("full_name", "").lower() == repository(env).lower())
 
 
+def _authenticated_read(env):
+    """Opt in only for the canonical repository's own pull-request job."""
+    if not (env.get("XORDER_COMPONENTS_READ_AUTH") == "1"
+            and env.get("GITHUB_ACTIONS") == "true"
+            and env.get("GITHUB_EVENT_NAME") == "pull_request"):
+        return False
+    event = _read(env["GITHUB_EVENT_PATH"])
+    expected = repository(env).lower()
+    return (event.get("repository", {}).get("full_name", "").lower() == expected
+            and event.get("pull_request", {}).get("head", {}).get("repo", {}).get("full_name", "").lower() == expected)
+
+
 def prepare(selected, source="local", root=ROOT, publish=False, env=None, require_published=False):
     """Resolve or build each input once; publish a completed input immediately."""
     root = Path(root)
     env = dict(os.environ if env is None else env)
     if publish and not _trusted_publication(env):
         raise ValueError("Component publication requires the repository's real master push event")
+    read_auth = not (publish or require_published) and _authenticated_read(env)
+    auth_mode = "publisher" if publish or require_published else "read" if read_auth else "anonymous"
     defs = definitions(root)
     refs = {}
     for name in _ordered(selected, defs):
         item = defs[name]
         key = build_key(name, root)
-        identity = (str(root.resolve()), name, key, publish, require_published, repository(env), source, _hash(item.get("verify", [])))
+        identity = (str(root.resolve()), name, key, publish, require_published, repository(env), source,
+                    _hash(item.get("verify", [])), auth_mode)
         if identity in PREPARED:
             refs[name] = PREPARED[identity]
             continue
         tag = reference(name, root, env=env)
         try:
-            existing = resolve(tag, authenticated=publish or require_published)
+            if read_auth:
+                existing = resolve(tag, authenticated=True, pull_only=True)
+            else:
+                existing = resolve(tag, authenticated=publish or require_published)
         except Exception as error:
             if publish:
                 raise

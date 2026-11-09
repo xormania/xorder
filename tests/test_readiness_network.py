@@ -38,6 +38,8 @@ if args and args[0] == "compose":
 with open(os.environ["TEST_DOCKER_LOG"], "a") as log:
     log.write(json.dumps({"args": args, "files": files, "env": dict(os.environ),
                          "env_files": env_files, "container_environment": container_environment}) + "\n")
+if args[:2] == ["context", "inspect"]:
+    print(json.dumps(os.environ.get("TEST_DOCKER_CONTEXT_ENDPOINT", "unix:///var/run/docker.sock")))
 if args and args[0] == "run":
     if args[-2:] == ["codex", "--version"] and "PUID=0" in args:
         raise SystemExit(64)
@@ -339,6 +341,46 @@ if sys.argv[1] == "init":
             self.assertEqual(call["env"]["BROWSER_IMAGE"], "browser:test")
             self.assertEqual(call["env"]["XORDER_PARITY_FIXTURE"], "1")
             self.assertNotEqual(call["env"]["DOCKER_CONFIG"], "/caller/credential/config")
+
+    def test_browser_parity_keeps_selected_context_with_an_isolated_cli_config(self):
+        self.prepare_parity()
+        endpoint = "unix://" + str(self.area / "selected/docker.sock")
+        docker = self.bin / "docker"
+        docker.write_text("#!/usr/bin/env python3\nimport json, os, sys\n"
+                          f"endpoint={endpoint!r}\n"
+                          "args=sys.argv[1:]\n"
+                          "if args[:2] == ['context', 'inspect']: print(json.dumps(endpoint))\n"
+                          "elif args[:2] == ['image', 'inspect']:\n"
+                          "    if os.environ.get('DOCKER_HOST') != endpoint: raise SystemExit(86)\n"
+                          "    print(json.dumps([{'Id': 'selected-engine-image'}]))\n")
+        docker.chmod(0o755)
+        self.write("examples/uxor/run.sh", "#!/bin/bash\npython3 - \"$@\" <<'PY'\n"
+                   "import json, os, subprocess, sys\n"
+                   "observed=json.loads(subprocess.check_output(['docker', 'image', 'inspect', 'application:test'], text=True))\n"
+                   f"with open({str(self.parity_log)!r}, 'a') as log:\n"
+                   "    log.write(json.dumps({'args': sys.argv[1:], 'env': dict(os.environ), 'observed': observed}) + '\\n')\n"
+                   "PY\n")
+        result = self.execute("tests/fixtures/playwright/parity.sh", "browser:test", "playwright-browser/fixture",
+                              DOCKER_CONTEXT="selected-context", DOCKER_HOST="unix:///other-engine.sock",
+                              DOCKER_CONFIG="/caller/registry-credentials")
+        self.assert_success(result)
+        for line in self.parity_log.read_text().splitlines():
+            call = json.loads(line)
+            self.assertEqual(call["observed"][0]["Id"], "selected-engine-image")
+            self.assertEqual(call["env"]["DOCKER_HOST"], endpoint)
+            self.assertNotIn("DOCKER_CONTEXT", call["env"])
+            self.assertNotEqual(call["env"]["DOCKER_CONFIG"], "/caller/registry-credentials")
+
+    def test_browser_parity_keeps_an_explicit_host_without_copying_docker_credentials(self):
+        self.prepare_parity()
+        endpoint = "unix://" + str(self.area / "explicit.sock")
+        self.assert_success(self.execute("tests/fixtures/playwright/parity.sh", "browser:test", "playwright-browser/fixture",
+                                         DOCKER_HOST=endpoint, DOCKER_CERT_PATH="/caller/certs", DOCKER_TLS_VERIFY="1"))
+        for line in self.parity_log.read_text().splitlines():
+            environment = json.loads(line)["env"]
+            self.assertEqual(environment.get("DOCKER_HOST"), endpoint)
+            self.assertNotIn("DOCKER_CERT_PATH", environment)
+            self.assertNotIn("DOCKER_TLS_VERIFY", environment)
 
     def test_browser_parity_leaves_unspecified_network_settings_absent(self):
         self.prepare_parity()

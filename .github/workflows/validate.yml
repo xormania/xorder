@@ -234,6 +234,9 @@ jobs:
   images:
     needs: metadata
     if: needs.metadata.outputs.has_images == 'true'
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.metadata.outputs.matrix) }}
@@ -251,6 +254,13 @@ jobs:
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver: docker
+      - name: Authenticate private component reads for repository pull requests
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
       - id: cache-key
         env:
           LINE: ${{ matrix.line }}
@@ -266,6 +276,8 @@ jobs:
             buildx-v2-${{ runner.os }}-${{ matrix.line }}-
       - name: Build and exercise the documented recipe
         env:
+          XORDER_COMPONENTS_READ_AUTH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && '1' || '0' }}
+          GH_TOKEN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.token || '' }}
           LIBRARY_CACHE_DIR: /tmp/image-library-build-cache
           XORDER_BUILD_CACHE: '1'
           LINE: ${{ matrix.line }}

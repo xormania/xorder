@@ -231,6 +231,43 @@ class SerenaSmokeSemanticsTests(unittest.TestCase):
                 module.verify_serena(Path("/prepared/project"))
 
 
+class ChromeSmokeTextTests(unittest.TestCase):
+    def verify_pages(self, text):
+        module = rpc_module()
+        class Client:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                pass
+
+            def notify(self, *_args):
+                pass
+
+            def call(self, method, params=None):
+                if method == "initialize":
+                    return {"serverInfo": {"name": "chrome-devtools-mcp"}}
+                if method == "tools/list":
+                    return {"tools": [{"name": name} for name in (
+                        "list_pages", "list_3p_developer_tools", "execute_3p_developer_tool")]}
+                if method == "tools/call" and params["name"] == "list_pages":
+                    return {"content": [{"type": "text", "text": text}]}
+                raise AssertionError((method, params))
+        with patch.object(module, "RpcClient", Client), patch.object(module.subprocess, "run", return_value=SimpleNamespace(stdout="<html></html>")):
+            module.verify_chrome()
+
+    def test_multiline_mcp_page_listing_is_read_as_text(self):
+        self.verify_pages("## Pages\n1: about:blank [selected]\n## Third-party developer tools\nNo third-party developer tools available.")
+
+    def test_missing_page_or_inline_example_does_not_establish_a_page(self):
+        for text in ("## Pages\nNo pages available.", "An example would be 1: about:blank"):
+            with self.subTest(text=text), self.assertRaises(AssertionError):
+                self.verify_pages(text)
+
+
 class MagoRpcClientTests(unittest.TestCase):
     @staticmethod
     def echo_server():
