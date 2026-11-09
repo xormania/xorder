@@ -37,6 +37,7 @@ jobs:
   metadata:
     runs-on: ubuntu-24.04
     outputs:
+      same_head: ${{ steps.validation-base.outputs.same_head }}
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_images: ${{ steps.matrix.outputs.has_images }}
       resources: ${{ steps.resources.outputs.resources }}
@@ -71,15 +72,6 @@ jobs:
           else
             python scripts/library.py check
           fi
-      - name: Unit tests
-        if: steps.validation-base.outputs.same_head != 'true'
-        run: python -m unittest discover -s tests -v
-      - name: Python syntax
-        if: steps.validation-base.outputs.same_head != 'true'
-        run: python -m compileall -q scripts tests
-      - name: Shell syntax
-        if: steps.validation-base.outputs.same_head != 'true'
-        run: find scripts images tests examples -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
       - id: matrix
         env:
           BASE_SHA: ${{ steps.validation-base.outputs.sha }}
@@ -127,8 +119,30 @@ jobs:
           path: out/validation-context.json
           retention-days: 14
           if-no-files-found: error
+  unit-tests:
+    needs: [metadata, fast-checks]
+    if: needs.metadata.outputs.same_head != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - run: python -m pip install -r requirements-ci.txt
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Python syntax
+        run: python -m compileall -q scripts tests
+      - name: Shell syntax
+        run: find scripts images tests examples -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
   application:
-    needs: metadata
+    needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_application == 'true'
     strategy:
       fail-fast: false
@@ -177,7 +191,7 @@ jobs:
           path: out/application-*
           if-no-files-found: ignore
   resources:
-    needs: metadata
+    needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_resources == 'true'
     strategy:
       fail-fast: false
@@ -201,7 +215,7 @@ jobs:
           path: out/resources/
           if-no-files-found: ignore
   environments:
-    needs: metadata
+    needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_environments == 'true'
     strategy:
       fail-fast: false
@@ -232,7 +246,7 @@ jobs:
           path: out/resources/
           if-no-files-found: ignore
   images:
-    needs: metadata
+    needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_images == 'true'
     permissions:
       contents: read
@@ -300,13 +314,15 @@ jobs:
           if-no-files-found: ignore
   checks:
     if: always()
-    needs: [fast-checks, attribution, metadata, images, resources, environments, application]
+    needs: [fast-checks, attribution, metadata, unit-tests, images, resources, environments, application]
     runs-on: ubuntu-24.04
     steps:
       - env:
           ATTRIBUTION: ${{ needs.attribution.result }}
           FAST_CHECKS: ${{ needs.fast-checks.result }}
           METADATA: ${{ needs.metadata.result }}
+          UNIT_TESTS: ${{ needs.unit-tests.result }}
+          SAME_HEAD: ${{ needs.metadata.outputs.same_head }}
           IMAGES: ${{ needs.images.result }}
           RESOURCES: ${{ needs.resources.result }}
           ENVIRONMENTS: ${{ needs.environments.result }}
@@ -315,6 +331,7 @@ jobs:
           test "$ATTRIBUTION" = success
           test "$FAST_CHECKS" = success
           test "$METADATA" = success
+          [[ "$UNIT_TESTS" == success || ("$UNIT_TESTS" == skipped && "$SAME_HEAD" == true) ]]
           [[ "$IMAGES" == success || "$IMAGES" == skipped ]]
           [[ "$RESOURCES" == success || "$RESOURCES" == skipped ]]
           [[ "$ENVIRONMENTS" == success || "$ENVIRONMENTS" == skipped ]]

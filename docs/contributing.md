@@ -43,6 +43,16 @@ python3 scripts/library.py check
 python3 -m unittest discover -s tests -v
 ```
 
+Validation plans the affected runtime checks before starting the full unit suite.
+Unit, image, resource and application checks run in parallel after planning and
+fast static checks succeed. The required `checks` aggregate still requires the
+unit result; only verified reuse of the same tested head/base/tree permits it to
+be skipped. This keeps long unit runs off the image-build critical path without
+removing their merge gate. Metadata-only changes first check the current image
+and component COPY sources; copied metadata remains a build input. Changes to
+shared or unknown runtime helpers retain full runtime verification. The shared
+Symfony/Mago fixture targets its Mago/Serena and Chrome consumers.
+
 ## Commit and pull request attribution
 
 Use an accountable person's Git identity or the repository's existing neutral
