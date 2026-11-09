@@ -27,6 +27,16 @@ Changing one line does not change another line's package inputs. A patch bump
 within a runtime line receives a fresh packaging revision; a new runtime minor
 starts at 1.0.0. The old exact releases and pins remain usable.
 
+The npm closure and all three downloaded engine payloads are retained in an
+independent build component for that runtime line. The component records its own
+exact Node donor. The final browser image copies those bytes and installs only
+the engine OS dependencies, user handling, and RGB font configuration. A runtime
+base or Debian package refresh therefore reuses the completed payload without
+fetching the browser archives again. Updating the consumer's Playwright pin
+refreshes that line's payload component; another minor line keeps its existing
+component and lock. This component reuse does not replace the final image's
+all-engine launch and screenshot parity checks.
+
 Every candidate keeps RGB subpixel rendering, launches Chromium/Firefox/WebKit
 offline, and compares Chromium screenshots with committed baselines at its
 own pinned consumer commit and accepted application-image digest. The watcher

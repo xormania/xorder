@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "playwright-1-58-payload",
+  "purpose": "Locked Playwright 1.58.2 npm closure with Chromium, Firefox and WebKit payloads, independent of runtime apt refreshes.",
+  "dockerfile": "images/components/playwright-1-58-payload/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-trixie",
+  "build_args": {
+    "NODE_IMAGE": "docker.io/library/node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6"
+  },
+  "verify": [
+    "node",
+    "-e",
+    "const fs=require('fs'),p=require('/opt/playwright/node_modules/playwright'); for (const e of ['chromium','firefox','webkit']) fs.accessSync(p[e].executablePath(),fs.constants.X_OK); console.log('all three Playwright engine payloads present')"
+  ]
+}

@@ -29,6 +29,28 @@ def consumer_pin(ref):
     return {"repository": f"https://github.com/{REPOSITORY}.git", "commit": commit, "playwright_version": pin}
 
 
+def prepare_payload_component(proposal, line, root):
+    """Give each runtime line its own payload closure and retained Node donor."""
+    source_id = proposal.get("build_components", {}).get("PLAYWRIGHT_IMAGE")
+    if not source_id:
+        raise ValueError("Browser refresh requires an explicit Playwright payload component")
+    source_definition = root / "images/components" / source_id / "definition.json"
+    component = json.loads(source_definition.read_text())
+    recipe = (root / component["dockerfile"]).read_text()
+    source_lines = set(re.findall(r"images/playwright-browser/lines/([^/]+)/package", recipe))
+    if len(source_lines) != 1:
+        raise ValueError("Playwright payload recipe must consume exactly one locked runtime line")
+    payload_id = "playwright-" + line.removesuffix("-trixie").replace(".", "-") + "-payload"
+    folder = root / "images/components" / payload_id
+    recipe = recipe.replace("/lines/" + source_lines.pop() + "/", "/lines/" + line + "/")
+    component.update(id=payload_id, purpose=f"Locked Playwright npm closure and all three engine payloads for {line}.",
+                     dockerfile=f"images/components/{payload_id}/Dockerfile")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "Dockerfile").write_text(recipe)
+    (folder / "definition.json").write_text(encoded(component))
+    proposal["build_components"] = dict(proposal["build_components"], PLAYWRIGHT_IMAGE=payload_id)
+
+
 def prepare(pin, root=ROOT):
     browser_version = pin["playwright_version"]
     major, minor, _ = version(browser_version)
@@ -58,6 +80,7 @@ def prepare(pin, root=ROOT):
         item = lock["packages"]["node_modules/" + package]
         if item["version"] != browser_version or not item.get("integrity", "").startswith("sha512-"):
             raise ValueError("Browser closure must contain the exact version and npm integrity hashes")
+    prepare_payload_component(proposal, line, root)
     definition["lines"][line] = proposal
     path.write_text(encoded(definition))
     fixture = root / "tests/fixtures/playwright/consumers" / (line + ".json")
@@ -89,7 +112,11 @@ def main():
     run("python3", "scripts/library.py", "generate")
     run("python3", "scripts/library.py", "check")
     if output("git", "status", "--porcelain").strip():
-        run("git", "add", "images/playwright-browser", "tests/fixtures/playwright/consumers", "catalog.json", "catalog-v2.json", "README.md", "docs")
+        definition = json.loads((ROOT / "images/playwright-browser/definition.json").read_text())
+        line = ".".join(pin["playwright_version"].split(".")[:2]) + "-trixie"
+        payload_id = definition["lines"][line]["build_components"]["PLAYWRIGHT_IMAGE"]
+        run("git", "add", "images/playwright-browser", f"images/components/{payload_id}",
+            "tests/fixtures/playwright/consumers", "catalog.json", "catalog-v2.json", "README.md", "docs")
         run("git", "commit", "-m", "Match consumer Playwright " + pin["playwright_version"])
     if output("git", "log", "--oneline", "origin/master..HEAD").strip():
         run("git", "push", "origin", branch)

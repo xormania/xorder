@@ -33,16 +33,20 @@
         "tag": "docker.io/library/node:22-trixie-slim"
       },
       "changes": [
-        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
+        "Retain the locked Playwright npm closure and all three engine payloads as one independently reusable component.",
+        "Assemble browser runtime packages and RGB font configuration separately; preserve all-engine launch and screenshot parity verification."
       ],
-      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
+      "migration": "Compatible browser packaging change. Adopt its verified digest after all-engine and committed screenshot parity checks; existing exact releases remain available.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
       "playwright_version": "1.58.2",
-      "revision": "1.0.7",
-      "runtime_line": "1.58"
+      "revision": "1.0.8",
+      "runtime_line": "1.58",
+      "build_components": {
+        "PLAYWRIGHT_IMAGE": "playwright-1-58-payload"
+      }
     }
   },
   "purpose": "Version-matched Chromium, Firefox and WebKit browser server without PHP or development build tools.",
