@@ -6,7 +6,8 @@ FROM ${PHP_FOUNDATION_IMAGE}
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 # Retain the complete upstream native bundle here. The consuming PHP CLI ABI
 # selects its own PHPStan Turbo binary when php-dev is composed.
-COPY images/shared/php-tools-composer.json images/shared/php-tools-composer.lock /opt/xorder/php-tools/
+COPY images/shared/php-tools-composer.json /opt/xorder/php-tools/composer.json
+COPY images/shared/php-tools-composer.lock /opt/xorder/php-tools/composer.lock
 RUN --mount=type=secret,id=xorder_ca \
     set -eu; \
     if [ -s /run/secrets/xorder_ca ]; then export COMPOSER_CAFILE=/run/secrets/xorder_ca; fi; \
