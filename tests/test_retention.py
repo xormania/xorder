@@ -133,6 +133,26 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(self.identities(result, "expire"), {ref("b")})
         self.assertEqual(self.identities(result, "removal"), {ref("c")})
 
+    def test_component_digest_edges_from_release_protect_transitive_inputs(self):
+        release = record("a")
+        release["build_components"] = {"INPUT_IMAGE": {"reference": ref("b")}}
+        support = policy(group("a", support="2026-12-01T00:00:00Z", removal="2026-12-15T00:00:00Z"), group("b"), group("c"))
+        inventory = snapshot(item("a"), item("b", dependencies=[ref("c")]), item("c"))
+        result = self.plan(inventory, support, [release])
+        self.assertEqual(self.identities(result, "keep"), {ref("a"), ref("b"), ref("c")})
+
+    def test_prepared_component_tags_are_not_treated_as_disposable_branch_caches(self):
+        inventory = snapshot(item("a", "cache", tags=["component-tool-input-key"],
+                                  last_used_at="2026-10-01T00:00:00Z", branch={"state": "closed", "closed_at": "2026-10-01T00:00:00Z"}))
+        result = self.plan(inventory)
+        self.assertEqual(self.identities(result, "keep"), {ref("a")})
+        self.assertFalse(result["sets"]["removal"])
+
+    def test_prepared_input_is_not_deleted_as_an_abandoned_generic_publication(self):
+        attempts = [{"id": "old", "state": "abandoned", "identities": [ref("a")], "ended_at": "2026-10-01T00:00:00Z"}]
+        inventory = snapshot(item("a", "candidate", tags=["component-built-input"]), publications=attempts)
+        self.assertEqual(self.identities(self.plan(inventory), "keep"), {ref("a")})
+
     def test_closed_and_inactive_branch_caches_have_bounded_windows(self):
         inventory = snapshot(item("a", "cache", last_used_at="2026-11-19T00:00:00Z", branch={"state": "closed", "closed_at": "2026-11-17T00:00:00Z"}),
                              item("b", "cache", last_used_at="2026-11-01T00:00:00Z", branch={"state": "open"}),

@@ -42,6 +42,13 @@ def validate_schemas(root=ROOT, previous_policy=None):
         validate_policy(policy, root, previous_policy)
     from xorder.model import check as check_resources
     check_resources(root)
+    from components import definitions as component_definitions, build_inputs as component_inputs
+    for component in component_definitions(root):
+        component_inputs(component, root)
+    for definition in definitions(root).values():
+        if definition.get("build_components"):
+            from components import image_inputs
+            image_inputs(definition, root)
 
 
 def encoded(value):
@@ -459,6 +466,9 @@ def fingerprint(d, root=ROOT):
             "uxor-dev": ("node", "tailwind"),
             "python-dev": ("uv",)}.get(d["family"], ())
     h.update(encoded({key: tools[key] for key in keys}).encode())
+    if d.get("build_components"):
+        from components import image_inputs
+        h.update(encoded(image_inputs(d, root)).encode())
     for path in sorted(paths):
         if path.is_file() and path.name != "definition.json":
             h.update(str(path.relative_to(root)).encode())

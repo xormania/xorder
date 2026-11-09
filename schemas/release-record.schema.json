@@ -183,6 +183,42 @@
     "build_key": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "build_components": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Z][A-Z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "reference",
+          "abi",
+          "platform"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^ghcr\\.io/[^@]+@sha256:[a-f0-9]{64}$"
+          },
+          "abi": {
+            "type": "string"
+          },
+          "platform": {
+            "const": "linux/amd64"
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false,

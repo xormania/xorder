@@ -14,6 +14,7 @@ from library import ROOT, definitions, encoded, fingerprint
 import browser_release
 import release
 from artifact_identity import build_key
+from components import image_inputs
 
 
 class BrowserReleaseTests(unittest.TestCase):
@@ -131,6 +132,10 @@ class BrowserReleaseTests(unittest.TestCase):
         resolved = {"digest": digest, "platforms": {"linux/amd64": digest}}
         labels = {"org.opencontainers.image.revision": self.source,
                   "org.opencontainers.image.version": proof["version"]}
+        component_facts = image_inputs(definitions()[self.line])
+        for facts in component_facts.values():
+            facts["reference"] = "ghcr.io/xormania/xorder-cache@sha256:" + "e" * 64
+        labels["io.xorder.components"] = json.dumps(component_facts)
         facts = {"image_size_bytes": 629145600, "size_method": "docker-image-inspect-size", "image_store": "overlay2/classic"}
         with tempfile.TemporaryDirectory() as folder, \
                 patch.object(release, "records", return_value=[]), \
@@ -153,6 +158,8 @@ class BrowserReleaseTests(unittest.TestCase):
             self.assertEqual(published["verification"]["completed_at"], proof["completed_at"])
             self.assertEqual(published["platforms"][0]["metrics"]["verification_seconds"], 7)
             self.assertEqual(published["platforms"][0]["metrics"]["build_seconds"], 11)
+            if component_facts:
+                self.assertEqual(published["build_components"], component_facts)
 
     def test_controlled_compose_ignores_consumer_infrastructure_and_rejects_host_symlinks(self):
         spec = importlib.util.spec_from_file_location("parity_profile", ROOT / "examples/uxor/runner.py")

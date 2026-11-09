@@ -43,7 +43,7 @@ class ImageBuilderWorkflowTests(unittest.TestCase):
         docker = re.search(r"^      - name: [^\n]+\n"
                            r"(?:(?!^      - ).)*docker/setup-docker-action@"
                            r"(?:(?!^      - ).)*", images, re.M | re.S)[0]
-        condition = re.search(r"^        if: (.+)$", docker, re.M)[1]
+        self.assertNotRegex(docker, r"^        if:", "Every runtime root may consume a local component donor")
         config = re.search(r"daemon-config: '(.+)'", docker)[1]
         self.assertTrue(json.loads(config)["features"]["containerd-snapshotter"])
         driver = re.search(r"^          driver: (.+)$", images, re.M)[1]
@@ -56,16 +56,11 @@ class ImageBuilderWorkflowTests(unittest.TestCase):
         roots = {line for line, entry in definitions.items() if not entry["base"].get("parent")}
         parents = {entry["base"]["parent"] for entry in definitions.values() if entry["base"].get("parent")}
         self.assertTrue(roots & parents)
+        self.assertEqual(driver, "docker")
         for line in sorted(roots):
             with self.subTest(line=line):
-                selected = evaluate(condition, line)
-                builder = evaluate(driver, line)
-                if line in parents:
-                    self.assertTrue(selected, f"{line} has children needing a local parent")
-                    self.assertEqual(builder, "docker")
-                else:
-                    self.assertFalse(selected)
-                    self.assertEqual(builder, "docker-container")
+                self.assertNotIn("docker-container", driver)
+
 
 
 if __name__ == "__main__":

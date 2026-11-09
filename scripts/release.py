@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -215,6 +216,20 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
                                             verification_seconds, env, build_seconds, build_cache)
     assurance = stage_assurance(source_tag, source, artifact, evidence, destination / "assurance")
     date = now()
+    component_facts = {}
+    if d.get("build_components"):
+        labels = json.loads(subprocess.check_output(
+            ["docker", "inspect", artifact, "--format", "{{json .Config.Labels}}"], text=True)) or {}
+        component_facts = json.loads(labels.get("io.xorder.components", "{}"))
+        from components import image_inputs
+        expected_components = image_inputs(d)
+        if set(component_facts) != set(expected_components):
+            raise ValueError("Candidate does not retain its exact component inputs")
+        for argument, expected in expected_components.items():
+            actual = component_facts[argument]
+            if (any(actual.get(key) != value for key, value in expected.items())
+                    or not re.fullmatch(r"ghcr\.io/[^@]+@sha256:[a-f0-9]{64}", actual.get("reference", ""))):
+                raise ValueError("Candidate component identity does not match its authored inputs")
     record = {"schema_version": 1, "line_id": line, "version": d["revision"], "source_commit": source, "source_tag": source_tag,
               "created_at": date, "definition": d, "tools": attempt['tools'], "resolved_base": resolved_base,
               "build_key_version": 1, "build_key": attempt['build_key'],
@@ -224,6 +239,8 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
               "publication": {"repository": repository, "digest": digest, "exact_tag": f"{d['line']}-v{d['revision']}", "public_pull_verified_at": date, "evidence": evidence},
               "verification": {"status": "passed", "surface": "github-actions-linux-amd64",
                                "completed_at": browser_proof["completed_at"] if browser_proof else date, "evidence": evidence}}
+    if component_facts:
+        record["build_components"] = component_facts
     validate_record(record)
     (destination / "record.json").write_text(encoded(record))
     # Persist before exact promotion. A retry recovers this artifact, never rebuilds it.
