@@ -1,0 +1,20 @@
+{
+  "abi": "python314-trixie-amd64",
+  "dockerfile": "images/components/python-foundation/Dockerfile",
+  "id": "python-foundation",
+  "image_bases": {
+    "BASE_IMAGE": "python-dev/3.14-trixie"
+  },
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Shared Python 3.14 Debian development foundation for Python development and live harnesses.",
+  "schema_version": 1,
+  "tool_args": {
+    "APT_REFRESH": "apt_indexes"
+  },
+  "verify": [
+    "python3",
+    "/opt/xorder/components/python-foundation/verify.py"
+  ]
+}
