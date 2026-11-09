@@ -405,10 +405,12 @@ class AffectedResourceTests(unittest.TestCase):
         self.assertEqual(verify.affected(changed, definitions), ["context/guidance"])
         self.assertEqual(image_affected(changed, image_definitions()), [])
 
-    def test_shared_transport_selects_resource_consumers_and_no_image_jobs(self):
+    def test_shared_transport_selects_resources_and_preserves_legacy_image_isolation(self):
         definitions = {"context/guidance": {"kind": "context"}, "binary/composer": {"kind": "binary"}, "environment/php": {"kind": "environment"}}
         self.assertEqual(verify.affected(["scripts/xorder/transport.py"], definitions), sorted(definitions))
-        self.assertEqual(image_affected(["scripts/xorder/transport.py"], image_definitions()), [])
+        selected_images = image_affected(["scripts/xorder/transport.py"], image_definitions())
+        self.assertNotIn("php-frankenphp/8.4-trixie", selected_images)
+        self.assertNotIn("php-frankenphp/8.5-trixie", selected_images)
         self.assertEqual(len(image_affected(["scripts/unknown-image-helper.py"], image_definitions())), 8)
 
     def test_environment_verifier_changes_select_native_environment_only(self):

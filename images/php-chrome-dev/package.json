@@ -1,0 +1,9 @@
+{
+  "name": "xorder-php-chrome-dev-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Locked Chrome DevTools MCP runtime for the php-chrome-dev image",
+  "dependencies": {
+    "chrome-devtools-mcp": "1.12.0"
+  }
+}

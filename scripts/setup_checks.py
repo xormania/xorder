@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-import hashlib
 import io
 import json
 from pathlib import Path
 import platform
 import tarfile
-import urllib.request
+
+from xorder.download_cache import cached_download
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,12 +19,7 @@ def install(spec: dict, destination: Path) -> None:
     url = spec["url"]
     if not url.startswith("https://github.com/"):
         raise ValueError("Check binaries require an HTTPS GitHub release URL")
-    request = urllib.request.Request(url, headers={"User-Agent": "xorder-checks"})
-    # The release URL is restricted to HTTPS GitHub above.
-    with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
-        payload = response.read()
-    if hashlib.sha256(payload).hexdigest() != spec["sha256"]:
-        raise ValueError(f"Checksum mismatch: {spec['name']}")
+    payload = cached_download(url, spec["sha256"]).read_bytes()
     if spec["archive"] == "tar.gz":
         with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
             member = archive.getmember(spec["member"])

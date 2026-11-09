@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "mago-native",
+  "purpose": "Latest selected upstream Mago native quality commands; independent of the patched LSP/SDK tuple.",
+  "dockerfile": "images/components/mago-release/Dockerfile",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "abi": "linux-amd64-glibc",
+  "build_args": {
+    "MAGO_VERSION": "1.59.0",
+    "MAGO_SHA256": "46809992b8afb54f4fdb87b55a39b8c269eac5dbf9de49956810ae55e7015d65"
+  }
+}

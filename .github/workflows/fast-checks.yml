@@ -28,11 +28,28 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: requirements-checks.txt
+      - name: Restore verified check downloads
+        id: check-downloads
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/xorder-check-downloads
+          key: xorder-check-downloads-v1-${{ runner.os }}-${{ hashFiles('checks/tools.json') }}
+          restore-keys: |
+            xorder-check-downloads-v1-${{ runner.os }}-
       - name: Install pinned check tools
+        id: install-checks
+        env:
+          XORDER_DOWNLOAD_CACHE: ${{ runner.temp }}/xorder-check-downloads
         run: |
           python -m pip install -r requirements-checks.txt
           python scripts/setup_checks.py --bin-dir "$RUNNER_TEMP/xorder-check-bin"
           echo "$RUNNER_TEMP/xorder-check-bin" >> "$GITHUB_PATH"
+      - name: Publish verified check downloads
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.check-downloads.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/xorder-check-downloads
+          key: ${{ steps.check-downloads.outputs.cache-primary-key }}
       - name: Run all fast checks
         env:
           STARTED_AT: ${{ steps.timer.outputs.started }}

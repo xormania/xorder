@@ -45,6 +45,11 @@ class BrowserRefreshTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(ROOT / "images", root / "images")
+            # Transitive build components may copy shared scripts and prepared
+            # fixtures; hash the same complete input closure as a real checkout.
+            for name in ("scripts", "examples", "schemas"):
+                shutil.copytree(ROOT / name, root / name)
+            shutil.copyfile(ROOT / ".dockerignore", root / ".dockerignore")
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
             self.accepted_catalog(root / "catalog-v2.json")
             before = {line: fingerprint(d, root) for line, d in definitions(root).items()}
@@ -85,6 +90,11 @@ class BrowserRefreshTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(ROOT / "images", root / "images")
+            # Transitive build components may copy shared scripts and prepared
+            # fixtures; hash the same complete input closure as a real checkout.
+            for name in ("scripts", "examples", "schemas"):
+                shutil.copytree(ROOT / name, root / name)
+            shutil.copyfile(ROOT / ".dockerignore", root / ".dockerignore")
             shutil.copyfile(ROOT / "catalog-v2.json", root / "catalog-v2.json")
             self.accepted_catalog(root / "catalog-v2.json")
             definition = root / "images/playwright-browser/definition.json"

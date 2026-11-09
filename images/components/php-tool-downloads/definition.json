@@ -1,0 +1,24 @@
+{
+  "abi": "php-tool-downloads-linux-amd64",
+  "build_args": {
+    "DOWNLOAD_PYTHON_IMAGE": "docker.io/library/python:3.14-slim-trixie@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d"
+  },
+  "dockerfile": "images/components/php-tool-downloads/Dockerfile",
+  "id": "php-tool-downloads",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Retained checksum-verified Symfony CLI and Infection payload, independent of PHP CLI and Debian workstation refreshes. The pinned Python image is a build-time downloader only.",
+  "schema_version": 1,
+  "tool_args": {
+    "INFECTION_SHA256": "infection.sha256",
+    "INFECTION_URL": "infection.url",
+    "SYMFONY_SHA256": "symfony.sha256",
+    "SYMFONY_URL": "symfony.url"
+  },
+  "verify": [
+    "python3",
+    "-c",
+    "import stat; from pathlib import Path; symfony=Path('/payload/symfony'); infection=Path('/payload/infection/infection.phar'); assert symfony.stat().st_size > 0 and stat.S_IMODE(symfony.stat().st_mode) == 0o755; assert infection.stat().st_size > 0 and stat.S_IMODE(infection.stat().st_mode) == 0o644"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "abi": "php-tools-linux-amd64",
+  "components": {
+    "PHP_FOUNDATION_IMAGE": "php-cli-foundation-84"
+  },
+  "dockerfile": "images/components/php-tools-portable/Dockerfile",
+  "id": "php-tools-portable",
+  "platforms": [
+    "linux/amd64"
+  ],
+  "purpose": "Internal Composer and locked isolated PHPStan payload shared by supported PHP CLI ABIs; PHPStan native selection occurs in the consuming image.",
+  "schema_version": 1,
+  "tool_args": {
+    "COMPOSER_IMAGE": "composer"
+  },
+  "verify": [
+    "bash",
+    "-c",
+    "test -x /usr/local/bin/composer && test -s /opt/xorder/php-tools/vendor/phpstan/phpstan/phpstan.phar && test -s /opt/xorder/php-tools/vendor/phpstan/phpstan/turbo-ext/linux-gnu-x86_64/phpstan_turbo-8.4.so && test -s /opt/xorder/php-tools/vendor/phpstan/phpstan/turbo-ext/linux-gnu-x86_64/phpstan_turbo-8.5.so"
+  ]
+}

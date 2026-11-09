@@ -196,6 +196,10 @@ def plan(snapshot, policy, releases, now=None, *, cache_days=14, closed_branch_d
             if parent.partition("/")[0] == "ghcr.io":
                 identity(parent)
                 graph[ref].add(parent)
+            for component in record.get("build_components", {}).values():
+                dependency = component["reference"]
+                identity(dependency)
+                graph[ref].add(dependency)
     groups_by_ref = defaultdict(list)
     for group in policy.get("groups", []):
         for resource in group["resources"]:
@@ -240,7 +244,9 @@ def plan(snapshot, policy, releases, now=None, *, cache_days=14, closed_branch_d
         groups = groups_by_ref[ref]
         active = [g for g in groups if now < timestamp(g["support_ends_at"])]
         publications = attempts_by_ref[ref]
-        if active:
+        if any(tag.startswith("component-") for tag in item["tags"]):
+            reason.append("Prepared build input retained; no announced prepared-artifact retirement policy")
+        elif active:
             reason.append("Supported release group: " + ", ".join(sorted(g["id"] for g in active)))
         elif any(a["state"] == "active" for a in publications):
             reason.append("Active publication attempt")

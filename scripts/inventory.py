@@ -38,8 +38,17 @@ elif family.startswith("php") or family == "uxor-dev":
         commands.update({"library-serena": ["library-serena", "--version"],
                          "phpactor": ["php", "/opt/xorder/serena/phpactor.phar", "--version"],
                          "uv": ["uv", "--version"]})
-    if family == "php-browser":
+    if family in ("php-browser", "php-mago-serena", "php-chrome-dev"):
         commands.update({"chromium": ["chromium", "--version"], "chromedriver": ["chromedriver", "--version"]})
+    if family in ("php-mago-serena", "php-chrome-dev"):
+        commands.update({"mago": ["mago", "--version"], "mago-baseline": ["mago-baseline", "--version"],
+                         "mago-native": ["mago-native", "--version"],
+                         "library-symfony-mago": ["library-symfony-mago", "--version"],
+                         "python": ["python3", "--version"], "uv": ["uv", "--version"],
+                         "serena": ["serena", "--version"]})
+    if family == "php-chrome-dev":
+        commands.update({"node": ["node", "--version"], "npm": ["npm", "--version"],
+                         "chrome": ["chrome", "--version"], "chrome-devtools-mcp": ["chrome-devtools-mcp", "--version"]})
     if family in ("php-frankenphp", "uxor-dev"):
         commands["frankenphp"] = ["frankenphp", "version"]
     if family == "uxor-dev":
@@ -69,6 +78,24 @@ for line in Path("/etc/os-release").read_text().splitlines():
 result = {"platform": "linux/" + {"x86_64": "amd64", "aarch64": "arm64"}[platform.machine()],
           "runtime_version": runtime, "tools": tools, "extensions": extensions,
           "os": os_release, "packages": run("dpkg-query", "-W", "-f=${Package}=${Version}\\n").splitlines()}
+if family in ("php-mago-serena", "php-chrome-dev"):
+    result["image_identity"] = json.loads(Path("/opt/xorder/image-identity.json").read_text())
+    paths = {"mago_binary_sha256": "/usr/local/bin/mago",
+             "mago_baseline_binary_sha256": "/usr/local/bin/mago-baseline",
+             "mago_native_binary_sha256": "/usr/local/bin/mago-native",
+             "serena_uv_lock_sha256": "/opt/xorder/serena/uv.lock"}
+    facades = list(Path("/opt/venv/lib").glob("python*/site-packages/serena/repl/api/lsp_api.py"))
+    if len(facades) != 1:
+        raise SystemExit("Expected one installed Serena facade")
+    paths["serena_facade_sha256"] = facades[0]
+    if family == "php-chrome-dev":
+        paths["chrome_binary_sha256"] = "/opt/chrome-linux64/chrome"
+    result["installed_binary_sha256"] = {}
+    for key, path in paths.items():
+        measured = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        if measured != result["image_identity"].get(key):
+            raise SystemExit(f"Installed identity hash mismatch: {key}")
+        result["installed_binary_sha256"][key] = measured
 if family == "python-matrix":
     result["interpreters"] = {}
     for minor, expected in json.loads(Path("/opt/xorder/python-matrix/versions.json").read_text()).items():

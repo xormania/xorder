@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "components": {
+    "node": "node-chrome-22",
+    "browser": "chrome-for-testing-157",
+    "mcp": "chrome-devtools-mcp-1-12"
+  }
+}

@@ -1,0 +1,4 @@
+hatchling==1.27.0
+# Preserve Serena's exact runtime pathspec dependency.
+pathspec==0.12.1
+packaging==26.3

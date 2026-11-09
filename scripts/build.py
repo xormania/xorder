@@ -50,9 +50,26 @@ def build(line, image, source, parent=None, cache=None, registry_imports=()):
                     TAILWIND_URL=tools["tailwind"]["url"], TAILWIND_SHA256=tools["tailwind"]["sha256"])
     if d["family"] == "python-dev":
         args["UV_IMAGE"] = pinned(tools["uv"])
-    local_parent = parent and parent.startswith("image-library-")
+    ca = os.environ.get("CA_CERTIFICATE")
+    if ca:
+        certificate = Path(ca)
+        if not certificate.is_absolute() or not certificate.is_file() or not os.access(certificate, os.R_OK):
+            raise ValueError("CA_CERTIFICATE must be a readable absolute PEM file")
+    from components import arguments as component_arguments
+    component_refs = component_arguments(d, source, require_published=os.environ.get("XORDER_COMPONENTS_PUBLISHED_ONLY") == "1")
+    args.update(component_refs)
+    component_facts = {}
+    if component_refs:
+        from components import image_inputs
+        component_facts = image_inputs(d)
+        for argument, reference in component_refs.items():
+            component_facts[argument]["reference"] = reference
+    local_parent = (parent and parent.startswith("image-library-")) or any(
+        value.startswith("image-library-component:") for value in args.values())
     cmd = ["docker", "buildx", "build", "--load", "--platform", "linux/amd64", "-t", image,
            "-f", f"images/{d['family']}/Dockerfile"]
+    if component_facts:
+        cmd += ["--label", "io.xorder.components=" + json.dumps(component_facts, sort_keys=True)]
     ca = os.environ.get("CA_CERTIFICATE")
     if ca:
         path = Path(ca)
@@ -69,8 +86,17 @@ def build(line, image, source, parent=None, cache=None, registry_imports=()):
         # Docker context (as in CI) need not be named "default".
         context = subprocess.check_output(["docker", "context", "show"], text=True).strip()
         cmd += ["--builder", context]
-    for item in registry_imports:
+    ci_cache = None
+    if os.environ.get("XORDER_BUILD_CACHE") == "1":
+        from build_cache import github_plan
+        import hashlib
+        scope = "i-" + hashlib.sha256((line + "/linux/amd64").encode()).hexdigest()[:20]
+        ci_cache = github_plan(dict(os.environ, XORDER_CACHE_SCOPE=scope))
+    imports = list(registry_imports) + (ci_cache["cache-from"] if ci_cache else [])
+    for item in dict.fromkeys(imports):
         cmd += ["--cache-from", item]
+    if ci_cache and ci_cache["write-enabled"]:
+        cmd += ["--cache-to", ci_cache["cache-to"]]
     cache_path = None
     if cache and os.environ.get("LIBRARY_CACHE_DIR"):
         cache_path = Path(os.environ["LIBRARY_CACHE_DIR"]) / cache
@@ -85,6 +111,7 @@ def build(line, image, source, parent=None, cache=None, registry_imports=()):
     if cache_path:
         shutil.rmtree(cache_path, ignore_errors=True)
         Path(str(cache_path) + "-next").rename(cache_path)
+    return component_facts
 
 
 def image_facts(image):
@@ -321,6 +348,8 @@ def main(argv=None):
     p.add_argument("--verify-lines", help="JSON array of exact behavior targets; other ancestors supply build inputs only")
     p.add_argument("--verify-suites", help="JSON object mapping every --verify-lines target to its full or independent fixture suites")
     a = p.parse_args(argv)
+    from components import clear_prepared
+    clear_prepared()
     defs = definitions()
     if a.line not in defs:
         p.error(f"Unknown image line: {a.line}")
