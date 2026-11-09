@@ -16,8 +16,8 @@ CLI development; unit and integration tests; project-owned lockfiles.
 | --- | --- | --- |
 | [image/php-dev/8.4-trixie](../docs/images/php-dev-8.4-trixie.md) | 1.2.7 | linux/amd64 |
 | [image/php-dev/8.5-trixie](../docs/images/php-dev-8.5-trixie.md) | 1.2.7 | linux/amd64 |
-| [image/python-dev/3.14-trixie](../docs/images/python-dev-3.14-trixie.md) | 1.1.7 | linux/amd64 |
-| [image/rust-dev/1.99-trixie](../docs/images/rust-dev-1.99-trixie.md) | 1.1.7 | linux/amd64 |
+| [image/python-dev/3.14-trixie](../docs/images/python-dev-3.14-trixie.md) | 1.1.8 | linux/amd64 |
+| [image/rust-dev/1.99-trixie](../docs/images/rust-dev-1.99-trixie.md) | 1.1.8 | linux/amd64 |
 
 Pinned selections: [profile/php-base](../profiles/php-base.json), [profile/python-base](../profiles/python-base.json), [profile/rust-base](../profiles/rust-base.json).
 
@@ -32,7 +32,7 @@ Symfony applications; FrankenPHP HTTP and workers; native devenv setup.
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
 | [image/php-frankenphp/8.4-trixie](../docs/images/php-frankenphp-8.4-trixie.md) | 1.1.7 | linux/amd64 |
-| [image/php-frankenphp/8.5-trixie](../docs/images/php-frankenphp-8.5-trixie.md) | 1.1.5 | linux/amd64 |
+| [image/php-frankenphp/8.5-trixie](../docs/images/php-frankenphp-8.5-trixie.md) | 1.1.7 | linux/amd64 |
 | [environment/php-symfony](../docs/resources/environment-php-symfony.md) | 1.0.0 | linux/amd64 |
 
 Pinned selections: [profile/php-http](../profiles/php-http.json), [profile/php-project](../profiles/php-project.json).
@@ -100,7 +100,7 @@ xormania/uxor; parallel worktrees; FrankenPHP and project-locked Playwright.
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
 | [image/uxor-dev/8.4-trixie](../docs/images/uxor-dev-8.4-trixie.md) | 1.0.5 | linux/amd64 |
-| [image/uxor-dev/8.5-trixie](../docs/images/uxor-dev-8.5-trixie.md) | 1.0.3 | linux/amd64 |
+| [image/uxor-dev/8.5-trixie](../docs/images/uxor-dev-8.5-trixie.md) | 1.0.5 | linux/amd64 |
 
 Pinned selections: [profile/uxor](../profiles/uxor.json).
 

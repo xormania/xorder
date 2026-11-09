@@ -2,13 +2,13 @@
 
 Rust 2024 native compilation, Clippy, formatting and wasm32-unknown-unknown builds.
 
-Available revision: **1.1.7**. Pin:
+Available revision: **1.1.8**. Pin:
 
 ```text
-ghcr.io/xormania/rust-dev@sha256:759940d4877fa1c636c439b3b25d96f967d6ffeb105eb7c134bc42268fead2c2
+ghcr.io/xormania/rust-dev@sha256:5ec55f521953900bacff4211a9238ff341891d97886539118c6150989b582307
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:21:05.347270Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597978081); 2026-11-09T10:49:14.276484Z.
 
 ## Measured inventory — linux/amd64
 
@@ -34,10 +34,10 @@ Runtime: 1.99.1; OS: Debian GNU/Linux 13 (trixie).
 | Metric | Measured value |
 | --- | ---: |
 | Local image size | 1,275.0 MiB (1,336,926,883 bytes) |
-| Build, cache export and image load | 54.93s |
-| Public-artifact behavior and inventory verification | 12.38s |
+| Build, cache export and image load | 51.26s |
+| Public-artifact behavior and inventory verification | 13.45s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:20:34.645273Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597978081); 2026-11-09T10:48:40.851818Z.
 
 Plan about **3 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
@@ -45,7 +45,7 @@ External build cache at start: `empty`. This does not assert that every layer wa
 
 Size baseline: v1.1.5, `ghcr.io/xormania/rust-dev@sha256:846314820c3b22d0672564d3acff0f65d5213df6970e681f815c48cbed10abde`; 1,274.8 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:16:00.969870Z.
 
-[Release notes](../releases/rust-dev-1.99-trixie-v1.1.7.md).
+[Release notes](../releases/rust-dev-1.99-trixie-v1.1.8.md).
 
 Capabilities: `rust`, `cargo`, `rustfmt`, `clippy`, `native-build`, `postgresql-client`, `wasm32-unknown-unknown`.
 
