@@ -137,9 +137,45 @@ class ComponentTests(unittest.TestCase):
 
     def test_external_copy_donor_requires_an_exact_digest(self):
         recipe = self.root / "images/components/base/Dockerfile"
-        recipe.write_text(recipe.read_text() + "COPY --from=example/tool:latest /tool /tool\n")
-        with self.assertRaisesRegex(ValueError, "exact digest"):
-            components.build_key("base", self.root)
+        original = recipe.read_text()
+        for instruction in (
+            "COPY --from=example/tool:latest /tool /tool\n",
+            "COPY \\\n --from=example/tool:latest /tool /tool\n",
+            "COPY --chown=0:0 \\\n --from=example/tool:latest \\\n /tool /tool\n",
+            "copy \\\n\t--chown=0:0 \\\n\t--from=example/tool:latest /tool /tool\n",
+            "# comment\\\nCOPY --from=example/tool:latest /tool /tool\n",
+            "COPY \\\n # comment\\\n --from=example/tool:latest /tool /tool\n",
+        ):
+            with self.subTest(instruction=instruction):
+                recipe.write_text(original + instruction)
+                with self.assertRaisesRegex(ValueError, "exact digest"):
+                    components.build_key("base", self.root)
+
+    def test_continued_copy_preserves_exact_and_local_donors(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = "FROM scratch AS tools\n" + recipe.read_text()
+        pinned = "example/tool@sha256:" + "b" * 64
+        for donor in (pinned, "tools", "TOOLS", "0"):
+            with self.subTest(donor=donor):
+                recipe.write_text(original + f"COPY \\\n --chown=0:0 \\\n --from={donor} \\\n /tool /tool\n")
+                self.assertEqual(len(components.build_key("base", self.root)), 64)
+
+    def test_copy_comment_boundaries_preserve_local_input_hashing_and_selection(self):
+        recipe = self.root / "images/components/base/Dockerfile"
+        original = recipe.read_text()
+        source = "images/components/base/extra.txt"
+        for instruction in (
+            f"# comment\\\nCOPY {source} /extra.txt\n",
+            f"COPY \\\n # comment\\\n {source} /extra.txt\n",
+        ):
+            with self.subTest(instruction=instruction):
+                recipe.write_text(original + instruction)
+                (self.root / source).write_text("first")
+                before = components.build_inputs("base", self.root)
+                self.assertIn(source, before["files"])
+                (self.root / source).write_text("changed")
+                self.assertNotEqual(components.build_inputs("base", self.root), before)
+                self.assertEqual(components.affected_components([source], self.root), ["base"])
 
     def test_reuse_runs_current_verification_and_retains_exact_receipt(self):
         key = components.build_key("base", self.root)

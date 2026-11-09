@@ -10,7 +10,7 @@ import subprocess
 import shutil
 import sys
 
-from artifact_identity import _files_current, _path, _sources, _matches, apt_refresh
+from artifact_identity import _files_current, _instructions, _path, _sources, _matches, apt_refresh
 from build_cache import cache_image, current_branch, github_plan, plan as cache_plan
 from registry import resolve
 
@@ -102,6 +102,7 @@ def clear_prepared():
 
 def _recipe_inputs(recipe, arguments, component_arguments):
     """Reject implicit/mutable image donors and undeclared manifest arguments."""
+    recipe = "\n".join(_instructions(recipe))
     declared = set(re.findall(r"^\s*ARG\s+([A-Z][A-Z0-9_]*)(?:=|\s|$)", recipe, re.M))
     supplied = set(arguments) | set(component_arguments)
     reserved = {"SOURCE_COMMIT", "IMAGE_VERSION", "XORDER_COMPONENT_KEY"}
@@ -109,12 +110,12 @@ def _recipe_inputs(recipe, arguments, component_arguments):
         raise ValueError("Unbound component build arguments: " + ", ".join(sorted(declared - supplied - reserved)))
     if supplied - declared:
         raise ValueError("Component arguments absent from Dockerfile: " + ", ".join(sorted(supplied - declared)))
-    for instruction in recipe.replace("\\\n", " ").splitlines():
+    for instruction in recipe.splitlines():
         if (re.search(r"\$(?:\{(?:SOURCE_COMMIT|IMAGE_VERSION)\}|(?:SOURCE_COMMIT|IMAGE_VERSION)\b)", instruction)
                 and not re.match(r"^\s*(LABEL|#)\b", instruction, re.I)):
             raise ValueError("Component source/revision arguments may only affect labels")
     stages = set()
-    for line in recipe.replace("\\\n", " ").splitlines():
+    for line in recipe.splitlines():
         match = re.match(r"^\s*FROM\s+(?:--platform=\S+\s+)?(\S+)(?:\s+AS\s+(\S+))?", line, re.I)
         if not match:
             continue

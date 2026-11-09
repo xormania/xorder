@@ -71,9 +71,15 @@ def apt_refresh(tools):
     return _key(indexes)
 
 
+def _instructions(recipe):
+    # Docker removes full-line comments before joining continued instructions.
+    recipe = "\n".join(line for line in recipe.splitlines() if not line.lstrip().startswith("#"))
+    return recipe.replace("\\\n", " ").splitlines()
+
+
 def _sources(recipe, line):
     sources = []
-    for instruction in recipe.replace("\\\n", " ").splitlines():
+    for instruction in _instructions(recipe):
         match = re.match(r"^\s*(COPY|ADD)\s+(.+)$", instruction, re.I)
         if not match:
             continue
@@ -218,7 +224,7 @@ def _inputs(definition, recipe, files, tools, parent, *, historical=False, compo
     if base.get("parent") and not parent:
         raise ValueError("Derived build identity requires the exact resolved parent digest")
     resolved = _reference(parent or (base["tag"] + "@" + base["digest"]))
-    for instruction in recipe.replace("\\\n", " ").splitlines():
+    for instruction in _instructions(recipe):
         if (re.search(r"\$(?:\{(?:SOURCE_COMMIT|IMAGE_VERSION)\}|(?:SOURCE_COMMIT|IMAGE_VERSION)\b)", instruction)
                 and not re.match(r"^\s*(LABEL|#)\b", instruction, re.I)):
             raise ValueError("Release provenance arguments may only affect image labels")
