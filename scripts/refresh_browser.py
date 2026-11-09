@@ -112,7 +112,11 @@ def main():
     run("python3", "scripts/library.py", "generate")
     run("python3", "scripts/library.py", "check")
     if output("git", "status", "--porcelain").strip():
-        run("git", "add", "images/playwright-browser", "tests/fixtures/playwright/consumers", "catalog.json", "catalog-v2.json", "README.md", "docs")
+        definition = json.loads((ROOT / "images/playwright-browser/definition.json").read_text())
+        line = ".".join(pin["playwright_version"].split(".")[:2]) + "-trixie"
+        payload_id = definition["lines"][line]["build_components"]["PLAYWRIGHT_IMAGE"]
+        run("git", "add", "images/playwright-browser", f"images/components/{payload_id}",
+            "tests/fixtures/playwright/consumers", "catalog.json", "catalog-v2.json", "README.md", "docs")
         run("git", "commit", "-m", "Match consumer Playwright " + pin["playwright_version"])
     if output("git", "log", "--oneline", "origin/master..HEAD").strip():
         run("git", "push", "origin", branch)
