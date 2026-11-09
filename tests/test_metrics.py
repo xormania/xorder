@@ -1,5 +1,6 @@
 """Release measurement provenance, publication boundaries, and generated views."""
 import copy
+import hashlib
 import json
 import shutil
 import tempfile
@@ -149,6 +150,17 @@ class MeasurementTests(unittest.TestCase):
         new = record(line, d["revision"], "f")
         digest = new["publication"]["digest"]
         resolved = {"digest": digest, "platforms": {"linux/amd64": digest}}
+        from components import image_inputs
+        component_facts = {
+            argument: {**value, "reference": "ghcr.io/xormania/xorder-build-cache@sha256:"
+                       + hashlib.sha256(argument.encode()).hexdigest()}
+            for argument, value in image_inputs(d).items()
+        }
+
+        def inspected_output(command, **_kwargs):
+            if command[:2] == ["docker", "inspect"]:
+                return json.dumps({"io.xorder.components": json.dumps(component_facts)})
+            return ""
 
         def verify(_line, _image, destination):
             Path(destination).write_text(json.dumps(new["platforms"][0]["inventory"]))
@@ -163,7 +175,7 @@ class MeasurementTests(unittest.TestCase):
                 patch.object(release, "image_measurements", side_effect=[FACTS, {**FACTS, "image_size_bytes": 1073741824}]), \
                 patch.object(release.time, "monotonic", side_effect=[1, 11, 12, 14.5]), \
                 patch.object(release, "run"), patch.object(release, "gh", return_value="[[]]"), \
-                patch.object(release.subprocess, "check_output", return_value=""), \
+                patch.object(release.subprocess, "check_output", side_effect=inspected_output), \
                 patch.object(release, "promote_exact"), patch.object(release, "finalize_release"), \
                 patch.object(release, "stage_assurance", return_value={"receipt_url": "https://github.com/xormania/xorder/releases/download/" + quote(new["source_tag"], safe="") + "/assurance.json", "receipt_sha256": "a" * 64, "predicate_type": "https://github.com/xormania/xorder/assurance/v1"}), \
                 patch("image_assurance.verify_record"), \
@@ -171,6 +183,7 @@ class MeasurementTests(unittest.TestCase):
             published = release.publish(line, "f" * 40, Path(tmp))
             self.assertEqual(published, read(Path(tmp) / "record.json"))
             measured = published["platforms"][0]["metrics"]
+            self.assertEqual(published.get("build_components", {}), component_facts)
             self.assertEqual(measured["build_seconds"], 10)
             self.assertEqual(measured["verification_seconds"], 2.5)
             self.assertEqual(measured["cache_source"], "empty")
