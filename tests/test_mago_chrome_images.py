@@ -56,14 +56,30 @@ class MagoChromeRoutingTests(unittest.TestCase):
         self.assertEqual(affected_lines(["tests/fixtures/mago-serena/check.py"], self.defs, ROOT),
                          [CHROME, MAGO])
 
-    def test_chrome_inherits_php_and_mago_contract_without_becoming_available(self):
+    def test_chrome_inherits_php_and_mago_contract_with_record_backed_availability(self):
         child = self.defs[CHROME]
         self.assertEqual(child["base"], {"parent": MAGO})
         self.assertEqual(self.defs[MAGO]["base"], {"parent": "php-browser/8.4-trixie"})
         self.assertTrue({"php", "composer", "panther", "mago", "serena-mago-adapter",
                          "chrome-for-testing", "chrome-devtools-mcp"} <= set(child["capabilities"]))
         catalog = json.loads((ROOT / "catalog.json").read_text())
-        self.assertFalse(any(item.get("line_id") in {MAGO, CHROME} for item in catalog["images"]))
+        releases = library.records()
+        published = {(item["line_id"], item["version"]): item for item in releases
+                     if item["line_id"] in {MAGO, CHROME}}
+        observed = {(item["line_id"], item["version"]): item for item in catalog["images"]
+                    if item["line_id"] in {MAGO, CHROME}}
+        self.assertEqual(set(observed), set(published))
+        for identity, item in observed.items():
+            record = published[identity]
+            self.assertEqual(record["verification"]["status"], "passed")
+            self.assertEqual(item["digest_reference"],
+                             record["publication"]["repository"] + "@" + record["publication"]["digest"])
+        unpublished = library.catalog([item for item in releases if item["line_id"] not in {MAGO, CHROME}])
+        for line in (MAGO, CHROME):
+            definition = self.defs[line]
+            self.assertEqual(library.select(unpublished, {
+                "family": definition["family"], "runtime_line": definition["runtime_line"],
+            })["status"], "no_matching_image")
 
     def test_vendored_serena_bytes_and_parent_digest_participate_in_build_identity(self):
         with tempfile.TemporaryDirectory() as directory:

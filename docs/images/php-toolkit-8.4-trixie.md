@@ -2,13 +2,13 @@
 
 Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.
 
-Available revision: **1.0.4**. Pin:
+Available revision: **1.0.7**. Pin:
 
 ```text
-ghcr.io/xormania/php-toolkit@sha256:2fe87102264fc07b09ea79c142aa0180d044ef410c27966c5f089a7f97cd5b91
+ghcr.io/xormania/php-toolkit@sha256:b7f45a34538f87d28be96c69d392fcd1f6b4b509a55048c50e492c0da8f0c9cd
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:25:50.176009Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:34:14.658589Z.
 
 ## Measured inventory — linux/amd64
 
@@ -17,15 +17,15 @@ Runtime: 8.4.27; OS: Debian GNU/Linux 13 (trixie).
 | Tool | Version |
 | --- | --- |
 | bash | GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-gnu) |
-| composer | Composer version 2.10.3 2026-08-27 13:34:23 |
+| composer | Composer version 2.11.1 2026-10-30 14:52:10 |
 | curl | curl 8.14.1 (x86_64-pc-linux-gnu) libcurl/8.14.1 OpenSSL/3.5.7 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10 |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
-| infection | Infection - PHP Mutation Testing Framework version 0.35.8 |
+| infection | Infection - PHP Mutation Testing Framework version 0.35.9 |
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
-| php | PHP 8.4.27 (cli) (built: Oct 21 2026 15:53:07) (NTS) |
+| php | PHP 8.4.27 (cli) (built: Nov  5 2026 07:23:05) (NTS) |
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
@@ -37,19 +37,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 937.8 MiB (983,392,836 bytes) |
-| Build, cache export and image load | 11.98s |
-| Public-artifact behavior and inventory verification | 39.75s |
+| Local image size | 937.3 MiB (982,858,171 bytes) |
+| Build, cache export and image load | 16.61s |
+| Public-artifact behavior and inventory verification | 38.25s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:25:21.555468Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:33:56.049898Z.
 
 Plan about **2 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.0.3, `ghcr.io/xormania/php-toolkit@sha256:7a658e512dd19d59f0cbf0b3ec158294f98a98dac101701a5432c172d86473af`; 938.2 MiB in the same image store. Change: **-0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:24:49.860081Z.
+Size baseline: v1.0.4, `ghcr.io/xormania/php-toolkit@sha256:2fe87102264fc07b09ea79c142aa0180d044ef410c27966c5f089a7f97cd5b91`; 937.8 MiB in the same image store. Change: **-0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:25:21.555468Z.
 
-[Release notes](../releases/php-toolkit-8.4-trixie-v1.0.4.md).
+[Release notes](../releases/php-toolkit-8.4-trixie-v1.0.7.md).
 
 Capabilities: `composer`, `mutation-testing`, `native-build`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `prepared-composer-dependencies`, `symfony`, `symfony-toolkit-baseline`, `ux-toolkit-validation`, `xdebug`.
 

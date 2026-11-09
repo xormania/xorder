@@ -2,13 +2,13 @@
 
 FrankenPHP/PHP 8.4 or 8.5 plus Node 22 and a pinned Tailwind CLI for uxor development and Playwright orchestration.
 
-Available revision: **1.0.3**. Pin:
+Available revision: **1.0.5**. Pin:
 
 ```text
-ghcr.io/xormania/uxor-dev@sha256:dee7bad6852f2b22960535e3ddb3d64675719b42ea766e8151b008477c5d6143
+ghcr.io/xormania/uxor-dev@sha256:7a3da062ccdee24173f8a6042264cd3231ea0d7cf258da575356886229476365
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:30:04.754379Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:32:28.508745Z.
 
 ## Measured inventory — linux/amd64
 
@@ -17,18 +17,18 @@ Runtime: 8.4.27; OS: Debian GNU/Linux 13 (trixie).
 | Tool | Version |
 | --- | --- |
 | bash | GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-gnu) |
-| composer | Composer version 2.10.3 2026-08-27 13:34:23 |
+| composer | Composer version 2.11.1 2026-10-30 14:52:10 |
 | curl | curl 8.14.1 (x86_64-pc-linux-gnu) libcurl/8.14.1 OpenSSL/3.5.7 zlib/1.3.1 brotli/1.1.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.64.0 nghttp3/1.8.0 librtmp/2.3 OpenLDAP/2.6.10 |
-| frankenphp | FrankenPHP v1.13.3 PHP 8.4.27 Caddy v2.11.7 h1:yj0Y4fYZGPkSvibBJ1sTWE33xC0fxztVyXEW5iIdUT4= |
+| frankenphp | FrankenPHP v1.13.5 PHP 8.4.27 Caddy v2.11.9 h1:bhZtcRKQOq0fuLvEgCdPYvUxXyGn9kzjG4lh2332DTE= |
 | gh | gh version 2.46.0 (2025-01-13 Debian 2.46.0-3) |
 | git | git version 2.47.3 |
-| infection | Infection - PHP Mutation Testing Framework version 0.35.8 |
+| infection | Infection - PHP Mutation Testing Framework version 0.35.9 |
 | jq | jq-1.7 |
 | library-php-coverage | xorder PHP coverage runner 1.0.0 |
 | library-php-tests | xorder PHP test runner 1.0.0 |
 | node | v22.23.4 |
 | npm | 10.9.9 |
-| php | PHP 8.4.27 (cli) (built: Oct 21 2026 15:53:39) (ZTS) |
+| php | PHP 8.4.27 (cli) (built: Nov  5 2026 07:23:26) (ZTS) |
 | phpstan-isolated | PHPStan - PHP Static Analysis Tool 2.3.0 |
 | psql | psql (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1) |
 | rg | ripgrep 14.1.1 |
@@ -41,19 +41,19 @@ Extensions: `apcu`, `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,200.6 MiB (1,258,904,991 bytes) |
-| Build, cache export and image load | 28.76s |
-| Public-artifact behavior and inventory verification | 278.78s |
+| Local image size | 1,201.6 MiB (1,259,939,832 bytes) |
+| Build, cache export and image load | 38.33s |
+| Public-artifact behavior and inventory verification | 225.95s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:29:44.326282Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:32:06.919917Z.
 
 Plan about **3 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
-External build cache at start: `restored`. This does not assert that every layer was a cache hit.
+External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.0.2, `ghcr.io/xormania/uxor-dev@sha256:ad891975441273af65c3a9ea441aaebe310454c82abd186bc01994727ebdb8f8`; 1,201.6 MiB in the same image store. Change: **-0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:27:29.248088Z.
+Size baseline: v1.0.3, `ghcr.io/xormania/uxor-dev@sha256:dee7bad6852f2b22960535e3ddb3d64675719b42ea766e8151b008477c5d6143`; 1,200.6 MiB in the same image store. Change: **+0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/41260170505); 2026-11-01T01:29:44.326282Z.
 
-[Release notes](../releases/uxor-dev-8.4-trixie-v1.0.3.md).
+[Release notes](../releases/uxor-dev-8.4-trixie-v1.0.5.md).
 
 Capabilities: `composer`, `frankenphp`, `mutation-testing`, `native-build`, `node`, `npm`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `playwright-client`, `postgresql-client`, `symfony`, `tailwind-cli`, `worker-server`, `xdebug`.
 
