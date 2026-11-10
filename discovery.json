@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-09T11:03:22.756871Z",
+  "generated_at": "2026-11-09T23:39:27.236944Z",
   "groups": [
     {
       "applies_to": [
@@ -708,12 +708,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "d5cccf469c9c87e0446352378659c50c9faf1225f18c933abc750eb600ae08fd",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-serena%2F8.5-trixie%2Fv1.1.3/assurance.json"
+        "receipt_sha256": "e4f83fa6cf21f36841d7d514c3ad8e2305a9f5193a19a000413b167c2a2a9b57",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-serena%2F8.5-trixie%2Fv1.1.9/assurance.json"
       },
       "documentation": "docs/images/php-serena-8.5-trixie.md",
       "id": "image/php-serena/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-serena@sha256:a21a6d18ae9be3d528fb01f19446769904ca4898fdf19b6bd4176769de809e04",
+      "identity": "ghcr.io/xormania/php-serena@sha256:c13753170b586f116ab4d948c5965fa8712f00c00e20e27fecba063cdfb75bc3",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -722,11 +722,11 @@
         ]
       },
       "purpose": "Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.",
-      "release_record": "release-records/php-serena/8.5-trixie/1.1.3.json",
+      "release_record": "release-records/php-serena/8.5-trixie/1.1.9.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.1.3"
+      "version": "1.1.9"
     },
     {
       "assurance": {
@@ -754,12 +754,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "3e36cdac7377300b594c1b7040b3e01657d62e88879fcbe6e33a7d777c488105",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-toolkit%2F8.5-trixie%2Fv1.0.3/assurance.json"
+        "receipt_sha256": "d61fc07348e216b3ae8012ccafa7816f730ec7820b5e902ddabe2a8330909547",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/php-toolkit%2F8.5-trixie%2Fv1.0.7/assurance.json"
       },
       "documentation": "docs/images/php-toolkit-8.5-trixie.md",
       "id": "image/php-toolkit/8.5-trixie",
-      "identity": "ghcr.io/xormania/php-toolkit@sha256:3c25724c04a3b854e6a4d90098fbc08ff9ca15306d1e07373fce42ae3d8b185c",
+      "identity": "ghcr.io/xormania/php-toolkit@sha256:db9a0ff566b63dabbf303a09528b856a5a627925719d3b201d74f4e5c4e5529d",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -768,11 +768,11 @@
         ]
       },
       "purpose": "Isolated Symfony UX Toolkit kit validation and clean locked Symfony 7.4 recipe-install applications, prepared for restricted consumer networks.",
-      "release_record": "release-records/php-toolkit/8.5-trixie/1.0.3.json",
+      "release_record": "release-records/php-toolkit/8.5-trixie/1.0.7.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.3"
+      "version": "1.0.7"
     },
     {
       "assurance": {
