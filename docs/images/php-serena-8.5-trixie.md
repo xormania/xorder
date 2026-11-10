@@ -2,13 +2,13 @@
 
 Prepared Serena v2 REPL, PHPactor and JavaScript/TypeScript navigation with MCP, shell queries and trusted source editing.
 
-Available revision: **1.1.9**. Pin:
+Available revision: **1.1.10**. Pin:
 
 ```text
-ghcr.io/xormania/php-serena@sha256:c13753170b586f116ab4d948c5965fa8712f00c00e20e27fecba063cdfb75bc3
+ghcr.io/xormania/php-serena@sha256:7e8ef1de281501b4a5fabfecf405ce1a60cb24046e8f213bbea23d2fa6487b81
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/42715280945); 2026-11-09T23:37:09.859418Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42739860263); 2026-11-10T02:10:07.522094Z.
 
 ## Measured inventory — linux/amd64
 
@@ -42,19 +42,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,243.7 MiB (1,304,114,088 bytes) |
-| Build, cache export and image load | 98.46s |
-| Public-artifact behavior and inventory verification | 101.78s |
+| Local image size | 1,244.2 MiB (1,304,620,038 bytes) |
+| Build, cache export and image load | 92.86s |
+| Public-artifact behavior and inventory verification | 97.91s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42715280945); 2026-11-09T23:36:22.855776Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42739860263); 2026-11-10T02:09:07.250957Z.
 
 Plan about **3 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `restored`. This does not assert that every layer was a cache hit.
 
-Size baseline: v1.1.3, `ghcr.io/xormania/php-serena@sha256:a21a6d18ae9be3d528fb01f19446769904ca4898fdf19b6bd4176769de809e04`; 1,245.1 MiB in the same image store. Change: **-0.1%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/39078086672); 2026-10-17T23:25:11.078823Z.
+Size baseline: v1.1.9, `ghcr.io/xormania/php-serena@sha256:c13753170b586f116ab4d948c5965fa8712f00c00e20e27fecba063cdfb75bc3`; 1,243.7 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/42715280945); 2026-11-09T23:36:22.855776Z.
 
-[Release notes](../releases/php-serena-8.5-trixie-v1.1.9.md).
+[Release notes](../releases/php-serena-8.5-trixie-v1.1.10.md).
 
 Capabilities: `composer`, `javascript-semantic-tools`, `mutation-testing`, `native-build`, `node`, `offline-php-semantic-tools`, `pcov`, `php`, `php-testing`, `phpactor`, `phpstan-isolated`, `postgresql-client`, `serena-shell`, `serena-v2-repl`, `symfony`, `typescript-semantic-tools`, `xdebug`.
 

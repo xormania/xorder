@@ -2,13 +2,13 @@
 
 Composable PHP Symfony development with latest selected native Mago, current Serena REPL, matched patched Mago LSP/SDK, and reusable Symfony/AI Mate project preparation.
 
-Available revision: **1.0.0**. Pin:
+Available revision: **1.0.1**. Pin:
 
 ```text
-ghcr.io/xormania/php-mago-serena@sha256:7ec4859f1844a109f014730f2de306dbaf49073fbd92092c40ae0f586227316c
+ghcr.io/xormania/php-mago-serena@sha256:1f2129133e9754a88e6553bb7f2a69f760b817f5d0667a0db2ef48549b089ded
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:27:48.444118Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42739860263); 2026-11-10T02:09:13.494979Z.
 
 ## Measured inventory — linux/amd64
 
@@ -46,17 +46,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 1,870.2 MiB (1,961,098,170 bytes) |
-| Build, cache export and image load | 33.24s |
-| Public-artifact behavior and inventory verification | 54.03s |
+| Local image size | 1,870.7 MiB (1,961,609,779 bytes) |
+| Build, cache export and image load | 82.28s |
+| Public-artifact behavior and inventory verification | 53.11s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:27:09.798648Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42739860263); 2026-11-10T02:08:00.869529Z.
 
 Plan about **4 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-[Release notes](../releases/php-mago-serena-8.4-trixie-v1.0.0.md).
+Size baseline: v1.0.0, `ghcr.io/xormania/php-mago-serena@sha256:7ec4859f1844a109f014730f2de306dbaf49073fbd92092c40ae0f586227316c`; 1,870.2 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:27:09.798648Z.
+
+[Release notes](../releases/php-mago-serena-8.4-trixie-v1.0.1.md).
 
 Capabilities: `ai-mate-project-config`, `browser`, `chromium`, `composer`, `mago`, `mago-lsp-extensions`, `mago-native`, `mago-sdk-compatible`, `mutation-testing`, `native-build`, `panther`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `python-3.12`, `serena-mago-adapter`, `serena-v2-repl`, `symfony`, `symfony-mago-project`, `uv`, `xdebug`.
 

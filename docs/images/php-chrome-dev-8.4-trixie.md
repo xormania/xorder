@@ -2,13 +2,13 @@
 
 PHP 8.4 Mago/Serena development plus Node 22, Chrome for Testing and Chrome DevTools MCP.
 
-Available revision: **1.0.0**. Pin:
+Available revision: **1.0.1**. Pin:
 
 ```text
-ghcr.io/xormania/php-chrome-dev@sha256:7850d077feda5b07f9eee244cd85d91ec3ae35197dd8a672756a9ce2f278ac93
+ghcr.io/xormania/php-chrome-dev@sha256:91f6406a6b0912b24acccbc0bd7e8032a6129c20ac8c41d733e38e2e422ba2d2
 ```
 
-[Verification evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:32:00.008698Z.
+[Verification evidence](https://github.com/xormania/xorder/actions/runs/42739860263); 2026-11-10T02:14:20.591007Z.
 
 ## Measured inventory — linux/amd64
 
@@ -50,17 +50,19 @@ Extensions: `bcmath`, `core`, `ctype`, `curl`, `date`, `dom`, `fileinfo`, `filte
 
 | Metric | Measured value |
 | --- | ---: |
-| Local image size | 2,421.5 MiB (2,539,076,745 bytes) |
-| Build, cache export and image load | 75.25s |
-| Public-artifact behavior and inventory verification | 55.98s |
+| Local image size | 2,421.9 MiB (2,539,588,838 bytes) |
+| Build, cache export and image load | 94.07s |
+| Public-artifact behavior and inventory verification | 56.86s |
 
-Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:31:34.145331Z.
+Size method: `docker-image-inspect-size`; image store: `overlay2/classic`. [Measurement evidence](https://github.com/xormania/xorder/actions/runs/42739860263); 2026-11-10T02:13:36.410875Z.
 
 Plan about **5 GiB free for a cold pull**, plus space for project dependencies and test output. This estimate is twice the measured unpacked image size, rounded up; shared layers may lower it, while the image store, temporary files and sandbox quotas can increase the requirement. Check free space on the Docker data filesystem; it may differ from the checkout filesystem.
 
 External build cache at start: `empty`. This does not assert that every layer was a cache hit.
 
-[Release notes](../releases/php-chrome-dev-8.4-trixie-v1.0.0.md).
+Size baseline: v1.0.0, `ghcr.io/xormania/php-chrome-dev@sha256:7850d077feda5b07f9eee244cd85d91ec3ae35197dd8a672756a9ce2f278ac93`; 2,421.5 MiB in the same image store. Change: **+0.0%**. [Baseline measurement](https://github.com/xormania/xorder/actions/runs/42597027964); 2026-11-09T10:31:34.145331Z.
+
+[Release notes](../releases/php-chrome-dev-8.4-trixie-v1.0.1.md).
 
 Capabilities: `ai-mate-project-config`, `browser`, `chrome-devtools-mcp`, `chrome-for-testing`, `chromium`, `composer`, `mago`, `mago-lsp-extensions`, `mago-native`, `mago-sdk-compatible`, `mutation-testing`, `native-build`, `node`, `npm`, `panther`, `pcov`, `php`, `php-testing`, `phpstan-isolated`, `postgresql-client`, `python-3.12`, `serena-mago-adapter`, `serena-v2-repl`, `symfony`, `symfony-mago-project`, `uv`, `xdebug`.
 
