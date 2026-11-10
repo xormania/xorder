@@ -244,6 +244,9 @@ def inside(chrome):
     assert identity["mago_baseline_binary_sha256"] == digest("/usr/local/bin/mago-baseline")
     assert subprocess.check_output(["python3", "--version"], text=True).strip() == "Python 3.12.12"
     subprocess.run(["/opt/venv/bin/python", "-c", "import serena_mago"], check=True)
+    subprocess.run(["/opt/venv/bin/python", "-c",
+                    "from importlib.metadata import version; "
+                    "assert version('filelock') == '4.2.1'; assert version('werkzeug') == '3.1.9'"], check=True)
     subprocess.run(["serena", "--version"], stdout=sys.stderr, check=True, timeout=30)
     with tempfile.TemporaryDirectory(prefix="xorder-mago-") as temporary:
         project = Path(temporary)

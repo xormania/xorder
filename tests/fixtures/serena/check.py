@@ -99,7 +99,7 @@ def main():
     image = sys.argv[1]
     packages = tomllib.loads((ROOT / "images/php-serena/security-uv.lock").read_text())["package"]
     expected = {item["name"]: item["version"] for item in packages
-                if item["name"] in ("anyio", "pyjwt", "certifi", "pillow")}
+                if item["name"] in ("anyio", "pyjwt", "certifi", "pillow", "filelock", "werkzeug")}
     probe = """import io
 import json
 import ssl
@@ -116,7 +116,7 @@ buffer.seek(0)
 with Image.open(buffer) as decoded:
     decoded.load()
     assert decoded.size == (2, 2) and decoded.getpixel((0, 0)) == (17, 34, 51)
-print(json.dumps({name: version(name) for name in ('anyio', 'pyjwt', 'certifi', 'pillow')}))
+print(json.dumps({name: version(name) for name in ('anyio', 'pyjwt', 'certifi', 'pillow', 'filelock', 'werkzeug')}))
 """
     measured = json.loads(subprocess.check_output([
         "docker", "run", "--rm", "--network=none", "--read-only", "--user=1000:1000",

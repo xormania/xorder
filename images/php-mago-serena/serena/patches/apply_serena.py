@@ -13,6 +13,7 @@ SERENA_SOURCE = "ede329aaf0c824bea75455a2926f01420d7aa620"
 BASE_SHA256 = "c95adadaf1e55a5b310a2fb43330143d53da9c62cef704ce5b342d126ee14cef"
 CANDIDATE_SHA256 = "438e52fc79044efa5264e84638190a68a5d5be4ed18f9e2f698f7a49e10d184e"
 PATCH_SHA256 = "57385a9e49d8a490e696f49b3c62d16e8685703d9531899372a3c41a28270051"
+SOURCE_RECORD = Path("/opt/xorder/serena/serena-source.sha")
 
 
 def digest(path):
@@ -41,7 +42,9 @@ def apply(site_root):
 def main():
     import serena
     direct_url = json.loads(distribution("serena-agent").read_text("direct_url.json"))
-    if direct_url.get("vcs_info", {}).get("commit_id") != SERENA_SOURCE:
+    if (direct_url.get("url") != "file:///opt/xorder/serena/upstream"
+            or direct_url.get("dir_info") not in ({}, {"editable": False})
+            or SOURCE_RECORD.read_text().strip() != SERENA_SOURCE):
         raise RuntimeError("Serena installed source revision differs from the reviewed base")
     target = apply(Path(serena.__file__).resolve().parent.parent)
     print(json.dumps({"source": SERENA_SOURCE, "patch_sha256": PATCH_SHA256,

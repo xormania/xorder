@@ -40,6 +40,8 @@ def collect():
         "serena": json.loads((ROOT / "serena-patch.json").read_text()),
         "serena_facade_sha256": sha("/opt/venv/lib/python3.12/site-packages/serena/repl/api/lsp_api.py"),
         "serena_uv_lock_sha256": sha(ROOT / "uv.lock"),
+        "serena_dependency_patch_sha256": sha(ROOT / "security.patch"),
+        "serena_manifest_sha256": (ROOT / "serena-manifest.sha256").read_text().split()[0],
         "chrome_binary_sha256": None,
         "chrome_devtools_mcp": None,
     }
@@ -51,6 +53,9 @@ def collect():
         raise RuntimeError("Installed Serena source differs from the selected revision")
     if record["serena_uv_lock_sha256"] != lock["serena"]["effective_uv_lock_sha256"]:
         raise RuntimeError("Installed Serena dependency lock differs from the selected inputs")
+    if (record["serena_dependency_patch_sha256"] != lock["serena"]["dependency_patch_sha256"]
+            or record["serena_manifest_sha256"] != lock["serena"]["effective_manifest_sha256"]):
+        raise RuntimeError("Installed Serena dependency patch differs from the selected inputs")
     # These tools are absent on the slow line; null keeps one explicit schema.
     chrome_lock = Path("/opt/xorder/chrome-toolchain.lock.json")
     if chrome_lock.is_file():

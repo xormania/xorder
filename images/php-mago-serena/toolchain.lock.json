@@ -47,12 +47,14 @@
     "adapter": "tools/serena/adapter (serena-mago-adapter 0.1.0)",
     "python": "3.12.12",
     "vendored_from": "xormania/mago-serena_v2-poc@b6dbec8378338e39fe51489bc28f9ad578e4f3ab",
-    "note": "pyproject keeps the PoC root project name mago-serena-poc so uv.lock stays valid under --frozen.",
+    "note": "The reviewed upstream checkout receives the dependency-only security.patch before locked installation; the original source revision and donor lock remain separately identified.",
     "donor_source_rev": "9e1cced0c34ed48d668e179f7c56c77b4d14a3e3",
     "upstream_manifest_blob": "d182433e952f978675d3a50298cee707983938cd",
     "upstream_facade_blob": "4a35f68837bacdc7befd73307dc4d5c0ee4ccc2a",
     "donor_uv_lock_sha256": "af281bd04479b299b685ec295f0e9517f4539e2394fd16b809ffa66118babfde",
-    "effective_uv_lock_sha256": "243a9c748f5cf784a0d692ffb8d2ccf34ad773b017d8ecf8395276b6850b028f"
+    "effective_uv_lock_sha256": "4c8d2ae33c1c4fc853c62dbd74de39d3ab6d5689e1158c03ab8bfb69aa15c2c0",
+    "dependency_patch_sha256": "c0c8a9e88b01b9009776893500942cd85007a2924b2c428fe29e24412c71689b",
+    "effective_manifest_sha256": "b33a075c1c1f5f8a1cd3e89417e2176d192e00afad2940b5961784ef2bbe9cd1"
   },
   "targets": {
     "php": "8.4",

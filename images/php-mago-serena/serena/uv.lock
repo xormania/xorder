@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.12.*"
 
 [manifest]
@@ -265,11 +265,11 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "3.25.2"
+version = "4.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/b8/00651a0f559862f3bb7d6f7477b192afe3f583cc5e26403b44e59a55ab34/filelock-3.25.2.tar.gz", hash = "sha256:b64ece2b38f4ca29dd3e810287aa8c48182bbecd1ae6e9ae126c9b35f1382694", size = 40480, upload-time = "2026-03-11T20:45:38.487Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/98/771d8ca889f220d7d7e352addf500666368f0fd081c6080a83767580c6e4/filelock-4.2.1.tar.gz", hash = "sha256:c4c937ccac2a813cee448e662a56366cfb374c0f8702e75f295c412cc1c5d5a3", size = 650997, upload-time = "2026-10-17T16:48:14.435Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/a5/842ae8f0c08b61d6484b52f99a03510a3a72d23141942d216ebe81fefbce/filelock-3.25.2-py3-none-any.whl", hash = "sha256:ca8afb0da15f229774c9ad1b455ed96e85a81373065fb10446672f64444ddf70", size = 26759, upload-time = "2026-03-11T20:45:37.437Z" },
+    { url = "https://files.pythonhosted.org/packages/28/00/db89d339bc4ecdc8087fa7b8607ba22ffc27bf96286f340c9620bea428b3/filelock-4.2.1-py3-none-any.whl", hash = "sha256:7be2662e9e826b9bba28afc0f843a123280d799a2ea44bb5d35ccec67905ae44", size = 162455, upload-time = "2026-10-17T16:48:12.937Z" },
 ]
 
 [[package]]
@@ -481,7 +481,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "serena-agent", git = "https://github.com/oraios/serena.git?rev=ede329aaf0c824bea75455a2926f01420d7aa620" },
+    { name = "serena-agent", directory = "upstream" },
     { name = "serena-mago-adapter", editable = "adapter" },
 ]
 
@@ -1054,7 +1054,7 @@ wheels = [
 [[package]]
 name = "serena-agent"
 version = "2.1.1.dev0"
-source = { git = "https://github.com/oraios/serena.git?rev=ede329aaf0c824bea75455a2926f01420d7aa620#ede329aaf0c824bea75455a2926f01420d7aa620" }
+source = { directory = "upstream" }
 dependencies = [
     { name = "anthropic" },
     { name = "beautifulsoup4" },
@@ -1091,6 +1091,68 @@ dependencies = [
     { name = "werkzeug" },
 ]
 
+[package.metadata]
+requires-dist = [
+    { name = "agno", marker = "extra == 'agno'", specifier = "==2.6.6" },
+    { name = "anthropic", specifier = "==0.117.0" },
+    { name = "beautifulsoup4", specifier = "==4.14.2" },
+    { name = "click", specifier = "==8.3.1" },
+    { name = "cryptography", specifier = "==50.0.0" },
+    { name = "docstring-parser", specifier = "==0.17.0" },
+    { name = "filelock", specifier = "==4.2.1" },
+    { name = "flask", specifier = "==3.1.3" },
+    { name = "google-genai", marker = "extra == 'google'", specifier = "==1.27.0" },
+    { name = "jinja2", specifier = "==3.1.6" },
+    { name = "jinja2", marker = "extra == 'dev'", specifier = "==3.1.6" },
+    { name = "joblib", specifier = "==1.5.1" },
+    { name = "jupyter-book", marker = "extra == 'dev'", specifier = "==1.0.4.post1" },
+    { name = "lsprotocol", specifier = "==2025.0.0" },
+    { name = "mcp", specifier = "==2.2.0" },
+    { name = "oslex", specifier = "==2.0.0" },
+    { name = "overrides", specifier = "==7.7.0" },
+    { name = "pathspec", specifier = "==0.12.1" },
+    { name = "poethepoet", marker = "extra == 'dev'", specifier = "==0.36.0" },
+    { name = "psutil", specifier = "==7.0.0" },
+    { name = "pyasn1", marker = "extra == 'dev'", specifier = "==0.6.4" },
+    { name = "pydantic", specifier = "==2.12.5" },
+    { name = "pygls", specifier = "==2.1.1" },
+    { name = "pyinstrument", marker = "extra == 'dev'", specifier = "==5.1.1" },
+    { name = "pyjwt", marker = "extra == 'dev'", specifier = "==2.13.0" },
+    { name = "pystray", specifier = "==0.19.5" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "==8.4.1" },
+    { name = "pytest-timeout", marker = "extra == 'dev'", specifier = "==2.4.0" },
+    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = "==3.8.0" },
+    { name = "python-dotenv", specifier = "==1.2.2" },
+    { name = "python-multipart", specifier = "==0.0.31" },
+    { name = "pythonnet", marker = "sys_platform == 'win32'", specifier = "==3.1.0" },
+    { name = "pywebview", specifier = "==6.2" },
+    { name = "pyyaml", specifier = "==6.0.2" },
+    { name = "regex", specifier = "==2026.2.28" },
+    { name = "requests", specifier = "==2.33.0" },
+    { name = "ruamel-yaml", specifier = "==0.18.14" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.12.5" },
+    { name = "sensai-utils", specifier = "==1.5.0" },
+    { name = "sphinx", marker = "extra == 'dev'", specifier = "==7.4.7" },
+    { name = "sphinx-book-theme", marker = "extra == 'dev'", specifier = "==1.1.4" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = "==2.0.0" },
+    { name = "sphinx-toolbox", marker = "extra == 'dev'", specifier = "==3.7.0" },
+    { name = "sqlalchemy", marker = "extra == 'agno'", specifier = "==2.0.41" },
+    { name = "starlette", specifier = "==1.3.1" },
+    { name = "syrupy", marker = "extra == 'dev'", specifier = "==4.9.1" },
+    { name = "tiktoken", specifier = "==0.12.0" },
+    { name = "toml-sort", marker = "extra == 'dev'", specifier = "==0.24.2" },
+    { name = "tornado", marker = "extra == 'dev'", specifier = "==6.5.8" },
+    { name = "tqdm", specifier = "==4.67.1" },
+    { name = "ty", marker = "extra == 'dev'", specifier = "==0.0.24" },
+    { name = "types-pyyaml", specifier = "==6.0.12.20250516" },
+    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = "==6.0.12.20250516" },
+    { name = "types-requests", marker = "extra == 'dev'", specifier = "==2.32.4.20250809" },
+    { name = "urllib3", specifier = "==2.8.0" },
+    { name = "werkzeug", specifier = "==3.1.9" },
+    { name = "wheel", marker = "extra == 'dev'", specifier = "==0.46.3" },
+]
+provides-extras = ["dev", "agno", "google"]
+
 [[package]]
 name = "serena-mago-adapter"
 version = "0.1.0"
@@ -1100,7 +1162,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "serena-agent" }]
+requires-dist = [{ name = "serena-agent", directory = "upstream" }]
 
 [[package]]
 name = "six"
@@ -1249,12 +1311,12 @@ wheels = [
 
 [[package]]
 name = "werkzeug"
-version = "3.1.7"
+version = "3.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/43/76ded108b296a49f52de6bac5192ca1c4be84e886f9b5c9ba8427d9694fd/werkzeug-3.1.7.tar.gz", hash = "sha256:fb8c01fe6ab13b9b7cdb46892b99b1d66754e1d7ab8e542e865ec13f526b5351", size = 875700, upload-time = "2026-03-24T01:08:07.687Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/34/4dd12fc8bb7d61c91467ec3efe415ffa7d5456f799954b40c5bbaeae470e/werkzeug-3.1.9.tar.gz", hash = "sha256:55ca7c70a75689be937aa27f8ff4b018f06ff4838fc73045560bf0f5a1291060", size = 940188, upload-time = "2026-09-27T18:33:41.637Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/b2/0bba9bbb4596d2d2f285a16c2ab04118f6b957d8441566e1abb892e6a6b2/werkzeug-3.1.7-py3-none-any.whl", hash = "sha256:4b314d81163a3e1a169b6a0be2a000a0e204e8873c5de6586f453c55688d422f", size = 226295, upload-time = "2026-03-24T01:08:06.133Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/38/df03f564f43cec2684823f3cccae1a652ee7face1cbaa76fb223096e64d7/werkzeug-3.1.9-py3-none-any.whl", hash = "sha256:6392e50c78460ba618e5b21f08a71f59c99ce99cdc6cf6e3dd7e6ccca8754fab", size = 228700, upload-time = "2026-09-27T18:33:39.685Z" },
 ]

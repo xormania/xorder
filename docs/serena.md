@@ -9,18 +9,19 @@ an accepted release record. No image is pulled automatically during MCP startup.
 The prepared source remains Serena commit `b79e2a55f9d4072084977dd35bd07d31146d88b9`.
 The dependency-only [security patch](../images/php-serena/security.patch) and
 [effective uv lock](../images/php-serena/security-uv.lock) pin AnyIO 4.14.2,
-PyJWT 2.14.0, certifi 2026.10.23 and Pillow 13.0.0, the fixes identified by the
-publication scan. Certifi follows the
+PyJWT 2.14.0, certifi 2026.10.23, Pillow 13.0.0, filelock 4.2.1 and Werkzeug
+3.1.9. The latter two address the November 2026 Dependabot alerts; the other
+fixes were identified by the publication scan. Certifi follows the
 [upstream recommendation](https://github.com/advisories/GHSA-6q48-6c7w-9gw2)
 to use 2026.10.19 or later; Pillow 13 fixes the five critical image-decoder
-findings in the scanned 12.3.0 dependency. The separate Mago/Serena lock already
-contains certifi 2026.10.23 and Pillow 13.0.0 and needs no dependency refresh.
+findings in the scanned 12.3.0 dependency. The separate Mago/Serena lock also
+includes filelock 4.2.1 and Werkzeug 3.1.9 through its own dependency-only patch.
 The build checks the
 original upstream lock hash before applying the patch, then installs the effective
 closure with `uv sync --locked`. Inventories identify the upstream and effective
 lock hashes separately. Source edits, lock changes, and installed dependency
 versions must pass the normal image behavior and publication assurance gates.
-The offline acceptance fixture measures these four installed packages, loads
+The offline acceptance fixture measures these six installed packages, loads
 certifi's CA store and encodes/decodes a PNG with Pillow before exercising the
 existing Serena/PHPactor and JavaScript navigation contracts.
 

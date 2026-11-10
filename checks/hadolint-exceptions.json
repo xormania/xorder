@@ -62,7 +62,7 @@
       "line": 7,
       "rule": "DL3008",
       "code_sha256": "ad7c35ff339e74f21fc2ba01c4ba53b314f12998b1cad30fa44c6ea3f2b2ee42",
-      "file_sha256": "b31d021e6f2edf2fd7d63aa5af44b596a9fc8cfb05434c80ac330efdabfbe09a",
+      "file_sha256": "b33810627b2c3ca8634d6ac38252bebe9ab0411e26bf9e4f43245b8f09cf7d72",
       "reason": "This dependency-only component uses xorder\u2019s observed APT_REFRESH package-index identity. Git is resolved from the current Debian feed and its installed package is confined to the build stage; Python and Serena payloads are copied into the final composition. Exact package version pins would bypass the existing observed-feed refresh contract."
     }
   ]
