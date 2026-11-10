@@ -64,12 +64,15 @@ class ValidationWorkflowTests(unittest.TestCase):
 
     def test_repeated_metadata_is_skipped_only_for_an_identical_successful_head(self):
         source = WORKFLOW.read_text()
-        lookup = source.index("      - id: validation-base\n")
+        # The job-level proof now covers the unit and both syntax checks together.
+        units = re.search(r"^  unit-tests:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
+        self.assertIn("needs: [metadata, fast-checks]", units)
+        self.assertIn("if: needs.metadata.outputs.same_head != 'true'", units)
+        self.assertIn("same_head: ${{ steps.validation-base.outputs.same_head }}", source)
         for name in ("Unit tests", "Python syntax", "Shell syntax"):
-            block = re.search(r"^      - name: " + name + r"\n(.*?)(?=^      - |^  [a-z]|\Z)",
-                              source, re.M | re.S)[1]
-            self.assertIn("if: steps.validation-base.outputs.same_head != 'true'", block)
-            self.assertLess(lookup, source.index("      - name: " + name + "\n"))
+            with self.subTest(step=name):
+                block = re.search(r"^      - name: " + name + r"\n(.*?)(?=^      - |\Z)", units, re.M | re.S)[1]
+                self.assertNotRegex(block, r"(?m)^        if:")
         catalog = re.search(r"^      - name: Validate catalog and immutable support policy\n(.*?)(?=^      - )",
                             source, re.M | re.S)[1]
         self.assertNotIn("\n        if:", catalog)

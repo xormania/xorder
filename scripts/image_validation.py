@@ -33,6 +33,61 @@ METADATA_SCHEMAS = {
     "schemas/release-groups.schema.json", "schemas/component.schema.json",
 }
 
+METADATA_PREFIXES = (
+    "scripts/xorder/", "artifacts/", "profiles/", "discovery/", "lifecycle/", "tests/agent-evals/", "tests/scenarios/",
+    "tests/fixtures/devenv/", "tests/fixtures/artifacts/", "examples/resources/", "examples/devenv/",
+    "tests/test_", "tests/requirements/",
+)
+# These paths previously selected no image unless they were real COPY inputs.
+METADATA_ONLY_PREFIXES = ("docs/", "release-records/", "retired-records/", "checks/")
+METADATA_ONLY_FILES = {"README.md", "AGENTS.md", "CLAUDE.md", "catalog.json", "catalog-v2.json", "discovery.json"}
+COMPONENT_POLICY_INPUTS = {"scripts/components.py", "scripts/artifact_identity.py", "schemas/component.schema.json"}
+
+
+def _metadata_path(path):
+    return (path.startswith(METADATA_PREFIXES + METADATA_ONLY_PREFIXES)
+            or path in METADATA_SCRIPTS | METADATA_WORKFLOWS | METADATA_SCHEMAS | METADATA_ONLY_FILES)
+
+
+def _component_inputs_changed(changed, root):
+    """Inspect component COPY declarations without hashing their payloads."""
+    from artifact_identity import _matches, _sources
+    from components import _arguments, definitions
+    root = Path(root)
+    components = definitions(root)
+    if components:
+        tools = json.loads((root / "images/tools.json").read_text())
+        for name, item in components.items():
+            arguments = _arguments(item, root, tools)
+            recipe = (root / item["dockerfile"]).read_bytes().decode("utf-8-sig")
+            sources = [item["dockerfile"], ".dockerignore", *_sources(recipe, arguments.get("IMAGE_LINE", name))]
+            if any(_matches(path, source) for path in changed for source in sources):
+                return True
+    return False
+
+
+def _copied_metadata_images(changed, defs, root):
+    if not changed:
+        return set()
+    from artifact_identity import _matches, _sources
+    result = set()
+    for line, definition in defs.items():
+        recipe = Path(root) / "images" / definition["family"] / "Dockerfile"
+        if recipe.is_file():
+            sources = _sources(recipe.read_bytes().decode("utf-8-sig"), definition.get("line"))
+            if any(_matches(path, source) for path in changed for source in sources):
+                result.add(line)
+    return result
+
+
+def _metadata_only_delta(changed, defs, root):
+    """Skip payload hashing only after ruling out actual metadata COPY inputs."""
+    if any(not _metadata_path(path) or path in COMPONENT_POLICY_INPUTS for path in changed):
+        return False
+    return not changed or (not _component_inputs_changed(changed, root)
+                           and not _copied_metadata_images(changed, defs, root))
+
+
 # These are the independent fixtures invoked by the public readiness recipe.
 # A new family must declare support before fixture-only changes can use partial
 # checks; otherwise it conservatively receives the full recipe.
@@ -80,17 +135,17 @@ def prerequisites(root, selected, defs):
 def _full_affected_lines(changed, defs, root, previous_tools=None, previous_definitions=None):
     """Propagate changed artifact inputs; keep fixture-only checks on their consumers."""
     selected, inputs = set(), set()
+    if _metadata_only_delta(changed, defs, root):
+        return []
     from components import affected_images
     inputs.update(affected_images(changed, defs, root, previous_tools, previous_definitions))
+    inputs.update(_copied_metadata_images([path for path in changed if _metadata_path(path)], defs, root))
     for path in changed:
         if path.startswith("images/components/"):
             # Component COPY inputs were selected before metadata filtering.
             continue
-        if (path.startswith(("scripts/xorder/", "artifacts/", "profiles/", "discovery/", "lifecycle/", "tests/agent-evals/", "tests/scenarios/",
-                             "tests/fixtures/devenv/", "tests/fixtures/artifacts/",
-                             "examples/resources/", "examples/devenv/",
-                             "tests/test_", "tests/requirements/"))
-                or path in METADATA_SCRIPTS | METADATA_WORKFLOWS | METADATA_SCHEMAS):
+        if _metadata_path(path):
+            # Real COPY consumers were selected before metadata filtering.
             continue
         families = set()
         is_input = False
@@ -130,7 +185,7 @@ def _full_affected_lines(changed, defs, root, previous_tools=None, previous_defi
                             "php-mago-serena", "php-chrome-dev"}
             elif path.startswith(("examples/php-toolkit/", "tests/fixtures/php-toolkit/")):
                 families = {"php-toolkit"}
-            elif path.startswith("tests/fixtures/mago-serena/"):
+            elif path.startswith(("tests/fixtures/mago-serena/", "tests/fixtures/symfony-mago/")):
                 families = {"php-mago-serena", "php-chrome-dev"}
             elif path.startswith("tests/fixtures/chrome-dev/"):
                 families = {"php-chrome-dev"}
@@ -184,6 +239,10 @@ def affected_suites(changed, defs, root, previous_tools=None, previous_definitio
     suites = {line: {"full"} for line in _full_affected_lines(
         ordinary, defs, root, previous_tools, previous_definitions)}
     copied_inputs = set()
+    partial_paths = [path for path, _ in partial]
+    if partial_paths and _component_inputs_changed(partial_paths, root):
+        from components import affected_images
+        copied_inputs.update(affected_images(partial_paths, defs, root, previous_tools, previous_definitions))
     for path, suite in partial:
         for line, definition in defs.items():
             family = definition["family"]
