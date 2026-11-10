@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-09T23:39:27.236944Z",
+  "generated_at": "2026-11-09T23:58:04.954324Z",
   "groups": [
     {
       "applies_to": [
@@ -777,12 +777,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "1a1ac43c56062e9943fbb86a5f76d5e055b1434d07e17f42d32711d26b85cfcc",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/playwright-browser%2F1.58-trixie%2Fv1.0.4/assurance.json"
+        "receipt_sha256": "2984cba917e14705b30005c4dc54234e97bbd51f02e0caafbf093a0d38e07976",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/playwright-browser%2F1.58-trixie%2Fv1.0.8/assurance.json"
       },
       "documentation": "docs/images/playwright-browser-1.58-trixie.md",
       "id": "image/playwright-browser/1.58-trixie",
-      "identity": "ghcr.io/xormania/playwright-browser@sha256:b932c432efe06cb33cdd5e7cf859f73e68ef65dcee3e4a7baaaa60ae3be6534b",
+      "identity": "ghcr.io/xormania/playwright-browser@sha256:ad168a781c7663f1f5aaa694289a3ba86660809b136a850897bed3d55c77edb6",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -791,11 +791,11 @@
         ]
       },
       "purpose": "Version-matched Chromium, Firefox and WebKit browser server without PHP or development build tools.",
-      "release_record": "release-records/playwright-browser/1.58-trixie/1.0.4.json",
+      "release_record": "release-records/playwright-browser/1.58-trixie/1.0.8.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.4"
+      "version": "1.0.8"
     },
     {
       "assurance": {
@@ -823,12 +823,12 @@
     {
       "assurance": {
         "predicate_type": "https://github.com/xormania/xorder/assurance/v1",
-        "receipt_sha256": "7c43abc198da8afeea9fe9e84b248eae8cd62731c594ab95f7c1a7f0a2b70113",
-        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-matrix%2Ftrixie%2Fv1.0.1/assurance.json"
+        "receipt_sha256": "c7b240f2d4a52d5f055e2d80e03dd1c0239b6496671920ec78bee16dc7644443",
+        "receipt_url": "https://github.com/xormania/xorder/releases/download/python-matrix%2Ftrixie%2Fv1.0.6/assurance.json"
       },
       "documentation": "docs/images/python-matrix-trixie.md",
       "id": "image/python-matrix/trixie",
-      "identity": "ghcr.io/xormania/python-matrix@sha256:dc0da00ee10740bb20406e4a0544ed4672e6ed0fc82169c34a246ccd20f93662",
+      "identity": "ghcr.io/xormania/python-matrix@sha256:31caf4654d8f1e059574887298c51a3df06acfc20216d01c69006fcca7b4a2a5",
       "kind": "image",
       "lifecycle": "available",
       "prerequisites": {
@@ -837,11 +837,11 @@
         ]
       },
       "purpose": "Python 3.10, 3.12 and 3.14 compatibility testing with tmux and the Python development toolchain.",
-      "release_record": "release-records/python-matrix/trixie/1.0.1.json",
+      "release_record": "release-records/python-matrix/trixie/1.0.6.json",
       "targets": [
         "linux/amd64"
       ],
-      "version": "1.0.1"
+      "version": "1.0.6"
     },
     {
       "assurance": {

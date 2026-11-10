@@ -72,9 +72,9 @@ prerequisites, release records, and evidence as new resources become available.
 | [php-serena/8.5-trixie](docs/images/php-serena-8.5-trixie.md) | 1.1.9 | linux/amd64 | `ghcr.io/xormania/php-serena:8.5-trixie-v1.1.9` |
 | [php-toolkit/8.4-trixie](docs/images/php-toolkit-8.4-trixie.md) | 1.0.7 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.4-trixie-v1.0.7` |
 | [php-toolkit/8.5-trixie](docs/images/php-toolkit-8.5-trixie.md) | 1.0.7 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.5-trixie-v1.0.7` |
-| [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.4 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.4` |
+| [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.8 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.8` |
 | [python-dev/3.14-trixie](docs/images/python-dev-3.14-trixie.md) | 1.1.8 | linux/amd64 | `ghcr.io/xormania/python-dev:3.14-trixie-v1.1.8` |
-| [python-matrix/trixie](docs/images/python-matrix-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/python-matrix:trixie-v1.0.1` |
+| [python-matrix/trixie](docs/images/python-matrix-trixie.md) | 1.0.6 | linux/amd64 | `ghcr.io/xormania/python-matrix:trixie-v1.0.6` |
 | [rust-dev/1.99-trixie](docs/images/rust-dev-1.99-trixie.md) | 1.1.8 | linux/amd64 | `ghcr.io/xormania/rust-dev:1.99-trixie-v1.1.8` |
 | [uxor-dev/8.4-trixie](docs/images/uxor-dev-8.4-trixie.md) | 1.0.5 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.4-trixie-v1.0.5` |
 | [uxor-dev/8.5-trixie](docs/images/uxor-dev-8.5-trixie.md) | 1.0.5 | linux/amd64 | `ghcr.io/xormania/uxor-dev:8.5-trixie-v1.0.5` |

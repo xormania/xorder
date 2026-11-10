@@ -49,7 +49,7 @@ Panther with Chromium; Playwright browser tasks matching the consuming project l
 | --- | --- | --- |
 | [image/php-browser/8.4-trixie](../docs/images/php-browser-8.4-trixie.md) | 1.2.7 | linux/amd64 |
 | [image/php-browser/8.5-trixie](../docs/images/php-browser-8.5-trixie.md) | 1.2.7 | linux/amd64 |
-| [image/playwright-browser/1.58-trixie](../docs/images/playwright-browser-1.58-trixie.md) | 1.0.4 | linux/amd64 |
+| [image/playwright-browser/1.58-trixie](../docs/images/playwright-browser-1.58-trixie.md) | 1.0.8 | linux/amd64 |
 | [image/php-chrome-dev/8.4-trixie](../docs/images/php-chrome-dev-8.4-trixie.md) | 1.0.0 | linux/amd64 |
 
 ### PHP coverage and analysis
