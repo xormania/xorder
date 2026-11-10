@@ -37,9 +37,14 @@ def definitions(root=ROOT):
     schema_path = root / "schemas/component.schema.json"
     schema = _read(schema_path if schema_path.is_file() else ROOT / "schemas/component.schema.json")
     import jsonschema
+    validator_class = jsonschema.validators.validator_for(schema)
+    validator_class.check_schema(schema)
+    validator = validator_class(schema)
     for path in paths:
         item = _read(path)
-        jsonschema.validate(item, schema)
+        error = jsonschema.exceptions.best_match(validator.iter_errors(item))
+        if error is not None:
+            raise error
         name = item["id"]
         if name != path.parent.name or name in result:
             raise ValueError(f"Component identity does not match its unique path: {path}")
@@ -136,12 +141,13 @@ def _recipe_inputs(recipe, arguments, component_arguments):
             raise ValueError("Component COPY donor requires an exact digest or declared stage: " + donor)
 
 
-def build_inputs(component_id, root=ROOT, platform="linux/amd64", tools=None):
-    root = Path(root)
-    defs = definitions(root)
+def _build_inputs(selected, root, platform, tools, defs):
+    """Evaluate each dependency once within this call, without caching source bytes."""
+    if not selected:
+        return {}
     tools = _read(root / "images/tools.json") if tools is None else tools
     snapshots = {}
-    for name in _ordered([component_id], defs):
+    for name in _ordered(selected, defs):
         item = defs[name]
         if platform not in item["platforms"]:
             raise ValueError(f"Unsupported component platform: {name}/{platform}")
@@ -158,7 +164,12 @@ def build_inputs(component_id, root=ROOT, platform="linux/amd64", tools=None):
                            "build_arguments": arguments,
                            "components": {argument: {"id": dependency, "key": _hash(snapshots[dependency])}
                                           for argument, dependency in item.get("components", {}).items()}}
-    return snapshots[component_id]
+    return snapshots
+
+
+def build_inputs(component_id, root=ROOT, platform="linux/amd64", tools=None):
+    root = Path(root)
+    return _build_inputs([component_id], root, platform, tools, definitions(root))[component_id]
 
 
 def build_key(component_id, root=ROOT, platform="linux/amd64", tools=None):
@@ -166,27 +177,37 @@ def build_key(component_id, root=ROOT, platform="linux/amd64", tools=None):
 
 
 def image_inputs(definition, root=ROOT):
+    root = Path(root)
     defs = definitions(root)
     result = {}
-    for argument, name in definition.get("build_components", {}).items():
+    selected = definition.get("build_components", {})
+    for name in selected.values():
         if name not in defs:
             raise ValueError(f"Unknown component for {definition.get('line_id')}: {name}")
-        platform = definition["platforms"][0]
-        result[argument] = {"id": name, "key": build_key(name, root, platform),
+    if not selected:
+        return result
+    platform = definition["platforms"][0]
+    snapshots = _build_inputs(selected.values(), root, platform, None, defs)
+    for argument, name in selected.items():
+        result[argument] = {"id": name, "key": _hash(snapshots[name]),
                             "abi": defs[name]["abi"], "platform": platform}
     return result
 
 
 def affected_components(changed, root=ROOT, previous_tools=None, previous_definitions=None):
+    changed = tuple(changed)
     root = Path(root)
     defs = definitions(root)
+    snapshots = _build_inputs(defs, root, "linux/amd64", None, defs)
+    previous_snapshots = (_build_inputs(defs, root, "linux/amd64", previous_tools, defs)
+                          if "images/tools.json" in changed and previous_tools is not None else {})
     chosen = set()
     for name, item in defs.items():
-        snapshot = build_inputs(name, root)
+        snapshot = snapshots[name]
         manifest = f"images/components/{name}/definition.json"
         for path in changed:
             if path == "images/tools.json":
-                if previous_tools is None or build_key(name, root, tools=previous_tools) != _hash(snapshot):
+                if previous_tools is None or _hash(previous_snapshots[name]) != _hash(snapshot):
                     chosen.add(name)
             elif (path == manifest or path in snapshot["files"]
                   or any(_matches(path, source) for source in _sources(

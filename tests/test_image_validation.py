@@ -71,6 +71,16 @@ class ImageSelectionTests(unittest.TestCase):
                 self.assertEqual(matrix(selected, self.defs), {"include": [
                     {"line": "php-dev/8.5-trixie", "verify_lines": ["php-serena/8.5-trixie"]}]})
 
+    def test_symfony_mago_fixture_checks_only_its_two_real_consumers(self):
+        expected = {"php-chrome-dev/8.4-trixie": ["full"], "php-mago-serena/8.4-trixie": ["full"]}
+        for path in ("tests/fixtures/symfony-mago/check.py", "tests/fixtures/symfony-mago/composer.lock"):
+            with self.subTest(path=path):
+                suites = affected_suites([path], self.defs, ROOT)
+                self.assertEqual(suites, expected)
+                self.assertEqual(matrix(suites, self.defs, suites), {"include": [{
+                    "line": "php-dev/8.4-trixie", "verify_lines": sorted(expected), "verify_suites": expected}]})
+        self.assertEqual(self.selected("tests/fixtures/symfony-mago-unknown/check.py"), sorted(self.defs))
+
     def test_harness_recipe_and_real_consumer_fixture_stay_opt_in(self):
         for path in ("images/harness-live/Dockerfile", "images/harness-live/harness-pins.json",
                      "tests/fixtures/harness-live/run.sh", "tests/fixtures/harness-live/consumer.json"):

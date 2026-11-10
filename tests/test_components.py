@@ -67,6 +67,58 @@ class ComponentTests(unittest.TestCase):
         self.mutate(lambda item: item.update(abi="other-abi"))
         self.assertNotEqual(components.build_key("base", self.root), before)
 
+    def test_selection_hashes_each_shared_dependency_once(self):
+        self.component("child", "base")
+        self.component("sibling", "base")
+        with patch.object(components, "_files_current", wraps=components._files_current) as read_files:
+            self.assertEqual(components.affected_components(["README.md"], self.root), [])
+        self.assertCountEqual([call.args[1] for call in read_files.call_args_list], [
+            f"images/components/{name}/Dockerfile" for name in ("base", "child", "sibling")])
+
+    def test_changed_path_iterator_is_not_consumed_by_tool_detection(self):
+        changed = iter(["images/components/base/data/a"])
+        self.assertEqual(components.affected_components(changed, self.root), ["base"])
+
+    def test_image_inputs_hash_shared_dependency_once_and_remain_fresh(self):
+        self.component("child", "base")
+        self.component("sibling", "base")
+        definition = {"line_id": "app/line", "platforms": ["linux/amd64"],
+                      "build_components": {"FIRST_IMAGE": "child", "SECOND_IMAGE": "sibling"}}
+        expected = {argument: components.build_key(name, self.root)
+                    for argument, name in definition["build_components"].items()}
+        with patch.object(components, "_files_current", wraps=components._files_current) as read_files:
+            before = components.image_inputs(definition, self.root)
+        self.assertEqual({argument: item["key"] for argument, item in before.items()}, expected)
+        self.assertCountEqual([call.args[1] for call in read_files.call_args_list], [
+            f"images/components/{name}/Dockerfile" for name in ("base", "child", "sibling")])
+        copied = self.root / "images/components/base/data/a"
+        original_stat = copied.stat()
+        copied.write_text("other")  # Same size and timestamp cannot hide changed input bytes.
+        os.utime(copied, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
+        after = components.image_inputs(definition, self.root)
+        self.assertTrue(all(after[argument]["key"] != item["key"] for argument, item in before.items()))
+
+    def test_definition_schema_is_checked_once_per_fresh_load(self):
+        from jsonschema import Draft202012Validator, SchemaError, ValidationError
+        self.component("child", "base")
+        with patch.object(Draft202012Validator, "check_schema", wraps=Draft202012Validator.check_schema) as check:
+            components.definitions(self.root)
+        self.assertEqual(check.call_count, 1)
+        path = self.root / "schemas/component.schema.json"
+        original = json.loads(path.read_text())
+        changed = json.loads(path.read_text())
+        changed["required"].append("new-required-field")
+        path.write_text(json.dumps(changed))
+        with self.assertRaises(ValidationError):
+            components.definitions(self.root)
+        path.write_text(json.dumps(original))
+        self.mutate(lambda item: item.update(purpose=""))
+        with self.assertRaises(ValidationError):
+            components.definitions(self.root)
+        path.write_text(json.dumps({"type": "not-a-json-schema-type"}))
+        with self.assertRaises(SchemaError):
+            components.definitions(self.root)
+
     def test_changed_tool_pin_and_transitive_component_invalidate_only_consumers(self):
         self.component("child", "base")
         self.component("unrelated")

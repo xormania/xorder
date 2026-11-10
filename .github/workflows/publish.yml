@@ -55,23 +55,28 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Restore checksum-verified build downloads
+      - name: Restore checksum-verified assurance tools
         id: tool-downloads
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/xorder-build-downloads
-          key: xorder-build-downloads-v1-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+          path: /tmp/xorder-assurance-downloads
+          key: xorder-assurance-tools-v2-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}
           restore-keys: |
-            xorder-build-downloads-v1-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}-
-            xorder-build-downloads-v1-${{ runner.os }}-
-      - run: python scripts/image_assurance.py install-signer --directory "$RUNNER_TEMP/xorder-tools"
+            xorder-assurance-tools-v2-${{ runner.os }}-
+      - id: install-signer
+        run: python scripts/image_assurance.py install-signer --directory "$RUNNER_TEMP/xorder-tools"
+        env:
+          XORDER_DOWNLOAD_CACHE: /tmp/xorder-assurance-downloads
 
-      - run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
-      - name: Retain verified build downloads
-        if: ${{ always() && !cancelled() && steps.tool-downloads.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.tool-downloads.outputs.cache-hit != 'true' }}
+      - id: install-scanner
+        run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
+        env:
+          XORDER_DOWNLOAD_CACHE: /tmp/xorder-assurance-downloads
+      - name: Retain verified assurance tools
+        if: ${{ always() && !cancelled() && steps.tool-downloads.outcome == 'success' && steps.install-signer.outcome == 'success' && steps.install-scanner.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.tool-downloads.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/xorder-build-downloads
+          path: /tmp/xorder-assurance-downloads
           key: ${{ steps.tool-downloads.outputs.cache-primary-key }}
       - name: Observe and publish assurance for the recorded digest
         run: python scripts/image_assurance.py assure-existing "$RECORD_PATH" --output out/existing
@@ -233,24 +238,29 @@ jobs:
             buildx-v3-${{ runner.os }}-${{ matrix.line }}-${{ steps.cache-key.outputs.key }}-
             buildx-v3-${{ runner.os }}-${{ matrix.line }}-
             buildx-v2-${{ runner.os }}-${{ matrix.line }}-
-      - name: Restore checksum-verified build downloads
+      - name: Restore checksum-verified assurance tools
         id: tool-downloads
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/xorder-build-downloads
-          key: xorder-build-downloads-v1-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+          path: /tmp/xorder-assurance-downloads
+          key: xorder-assurance-tools-v2-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}
           restore-keys: |
-            xorder-build-downloads-v1-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}-
-            xorder-build-downloads-v1-${{ runner.os }}-
-      - run: python scripts/image_assurance.py install-signer --directory "$RUNNER_TEMP/xorder-tools"
+            xorder-assurance-tools-v2-${{ runner.os }}-
+      - id: install-signer
+        run: python scripts/image_assurance.py install-signer --directory "$RUNNER_TEMP/xorder-tools"
+        env:
+          XORDER_DOWNLOAD_CACHE: /tmp/xorder-assurance-downloads
 
       - name: Install checksum-pinned image scanner
+        id: install-scanner
         run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
-      - name: Retain verified build downloads
-        if: ${{ always() && !cancelled() && steps.tool-downloads.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.tool-downloads.outputs.cache-hit != 'true' }}
+        env:
+          XORDER_DOWNLOAD_CACHE: /tmp/xorder-assurance-downloads
+      - name: Retain verified assurance tools
+        if: ${{ always() && !cancelled() && steps.tool-downloads.outcome == 'success' && steps.install-signer.outcome == 'success' && steps.install-scanner.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.tool-downloads.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/xorder-build-downloads
+          path: /tmp/xorder-assurance-downloads
           key: ${{ steps.tool-downloads.outputs.cache-primary-key }}
       - name: Publish or resume exact artifacts
         env:
@@ -349,24 +359,29 @@ jobs:
         with:
           name: browser-verification-${{ steps.key.outputs.line }}
           path: out/verified
-      - name: Restore checksum-verified build downloads
+      - name: Restore checksum-verified assurance tools
         id: tool-downloads
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/xorder-build-downloads
-          key: xorder-build-downloads-v1-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ strategy.job-index || 0 }}
+          path: /tmp/xorder-assurance-downloads
+          key: xorder-assurance-tools-v2-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}
           restore-keys: |
-            xorder-build-downloads-v1-${{ runner.os }}-${{ hashFiles('scripts/image_assurance.py') }}-
-            xorder-build-downloads-v1-${{ runner.os }}-
-      - run: python scripts/image_assurance.py install-signer --directory "$RUNNER_TEMP/xorder-tools"
+            xorder-assurance-tools-v2-${{ runner.os }}-
+      - id: install-signer
+        run: python scripts/image_assurance.py install-signer --directory "$RUNNER_TEMP/xorder-tools"
+        env:
+          XORDER_DOWNLOAD_CACHE: /tmp/xorder-assurance-downloads
 
       - name: Install checksum-pinned image scanner
+        id: install-scanner
         run: python scripts/image_assurance.py install-scanner --directory "$RUNNER_TEMP/xorder-tools"
-      - name: Retain verified build downloads
-        if: ${{ always() && !cancelled() && steps.tool-downloads.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.tool-downloads.outputs.cache-hit != 'true' }}
+        env:
+          XORDER_DOWNLOAD_CACHE: /tmp/xorder-assurance-downloads
+      - name: Retain verified assurance tools
+        if: ${{ always() && !cancelled() && steps.tool-downloads.outcome == 'success' && steps.install-signer.outcome == 'success' && steps.install-scanner.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.tool-downloads.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/xorder-build-downloads
+          path: /tmp/xorder-assurance-downloads
           key: ${{ steps.tool-downloads.outputs.cache-primary-key }}
       - name: Finalize only the exact anonymously verified digest
         env:
