@@ -37,6 +37,17 @@ child retains those facts and records its Node, Chrome and MCP versions and
 Chrome executable hash. Browser-specific fields are null in the Mago parent.
 The adapter checks the Mago executable against the identity before startup.
 
+The Serena dependency component checks out commit
+`ede329aaf0c824bea75455a2926f01420d7aa620` and applies the dependency-only
+`images/php-mago-serena/serena/security.patch` before `uv sync --locked`.
+This updates filelock to 4.2.1 and Werkzeug to 3.1.9 without changing Serena's
+application source. The lock uses the prepared local `upstream` directory;
+the image records the original commit, patched manifest hash, dependency patch
+hash and effective lock hash. Final assembly installs the adapter offline from
+the already prepared dependency payload and checks installed requirements.
+To regenerate the lock locally, prepare that ignored `upstream` checkout at the
+same commit, apply the patch, then run uv 0.12.8 from the Serena project directory.
+
 The release tarball is verified by its locked SHA-256 and installed as
 `mago-baseline`; `mago` is the patched source build. `mago-native` is the latest
 selected upstream release for ordinary quality commands, with its own version

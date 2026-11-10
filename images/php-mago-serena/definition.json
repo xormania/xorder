@@ -44,15 +44,14 @@
         "parent": "php-browser/8.4-trixie"
       },
       "changes": [
-        "Compose independently reusable Mago native, patched LSP, baseline and frozen Serena dependency artifacts.",
-        "Select current Serena main and latest Symfony/AI Mate prereleases, preserve exact tuple provenance and provide reusable project initialization, compiled metadata preparation and Mago quality commands."
+        "Update Serena dependencies to filelock 4.2.1 and Werkzeug 3.1.9 to address the November 2026 Dependabot alerts, retaining the reviewed Serena application source."
       ],
-      "migration": "First release of this line. Adopt its verified digest only after the consumer identity, Mago/Serena and browser smoke checks pass; retain the previous image for rollback.",
+      "migration": "Compatible dependency security update. Adopt the newly verified digest after project validation; existing exact releases retain their original contents.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.0",
+      "revision": "1.0.1",
       "runtime_line": "8.4"
     }
   },

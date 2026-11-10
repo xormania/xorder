@@ -3,7 +3,7 @@ name = "mago-serena-poc"
 version = "0.1.0"
 requires-python = "==3.12.*"
 dependencies = [
-  "serena-agent @ git+https://github.com/oraios/serena.git@ede329aaf0c824bea75455a2926f01420d7aa620",
+  "serena-agent",
   "serena-mago-adapter",
 ]
 
@@ -14,4 +14,6 @@ package = false
 members = ["adapter"]
 
 [tool.uv.sources]
+# The dependency component checks out the reviewed commit and applies security.patch.
+serena-agent = { path = "upstream" }
 serena-mago-adapter = { workspace = true }

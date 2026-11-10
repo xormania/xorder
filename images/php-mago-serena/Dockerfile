@@ -13,6 +13,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Prepared payloads are independently keyed and reusable across PHP/browser lines.
 COPY --from=serena /payload/python/ /usr/local/
 COPY --from=serena /payload/venv/ /opt/venv/
+COPY --from=serena /payload/identity/ /opt/xorder/serena/
 COPY --from=mago /payload/bin/mago /usr/local/bin/mago
 COPY --from=mago /payload/identity/ /opt/xorder/serena/
 COPY --from=baseline /payload/bin/mago /usr/local/bin/mago-baseline
@@ -22,12 +23,13 @@ COPY --from=native /payload/licenses/ /opt/licenses/mago-native/
 RUN ldconfig
 # This cheap overlay installs only the adapter; dependency sync is in serena-deps.
 COPY images/php-mago-serena/serena/pyproject.toml images/php-mago-serena/serena/uv.lock /opt/xorder/serena/
+COPY images/php-mago-serena/serena/security.patch /opt/xorder/serena/security.patch
 COPY images/php-mago-serena/serena/adapter/ /opt/xorder/serena/adapter/
 ENV UV_PYTHON_DOWNLOADS=never
 RUN --mount=type=secret,id=xorder_ca \
     set -eu; \
     if [ -s /run/secrets/xorder_ca ]; then export SSL_CERT_FILE=/run/secrets/xorder_ca GIT_SSL_CAINFO=/run/secrets/xorder_ca; fi; \
-    UV_PROJECT_ENVIRONMENT=/opt/venv uv --no-cache sync --project /opt/xorder/serena --frozen --no-dev --no-editable --inexact --offline --no-build-isolation --python /usr/local/bin/python3 \
+    uv --no-cache pip install --python /opt/venv/bin/python --offline --no-build-isolation --no-deps /opt/xorder/serena/adapter \
     && uv pip check --python /opt/venv/bin/python \
     && rm -rf /root/.cache/uv
 COPY images/php-mago-serena/serena/patches/ /opt/xorder/serena/patches/

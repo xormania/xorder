@@ -114,7 +114,8 @@ class SerenaTests(unittest.TestCase):
     def test_security_closure_pins_fixed_versions_with_artifact_hashes(self):
         lock = tomllib.loads((ROOT / 'images/php-serena/security-uv.lock').read_text())
         packages = {item['name']: item for item in lock['package']}
-        for name, expected in (('anyio', '4.14.2'), ('pyjwt', '2.14.0')):
+        for name, expected in (('anyio', '4.14.2'), ('pyjwt', '2.14.0'),
+                               ('filelock', '4.2.1'), ('werkzeug', '3.1.9')):
             with self.subTest(package=name):
                 package = packages[name]
                 self.assertEqual(package['version'], expected)

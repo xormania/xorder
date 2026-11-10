@@ -44,14 +44,14 @@
         "SERENA_PYTHON_IMAGE": "php-serena-python-85"
       },
       "changes": [
-        "Update only the pinned Serena Python dependency closure to certifi 2026.10.23 and Pillow 13.0.0 for the publication scan's fixable critical findings. Retain the same Serena/PHPactor backend and all other dependency versions."
+        "Update Serena dependencies to filelock 4.2.1 and Werkzeug 3.1.9 to address the November 2026 Dependabot alerts, retaining the reviewed Serena application source."
       ],
-      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
+      "migration": "Compatible dependency security update. Adopt the newly verified digest after project validation; existing exact releases retain their original contents.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.1.9",
+      "revision": "1.1.10",
       "runtime_line": "8.5"
     }
   },

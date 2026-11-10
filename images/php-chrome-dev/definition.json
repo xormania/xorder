@@ -33,16 +33,14 @@
         "parent": "php-mago-serena/8.4-trixie"
       },
       "changes": [
-        "Add the separately pinned Node 22, Chrome for Testing 157.0.8103.38 and Chrome DevTools MCP 1.12.0 toolchain.",
-        "Preserve inherited Mago/Serena identity and record Chrome and MCP versions and installed browser hash.",
-        "Compose independently retained Node, Chrome for Testing and MCP payloads without downloading them during final image assembly."
+        "Inherit the Mago/Serena dependency security refresh with filelock 4.2.1 and Werkzeug 3.1.9."
       ],
-      "migration": "First release of this line. Adopt its verified digest only after the consumer identity, Mago/Serena and browser smoke checks pass; retain the previous image for rollback.",
+      "migration": "Compatible dependency security update. Adopt the newly verified digest after project validation; existing exact releases retain their original contents.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.0",
+      "revision": "1.0.1",
       "runtime_line": "8.4",
       "build_components": {
         "NODE_IMAGE": "node-chrome-22",

@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
@@ -100,6 +101,49 @@ class MagoChromeRoutingTests(unittest.TestCase):
             prose = copy.deepcopy(definition)
             prose.update(purpose="Clarified description", revision="1.0.1", changes=["Editorial"])
             self.assertEqual(changed, artifact_identity.build_key(prose, root, parent=PARENT))
+
+    def test_security_lock_and_patch_match_the_selected_toolchain_identity(self):
+        root = ROOT / "images/php-mago-serena"
+        identity = json.loads((root / "toolchain.lock.json").read_text())["serena"]
+        for field, name in (("effective_uv_lock_sha256", "uv.lock"),
+                            ("dependency_patch_sha256", "security.patch")):
+            self.assertEqual(identity[field], hashlib.sha256((root / "serena" / name).read_bytes()).hexdigest())
+        packages = {item["name"]: item for item in tomllib.loads((root / "serena/uv.lock").read_text())["package"]}
+        requirements = {item["name"]: item for item in packages["serena-agent"]["metadata"]["requires-dist"]}
+        for name, version in (("filelock", "4.2.1"), ("werkzeug", "3.1.9")):
+            self.assertEqual(packages[name]["version"], version)
+            self.assertEqual(requirements[name]["specifier"], "==" + version)
+
+    def test_facade_patch_rejects_an_unreviewed_source_installation(self):
+        path = ROOT / "images/php-mago-serena/serena/patches/apply_serena.py"
+        spec = importlib.util.spec_from_file_location("serena_security_provenance", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            record = Path(directory) / "source.sha"
+            target = Path(directory) / "lsp_api.py"
+            target.write_text("reviewed facade")
+            origin = {"url": "file:///opt/xorder/serena/upstream", "dir_info": {"editable": False}}
+            with patch.object(module, "SOURCE_RECORD", record), \
+                    patch.object(module, "distribution") as distribution, \
+                    patch.object(module, "apply", return_value=target) as apply, \
+                    patch.dict(sys.modules, {"serena": SimpleNamespace(__file__=str(target))}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                record.write_text(module.SERENA_SOURCE + "\n")
+                distribution.return_value.read_text.return_value = json.dumps(origin)
+                module.main()
+                apply.assert_called_once()
+                apply.reset_mock()
+                for source, direct_url in (
+                        ("0" * 40, origin),
+                        (module.SERENA_SOURCE, {**origin, "url": "file:///unreviewed"}),
+                        (module.SERENA_SOURCE, {**origin, "dir_info": {"editable": True}})):
+                    with self.subTest(source=source, direct_url=direct_url):
+                        record.write_text(source)
+                        distribution.return_value.read_text.return_value = json.dumps(direct_url)
+                        with self.assertRaisesRegex(RuntimeError, "reviewed base"):
+                            module.main()
+                        apply.assert_not_called()
 
 
 class MagoSeedTests(unittest.TestCase):

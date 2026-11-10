@@ -5,3 +5,4 @@ vendor/
 target/
 out/
 .env
+images/php-mago-serena/serena/upstream/
