@@ -55,14 +55,21 @@ Symfony/Mago fixture targets its Mago/Serena and Chrome consumers.
 
 ## Commit and pull request attribution
 
-Use an accountable person's Git identity or the repository's existing neutral
-automation identity. Do not attribute a commit or pull request to Claude,
+Interactive, user-directed development, including AI-assisted work, uses the
+requesting person's established Git identity for both author and committer.
+Preserve the user's identity and verify `git var GIT_AUTHOR_IDENT` and
+`git var GIT_COMMITTER_IDENT` before committing. If the identity is unavailable,
+ask the user rather than inventing one or substituting an automation identity.
+Dependabot and the repository's `xorder automation` and `image-library automation`
+identities are reserved for unattended repository jobs such as dependency
+refreshes and release/catalog workflows. Using an agent to run Git commands in
+an interactive session does not make that session an automation job.
+
+Do not attribute a commit or pull request to Claude,
 Codex, Grok, Anthropic, OpenAI, or xAI: omit their author/committer identities,
 attribution trailers, generated-with signatures, and model session links. This
 is a metadata policy, not a ban on using or discussing development tools;
 ordinary technical references to those tools and providers remain allowed.
-Dependabot and the repository's `xorder automation` and `image-library
-automation` identities are also allowed.
 
 Validation checks the full history reachable from a proposed head plus the pull
 request title and body. A branch based on superseded history must be rebased;

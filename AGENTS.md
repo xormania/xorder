@@ -22,10 +22,20 @@ Use feature branches and PRs against master. Run `python3 scripts/library.py che
 and `python3 -m unittest discover -s tests`. Container behavior is checked by
 `scripts/verify-image.sh`, also used by the public usage instructions.
 
-Use an accountable person or the repository's neutral automation identity for
-Git authorship. Do not add Claude, Codex, Grok, Anthropic, OpenAI, or xAI as an
+For interactive, user-directed work, including AI-assisted development, use the
+requesting person's established Git identity for both author and committer.
+Preserve that identity; running Git through an agent does not make the work an
+automation job. Resolve the identity from the user's instructions or verified
+user-specific Git configuration/account-linked history. If it is unavailable,
+ask rather than inventing an identity or substituting a bot. Before committing,
+check `git var GIT_AUTHOR_IDENT` and `git var GIT_COMMITTER_IDENT`.
+
+Reserve `xorder automation`, `image-library automation`, and Dependabot identities
+for unattended repository jobs such as dependency refreshes and release/catalog
+workflows. They are not the default for interactive development.
+
+Do not add Claude, Codex, Grok, Anthropic, OpenAI, or xAI as an
 author, committer, co-author, or other commit/PR attribution. Omit
 generated-with footers, model session links, and equivalent signatures from
 these tools. Technical prose about them and factual dependency or compatibility
-records remain valid. Dependabot and the established neutral repository
-automation identities remain valid.
+records remain valid.
