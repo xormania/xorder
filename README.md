@@ -140,6 +140,7 @@ and direct usage pages remains sufficient.
 - [Workspace, caches, database, and browser recipes](docs/usage.md)
 - [Optional Python compatibility matrix and real tmux checks](docs/python-matrix.md)
 - [FrankenPHP and uxor development/testing](docs/uxor.md)
+- [Xorchestrate native validation preparation and reuse](docs/xorchestrate.md)
 - [Claude cloud session quick start and dependency reuse](docs/claude-cloud.md)
 - [Automatic UTC prompt context for Claude Code](docs/claude-hooks.md)
 - [Reusable PHP test tasks and per-process coverage](docs/php-tests.md)

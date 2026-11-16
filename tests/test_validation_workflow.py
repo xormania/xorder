@@ -2,6 +2,7 @@
 import re
 import contextlib
 import io
+import importlib.util
 import json
 import os
 import subprocess
@@ -36,6 +37,48 @@ def concurrency_cancels(event):
     return eval(expression.replace("||", " or ").replace("&&", " and "), {"__builtins__": {}})
 
 
+class NativeAcceptanceProcessTests(unittest.TestCase):
+    def test_timeout_allows_runner_to_clean_up_its_separate_child_session(self):
+        helper = WORKFLOW.parents[2] / "tests/fixtures/xorchestrate-runner/acceptance.py"
+        specification = importlib.util.spec_from_file_location("native_acceptance", helper)
+        acceptance = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(acceptance)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker, child_id = root / "cleaned", root / "child.pid"
+            program = root / "runner.py"
+            program.write_text(textwrap.dedent("""\
+                import os,signal,subprocess,sys,time
+                from pathlib import Path
+                child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)'],start_new_session=True)
+                def stop(_signum,_frame):
+                    os.killpg(child.pid,signal.SIGTERM)
+                    child.wait(timeout=2)
+                    Path(sys.argv[1]).write_text('cleaned')
+                    print('cleanup complete',flush=True)
+                    raise SystemExit(0)
+                signal.signal(signal.SIGTERM,stop)
+                Path(sys.argv[2]).write_text(str(child.pid))
+                while True:
+                    time.sleep(1)
+                """))
+            evidence = {}
+            try:
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    acceptance.bounded_command([sys.executable, str(program), str(marker), str(child_id)],
+                                               os.environ.copy(), evidence, timeout=1)
+                self.assertEqual(marker.read_text(), "cleaned")
+                self.assertFalse((Path("/proc") / child_id.read_text()).exists())
+                self.assertEqual(evidence["cleanup"], "passed")
+                self.assertIn("cleanup complete", evidence["stdout_tail"])
+            finally:
+                if child_id.exists():
+                    try:
+                        os.kill(int(child_id.read_text()), 9)
+                    except ProcessLookupError:
+                        pass
+
+
 class ValidationWorkflowTests(unittest.TestCase):
     def test_title_and_body_edits_preserve_running_behavior_checks(self):
         for changes in ({"body": {"from": "before"}}, {"title": {"from": "before"}},
@@ -55,7 +98,7 @@ class ValidationWorkflowTests(unittest.TestCase):
 
     def test_all_runtime_surfaces_share_the_validated_incremental_baseline(self):
         source = WORKFLOW.read_text()
-        for step in ("matrix", "resources", "application"):
+        for step in ("matrix", "resources", "application", "xorchestrate"):
             with self.subTest(step=step):
                 block = re.search(r"^      - id: " + step + r"\n(.*?)(?=^      - |^  [a-z]|\Z)",
                                   source, re.M | re.S)[1]
@@ -76,6 +119,46 @@ class ValidationWorkflowTests(unittest.TestCase):
         catalog = re.search(r"^      - name: Validate catalog and immutable support policy\n(.*?)(?=^      - )",
                             source, re.M | re.S)[1]
         self.assertNotIn("\n        if:", catalog)
+
+    def test_native_consumer_is_read_only_and_required_when_selected(self):
+        source = WORKFLOW.read_text()
+        job = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
+        self.assertIn("if: needs.metadata.outputs.has_xorchestrate == 'true'", job)
+        self.assertIn("persist-credentials: false", job)
+        self.assertIn("permissions:\n      contents: read", job)
+        self.assertNotIn("github.token", job)
+        self.assertIn("steps.consumer-baseline.outputs.python", job)
+        self.assertIn("steps.consumer-baseline.outputs.uv", job)
+        aggregate = source.split("  checks:\n", 1)[1]
+        self.assertIn("needs.native-xorchestrate.result", aggregate)
+        self.assertIn('"$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" != true', aggregate)
+
+    def test_native_consumer_passes_the_managed_interpreter_to_preparation(self):
+        source = WORKFLOW.read_text()
+        job = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
+        managed = re.search(r"^      - id: consumer-python\n(.*?)(?=^      - )", job, re.M | re.S)[1]
+        exercise = re.search(r"^      - name: Exercise online preparation.*?\n(.*?)(?=^      - )", job, re.M | re.S)[1]
+        self.assertIn("BASELINE_PYTHON: ${{ steps.consumer-baseline.outputs.python }}", managed)
+        self.assertIn("uv python install --no-bin", managed)
+        self.assertIn("uv python find --managed-python --no-project", managed)
+        self.assertNotIn("--upgrade", managed)
+        self.assertIn("ACCEPTANCE_PYTHON: ${{ steps.consumer-python.outputs.python }}", exercise)
+        script = textwrap.dedent(exercise.split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / "python"
+            output = root / "args.json"
+            executable.write_text("#!" + sys.executable + "\nimport json,os,sys\n"
+                                  "open(os.environ['CAPTURE_ARGS'],'w').write(json.dumps(sys.argv[1:]))\n")
+            executable.chmod(0o755)
+            managed_python = str(root / "owned-python/bin/python3.12")
+            env = {**os.environ, "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                   "CAPTURE_ARGS": str(output), "ACCEPTANCE_PYTHON": managed_python,
+                   "CONSUMER_PATH": str(root / "consumer"), "CONSUMER_REVISION": "a" * 40,
+                   "ACCEPTANCE_RUNTIME": str(root / "runtime")}
+            subprocess.run(["bash", "-e", "-c", script], env=env, check=True)
+            arguments = json.loads(output.read_text())
+            self.assertEqual(arguments[arguments.index("--python") + 1], managed_python)
 
 
 class IncrementalComparisonTests(unittest.TestCase):
@@ -148,6 +231,28 @@ class IncrementalComparisonTests(unittest.TestCase):
             env["COMPARE_HEAD"] = head
         return subprocess.check_output([sys.executable, "-c", textwrap.dedent(script)],
                                        cwd=self.root, env=env, text=True).strip()
+
+    def native_xorchestrate(self, base, head):
+        source = WORKFLOW.read_text()
+        block = re.search(r"^      - id: xorchestrate\n(.*?)(?=^      - |^  [a-z]|\Z)", source, re.M | re.S)[1]
+        script = re.search(r"^          python - <<'PY'.*?\n(.*?)^          PY$", block, re.M | re.S)[1]
+        return subprocess.check_output([sys.executable, "-c", textwrap.dedent(script)], cwd=self.root,
+                                       env={**self.env, "BASE_SHA": base, "COMPARE_HEAD": head}, text=True).strip()
+
+    def test_native_consumer_runs_for_its_inputs_without_docs_only_reruns(self):
+        previous = self.merge
+        for path, expected in (("docs/xorchestrate.md", False),
+                               ("examples/xorchestrate/runner.py", True),
+                               ("examples/xorchestrate/native.py", True),
+                               ("tests/fixtures/xorchestrate-runner/acceptance.py", True),
+                               ("tests/test_xorchestrate_runner.py", True),
+                               (".github/workflows/validate.yml", True),
+                               ("examples/other/runner.py", False)):
+            with self.subTest(path=path):
+                current = self.commit(path, "changed input\n")
+                self.assertEqual(self.native_xorchestrate(previous, current), "enabled=" + str(expected).lower())
+                self.assertEqual(self.native_xorchestrate(current, current), "enabled=false")
+                previous = current
 
     def test_same_source_head_behind_the_base_ignores_already_tested_merge_inputs(self):
         context = self.context(self.source, self.source)

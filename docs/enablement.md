@@ -54,6 +54,17 @@ refer to a remote engine; host filesystem space does not measure that engine's
 image storage. HTTP, proxy and certificate behavior must be checked on the
 actual route in the current execution environment.
 
+For Xorchestrate's native validation environment, use its
+[project preparation runner](xorchestrate.md). An explicit `prepare` action
+installs the project's locked dependencies into an owned external environment,
+checks project readiness and runs real scanner controls. Matching preparation
+can be reused; changed relevant inputs require preparation again. `status`
+observes retained evidence without executing project hooks, while `check` runs
+the current project's static suite. The runner requires the project's exact CI
+Python/uv baseline, checks the selected Python's SQLite gate and performs real
+tmux/PTY/socket/`/proc` operations. Its optional `--offline` mode requires the
+locked packages and pinned Git source to be cached already.
+
 Current summaries retain optional assurance locators from the accepted image
 record when present. Follow [image assurance and consumer verification](image-assurance.md)
 to check the signed digest and evidence before requiring that assurance. Historical
