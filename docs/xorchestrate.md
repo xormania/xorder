@@ -136,7 +136,11 @@ does not remove sibling state directories or overwrite the project's locks.
 
 The `Validate` workflow's `native-xorchestrate` job exercises the exact consumer
 revision outside the Xorder checkout. It derives the Python/uv selections from
-that consumer's CI configuration, runs fresh preparation and unchanged reuse,
+that consumer's CI configuration and provisions the exact uv-managed Python
+before passing its executable to the runner. The initial hosted setup-python
+3.12.16 build used SQLite 3.45.1 and failed the project's WAL gate; matching the
+Python patch number alone did not establish the required SQLite capability.
+The job runs fresh preparation and unchanged reuse,
 then prepares a second environment from the warmed cache inside a separate
 network namespace and runs the actual static suite offline. Project code in the
 offline replay runs as the original user and group after namespace creation.

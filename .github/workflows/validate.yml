@@ -239,6 +239,14 @@ jobs:
           version: ${{ steps.consumer-baseline.outputs.uv }}
           checksum: ${{ steps.consumer-baseline.outputs.uv_checksum }}
           enable-cache: false
+      - id: consumer-python
+        name: Install the consumer's managed Python baseline
+        env:
+          BASELINE_PYTHON: ${{ steps.consumer-baseline.outputs.python }}
+        run: |
+          export UV_PYTHON_INSTALL_DIR="$ACCEPTANCE_RUNTIME/python"
+          uv python install --no-bin "$BASELINE_PYTHON"
+          echo "python=$(uv python find --managed-python --no-project "$BASELINE_PYTHON")" >> "$GITHUB_OUTPUT"
       - name: Ensure the real native terminal prerequisite is installed
         run: |
           if ! command -v tmux >/dev/null; then
@@ -246,10 +254,13 @@ jobs:
             sudo apt-get install -y tmux
           fi
       - name: Exercise online preparation and a fresh network-isolated replay
+        env:
+          ACCEPTANCE_PYTHON: ${{ steps.consumer-python.outputs.python }}
         run: |
           python tests/fixtures/xorchestrate-runner/acceptance.py run \
             --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" \
-            --runtime "$ACCEPTANCE_RUNTIME" --output out/xorchestrate-acceptance
+            --runtime "$ACCEPTANCE_RUNTIME" --output out/xorchestrate-acceptance \
+            --python "$ACCEPTANCE_PYTHON"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

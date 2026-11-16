@@ -133,6 +133,33 @@ class ValidationWorkflowTests(unittest.TestCase):
         self.assertIn("needs.native-xorchestrate.result", aggregate)
         self.assertIn('"$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" != true', aggregate)
 
+    def test_native_consumer_passes_the_managed_interpreter_to_preparation(self):
+        source = WORKFLOW.read_text()
+        job = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
+        managed = re.search(r"^      - id: consumer-python\n(.*?)(?=^      - )", job, re.M | re.S)[1]
+        exercise = re.search(r"^      - name: Exercise online preparation.*?\n(.*?)(?=^      - )", job, re.M | re.S)[1]
+        self.assertIn("BASELINE_PYTHON: ${{ steps.consumer-baseline.outputs.python }}", managed)
+        self.assertIn("uv python install --no-bin", managed)
+        self.assertIn("uv python find --managed-python --no-project", managed)
+        self.assertNotIn("--upgrade", managed)
+        self.assertIn("ACCEPTANCE_PYTHON: ${{ steps.consumer-python.outputs.python }}", exercise)
+        script = textwrap.dedent(exercise.split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / "python"
+            output = root / "args.json"
+            executable.write_text("#!" + sys.executable + "\nimport json,os,sys\n"
+                                  "open(os.environ['CAPTURE_ARGS'],'w').write(json.dumps(sys.argv[1:]))\n")
+            executable.chmod(0o755)
+            managed_python = str(root / "owned-python/bin/python3.12")
+            env = {**os.environ, "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                   "CAPTURE_ARGS": str(output), "ACCEPTANCE_PYTHON": managed_python,
+                   "CONSUMER_PATH": str(root / "consumer"), "CONSUMER_REVISION": "a" * 40,
+                   "ACCEPTANCE_RUNTIME": str(root / "runtime")}
+            subprocess.run(["bash", "-e", "-c", script], env=env, check=True)
+            arguments = json.loads(output.read_text())
+            self.assertEqual(arguments[arguments.index("--python") + 1], managed_python)
+
 
 class IncrementalComparisonTests(unittest.TestCase):
     """Exercise real source and merge trees when the PR branch trails its base."""
