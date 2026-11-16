@@ -36,6 +36,7 @@ METADATA_SCHEMAS = {
 METADATA_PREFIXES = (
     "scripts/xorder/", "artifacts/", "profiles/", "discovery/", "lifecycle/", "tests/agent-evals/", "tests/scenarios/",
     "tests/fixtures/devenv/", "tests/fixtures/artifacts/", "examples/resources/", "examples/devenv/",
+    "examples/xorchestrate/", "tests/fixtures/xorchestrate-runner/",
     "tests/test_", "tests/requirements/",
 )
 # These paths previously selected no image unless they were real COPY inputs.

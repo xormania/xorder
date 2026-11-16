@@ -44,9 +44,16 @@ class MetadataImageSelectionTests(unittest.TestCase):
             self.assertEqual(affected_suites(paths, self.defs, self.root), {})
             self.assertEqual(affected_suites([], self.defs, self.root), {})
 
+    def test_native_xorchestrate_runner_does_not_select_container_checks(self):
+        paths = ["examples/xorchestrate/runner.py", "tests/test_xorchestrate_runner.py",
+                 "tests/fixtures/xorchestrate-runner/proof.py", "docs/xorchestrate.md"]
+        with patch("components._files_current", side_effect=AssertionError("Container payloads were hashed")):
+            self.assertEqual(affected_suites(paths, self.defs, self.root), {})
+
     def test_component_copy_of_metadata_and_test_paths_still_checks_consumer(self):
         original = self.component_recipe.read_text()
-        for name in ("README.md", "tests/test_example.py", "scripts/setup_checks.py"):
+        for name in ("README.md", "tests/test_example.py", "scripts/setup_checks.py",
+                     "examples/xorchestrate/runner.py", "tests/fixtures/xorchestrate-runner/proof.py"):
             with self.subTest(name=name):
                 source = self.root / name
                 source.parent.mkdir(parents=True, exist_ok=True)
@@ -65,7 +72,8 @@ class MetadataImageSelectionTests(unittest.TestCase):
         self.assertEqual(affected_suites(["docs/component.Dockerfile"], self.defs, self.root), {"app/line": ["full"]})
 
     def test_image_copy_of_metadata_path_still_checks_consumer(self):
-        for name in ("README.md", "tests/test_example.py", "scripts/setup_checks.py"):
+        for name in ("README.md", "tests/test_example.py", "scripts/setup_checks.py",
+                     "examples/xorchestrate/runner.py", "tests/fixtures/xorchestrate-runner/proof.py"):
             with self.subTest(name=name):
                 source = self.root / name
                 source.parent.mkdir(parents=True, exist_ok=True)
@@ -91,6 +99,7 @@ class MetadataImageSelectionTests(unittest.TestCase):
 
     def test_shared_and_unknown_runtime_helpers_still_check_images(self):
         for path in ("scripts/artifact_identity.py", "scripts/components.py", "scripts/unknown-runtime.py",
+                     "examples/unknown-runtime/runner.py", "tests/fixtures/xorchestrate-unknown/check.py",
                      "schemas/component.schema.json", ".github/workflows/validate.yml"):
             with self.subTest(path=path):
                 self.assertEqual(affected_suites([path], self.defs, self.root), {"app/line": ["full"]})

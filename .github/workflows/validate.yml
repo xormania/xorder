@@ -45,6 +45,7 @@ jobs:
       has_resources: ${{ steps.resources.outputs.has_resources }}
       has_environments: ${{ steps.resources.outputs.has_environments }}
       has_application: ${{ steps.application.outputs.enabled }}
+      has_xorchestrate: ${{ steps.xorchestrate.outputs.enabled }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -109,6 +110,21 @@ jobs:
           changed = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines() if base else None
           prefixes = ("scripts/xorder/", "artifacts/configuration/", "artifacts/context/", "profiles/", "schemas/resource", "schemas/catalog-v2", "schemas/profile", "schemas/resolution-lock", "schemas/installation-receipt", "tests/fixtures/artifacts/application/")
           exact = {"scripts/xorder_cli.py", "tests/requirements/resource-application.json", ".github/workflows/validate.yml"}
+          enabled = changed is None or any(path in exact or path.startswith(prefixes) for path in changed)
+          print("enabled=" + str(enabled).lower())
+          PY
+      - id: xorchestrate
+        env:
+          BASE_SHA: ${{ steps.validation-base.outputs.sha }}
+          COMPARE_HEAD: ${{ steps.validation-base.outputs.head }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, subprocess
+          base = os.environ.get("BASE_SHA", "")
+          head = os.environ.get("COMPARE_HEAD", "HEAD")
+          changed = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines() if base else None
+          prefixes = ("examples/xorchestrate/", "tests/fixtures/xorchestrate-runner/")
+          exact = {"tests/test_xorchestrate_runner.py", ".github/workflows/validate.yml"}
           enabled = changed is None or any(path in exact or path.startswith(prefixes) for path in changed)
           print("enabled=" + str(enabled).lower())
           PY
@@ -190,6 +206,57 @@ jobs:
           name: application-${{ matrix.surface }}
           path: out/application-*
           if-no-files-found: ignore
+  native-xorchestrate:
+    needs: [metadata, fast-checks]
+    if: needs.metadata.outputs.has_xorchestrate == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      CONSUMER_REVISION: 7f226dc27cb5e2e93b27645a164f3a2b1389145e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Fetch the exact public consumer revision
+        run: |
+          CONSUMER_PATH="$RUNNER_TEMP/xorchestrate-consumer"
+          echo "CONSUMER_PATH=$CONSUMER_PATH" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_RUNTIME=$RUNNER_TEMP/xorchestrate-native-runtime" >> "$GITHUB_ENV"
+          git init "$CONSUMER_PATH"
+          git -C "$CONSUMER_PATH" fetch --depth 1 https://github.com/xormania/xorchestrate.git "$CONSUMER_REVISION"
+          git -C "$CONSUMER_PATH" checkout --detach FETCH_HEAD
+          test "$(git -C "$CONSUMER_PATH" rev-parse HEAD)" = "$CONSUMER_REVISION"
+      - id: consumer-baseline
+        name: Read the consumer's exact CI tool selections
+        run: python3 tests/fixtures/xorchestrate-runner/acceptance.py baseline --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ steps.consumer-baseline.outputs.python }}
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: ${{ steps.consumer-baseline.outputs.uv }}
+          checksum: ${{ steps.consumer-baseline.outputs.uv_checksum }}
+          enable-cache: false
+      - name: Ensure the real native terminal prerequisite is installed
+        run: |
+          if ! command -v tmux >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y tmux
+          fi
+      - name: Exercise online preparation and a fresh network-isolated replay
+        run: |
+          python tests/fixtures/xorchestrate-runner/acceptance.py run \
+            --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" \
+            --runtime "$ACCEPTANCE_RUNTIME" --output out/xorchestrate-acceptance
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: native-xorchestrate-acceptance
+          path: out/xorchestrate-acceptance/
+          if-no-files-found: ignore
+          retention-days: 14
   resources:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_resources == 'true'
@@ -314,7 +381,7 @@ jobs:
           if-no-files-found: ignore
   checks:
     if: always()
-    needs: [fast-checks, attribution, metadata, unit-tests, images, resources, environments, application]
+    needs: [fast-checks, attribution, metadata, unit-tests, images, resources, environments, application, native-xorchestrate]
     runs-on: ubuntu-24.04
     steps:
       - env:
@@ -327,6 +394,8 @@ jobs:
           RESOURCES: ${{ needs.resources.result }}
           ENVIRONMENTS: ${{ needs.environments.result }}
           APPLICATION: ${{ needs.application.result }}
+          XORCHESTRATE: ${{ needs.native-xorchestrate.result }}
+          XORCHESTRATE_SELECTED: ${{ needs.metadata.outputs.has_xorchestrate }}
         run: |
           test "$ATTRIBUTION" = success
           test "$FAST_CHECKS" = success
@@ -336,3 +405,4 @@ jobs:
           [[ "$RESOURCES" == success || "$RESOURCES" == skipped ]]
           [[ "$ENVIRONMENTS" == success || "$ENVIRONMENTS" == skipped ]]
           [[ "$APPLICATION" == success || "$APPLICATION" == skipped ]]
+          [[ "$XORCHESTRATE" == success || ("$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" != true) ]]
