@@ -1,21 +1,45 @@
 # xorder architecture and discovery
 
-xorder makes prepared tools, environments, configuration, and context available
-to computers and containers. The public repository URL is the discovery entry
-point: [README](../README.md) → catalog or resource page → direct usage and
+xorder builds, verifies, publishes and maintains prepared container images.
+The public repository URL is the discovery entry point:
+[README](../README.md) → image catalog or usage page → direct usage and
 readiness instructions. GitHub rendering and raw files carry the same information.
 An installed CLI, skill, plugin, or separate discovery service is unnecessary.
 
-## Current capability and extension boundaries
+## Image supply and consumer ownership
+
+Xorder owns image recipes, packaged tools, component reuse, download/build
+caches, container startup and advertised capabilities. It publishes exact
+identities with measured inventories, verification, provenance, assurance and
+support information. Consumers select those identities and own their application
+dependencies, service configuration, state, native environments and tests.
+
+Small Xorder-owned subjects prove image behavior: compiling source, performing a
+database round trip, serving HTTP, interacting with a browser or exchanging data
+through tmux. Consumer application suites and snapshots belong in the consumer's
+validation. A named project image can still be an Xorder product; its name does
+not make Xorder responsible for operating that project.
+
+Tools can include substantial prepared dependencies or templates. A tool owned
+elsewhere may be packaged at an exact version; Xorder then owns its image
+packaging and advertised operation. Application policy and lifecycle remain
+with the tool or consumer owner. Image support policy and its authorized
+enforcement remain in force as integration ownership changes.
+
+[Responsibility boundaries](responsibility-boundary.md) maps the existing code
+to this scope and describes the transfer sequence. The sections below document
+the current implementation, including compatibility surfaces awaiting transfer.
+
+## Existing discovery and compatibility surfaces
 
 The compact [current index](../discovery.json) and
 [capability guide](capabilities.md) list the newest available verified releases.
 The typed [catalog](../catalog-v2.json) retains every accepted release. The
 detailed [image view](../catalog.json), existing image definitions, records,
-commands, GHCR references, and usage remain available. Additional kinds extend
-that structure as verified releases enter the ledger:
+commands, GHCR references, and usage remain available. The earlier broader
+resource implementation also exposes the following kinds:
 
-| Kind | Owns |
+| Kind | Current implementation |
 | --- | --- |
 | Image | OCI identity, platform inventory, toolchain and container behavior |
 | Binary | Downloaded bytes, upstream version, checksum, dependencies and invocation |
@@ -24,10 +48,16 @@ that structure as verified releases enter the ledger:
 | Context | Audience, task/harness scope, source and selected guidance payload |
 
 A profile composes resources for an explicit target; it is not another software
-payload. The authored first examples include Composer, whose PHAR requires PHP,
-and a devenv PHP/Symfony environment. Devenv retains responsibility for native
-package resolution and process lifecycle. Neither is available merely because
-its definition or usage instructions are present in the source tree.
+payload. Existing products include Composer, whose PHAR requires PHP, and a
+devenv PHP/Symfony environment. Devenv retains responsibility for native package
+resolution and process lifecycle. Their definitions alone never establish
+availability; verified release evidence does.
+
+Independent binary, native environment, configuration and context products,
+general resource composition and target-file application are outside Xorder's
+image scope. Their current code, releases and interfaces remain during transfer.
+Do not add new non-image products or treat the existing kind model as an
+expansion plan. No removal or completed transfer is implied by this boundary.
 
 ## Separate intent, evidence, selection, and target state
 
@@ -40,28 +70,28 @@ its definition or usage instructions are present in the source tree.
 | Resolution lock | Exact releases and target assumptions chosen before applying |
 | Installation receipt | Owned target files, hashes and activation/recovery state |
 
-Maintain common material once and assign it selectively. This is the useful
-fleet pattern: reusable defaults plus explicit assignments. Public profiles
-contain reusable examples; private machine inventories and user-specific values
-can be supplied separately. Catalog discovery never activates every context
-bundle, and delivering an instruction file does not establish that a model
-followed it. Current user direction remains authoritative.
+The existing profile and application system assigns reusable material
+selectively. Public profiles contain examples; private machine inventories and
+user-specific values can be supplied separately. Catalog discovery never
+activates every context bundle, and delivering an instruction file does not
+establish that a model followed it. Current user direction remains authoritative.
 
-Use a small common model with validated kind-specific fields. An OCI digest,
+The current common model validates kind-specific fields. An OCI digest,
 HTTP checksum, native environment lock and installation receipt have different
 roles. Preserve them rather than pretending all resources install alike.
 
 ## One model, generated compatibility views
 
-Existing image definitions live in `images/`, with measured release evidence in
-`release-records/`. Keep those paths and historical facts intact. New resource
-definitions belong under `artifacts/<kind>/<name>/`; reusable compositions belong
+Image definitions live in `images/`, with measured release evidence in
+`release-records/`. Keep those paths and historical facts intact. Existing
+non-image definitions live under `artifacts/<kind>/<name>/`; compositions live
 in `profiles/`. These definitions are authored intent and need verified release
-records before selection can offer them.
+records before selection can offer them. They remain compatibility inputs
+pending transfer rather than locations for new product lines.
 
-Normalize image data and new resources into one shared model. Generate the
-existing schema-1 `catalog.json` as the image compatibility view and a compact
-typed [catalog-v2.json](../catalog-v2.json) for broader discovery. The small
+The generator normalizes image data and existing resources into one shared
+model. It produces the schema-1 `catalog.json` image view and the typed
+[catalog-v2.json](../catalog-v2.json) compatibility view. The small
 `discovery.json` and `docs/capabilities.md` are generated current-release views.
 Their navigation belongs in `discovery/organization.json`, separate from released
 input definitions; grouping cannot change artifact bytes, identity or availability.
@@ -159,16 +189,14 @@ Private overlay files are not inputs to public catalog generation.
 
 ## Delivery and application
 
-Keep current image package names in GHCR. Use GitHub Releases initially for
-downloadable artifacts and bundles. Locations may gain CDN mirrors later;
-content identity remains an exact digest or checksum. Reuse release orchestration
-and evidence while each kind owns its build and behavior checks.
+Keep current image package names in GHCR. The existing non-image implementation
+uses GitHub Releases for downloadable artifacts and bundles; those published
+identities and evidence remain intact during transfer.
 
-Resolve exact selected resources before applying them. Stage and verify bytes,
-materialize only selected scopes, track owned files, and preserve locally edited
-or unrelated destinations. Native backends own their services. Installing context
-or changing configuration is independent of building a toolchain. Optional
-helpers use these same operations; direct documented use remains available.
+The existing application helper resolves exact selected resources, stages and
+verifies bytes, materializes selected scopes, tracks owned files, and preserves
+locally edited or unrelated destinations. Native backends own their services.
+This target-file lifecycle is a compatibility surface awaiting transfer.
 The [application guide](application.md) describes the implemented helper's target
 locks, receipts, repeated application, conflicts, recovery, rollback, and explicit
 removal. Runtime readiness checks remain separate from file receipt verification.
