@@ -169,7 +169,7 @@ def publish(line, source, destination, parent=None, browser_evidence=None):
             verify(line, artifact, inventory_path)
             return
         if browser_evidence is None:
-            raise ValueError("Browser publication requires anonymous parity evidence")
+            raise ValueError("Browser publication requires anonymous capability evidence")
         from browser_release import accepted_evidence
         browser_proof = accepted_evidence(line, source, artifact, browser_evidence,
                                          definition=d, input_fingerprint=fp)

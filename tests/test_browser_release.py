@@ -1,5 +1,4 @@
 """Anonymous browser verification and exact evidence binding before publication."""
-import importlib.util
 import copy
 import json
 import os
@@ -26,6 +25,7 @@ class BrowserReleaseTests(unittest.TestCase):
         return {"line": self.line, "source": self.source, "artifact": self.artifact,
                 "version": definitions()[self.line]["revision"],
                 "input_fingerprint": fingerprint(definitions()[self.line]),
+                "verification_contract": browser_release.VERIFICATION_CONTRACT,
                 "fixture_sha256": browser_release.fixture_hash(self.line)}
 
     def test_unnecessary_revision_is_refused_before_reservation_or_docker(self):
@@ -77,7 +77,7 @@ class BrowserReleaseTests(unittest.TestCase):
             build.assert_not_called()
             docker.assert_called_once_with(['docker', 'pull', self.artifact], check=True)
 
-    def test_staging_never_executes_consumers_and_anonymous_verification_binds_the_digest(self):
+    def test_staging_never_executes_fixtures_and_anonymous_verification_binds_the_digest(self):
         inventory = record(self.line)["platforms"][0]["inventory"]
         inventory["runtime_version"] = "1.58.2"
         def verify(_line, _image, output):
@@ -89,14 +89,13 @@ class BrowserReleaseTests(unittest.TestCase):
                 patch.object(browser_release, "resolve", side_effect=[None, None, {"digest": "sha256:" + "d" * 64}, {"digest": "sha256:" + "d" * 64}]), \
                 patch.object(browser_release, "build") as build, \
                 patch.object(browser_release.subprocess, "run") as docker, \
-                patch.object(browser_release, "public_parity_application", return_value=("https://github.com/xormania/uxor.git", "a" * 40, "1.58.2", "ghcr.io/xormania/uxor-dev@sha256:" + "b" * 64)), \
-                patch.object(browser_release, "verify", side_effect=verify) as consumer:
+                patch.object(browser_release, "verify", side_effect=verify) as capabilities:
             candidate, evidence = Path(folder) / "candidate.json", Path(folder) / "verified.json"
             browser_release.stage(self.line, self.source, candidate)
             build.assert_called_once()
-            consumer.assert_not_called()
+            capabilities.assert_not_called()
             browser_release.verify_candidate(candidate, evidence)
-            consumer.assert_called_once_with(self.line, self.artifact, evidence.with_suffix(".inventory.json"))
+            capabilities.assert_called_once_with(self.line, self.artifact, evidence.with_suffix(".inventory.json"))
             proof = browser_release.accepted_evidence(self.line, self.source, self.artifact, evidence)
             self.assertEqual(proof["status"], "passed")
             self.assertEqual(proof["inventory"], inventory)
@@ -141,19 +140,18 @@ class BrowserReleaseTests(unittest.TestCase):
                 patch.object(release, "records", return_value=[]), \
                 patch.object(release, "release_asset", return_value=None), \
                 patch.object(release, "resolve", side_effect=[None, resolved, resolved, resolved]), \
-                patch.object(release, "verify") as consumer, patch.object(release, "build") as build, \
+                patch.object(release, "verify") as capabilities, patch.object(release, "build") as build, \
                 patch.object(release, "image_measurements", return_value=facts), \
                 patch.object(release, "run"), patch.object(release, "gh", return_value="[[]]"), \
                 patch.object(release.subprocess, "check_output", side_effect=lambda args, **kw: json.dumps(labels) if args[0] == "docker" else ""), \
                 patch.object(release, "promote_exact"), patch.object(release, "finalize_release"), \
                 patch.object(release, "stage_assurance", return_value={"receipt_url": "https://github.com/xormania/xorder/releases/download/" + quote(self.line + "/v" + proof["version"], safe="") + "/assurance.json", "receipt_sha256": "a" * 64, "predicate_type": "https://github.com/xormania/xorder/assurance/v1"}), \
                 patch("image_assurance.verify_record"), \
-                patch.object(browser_release, "public_parity_application", return_value=("https://github.com/xormania/uxor.git", "a" * 40, "1.58.2", "ghcr.io/xormania/uxor-dev@sha256:" + "b" * 64)), \
                 patch.dict(os.environ, {"GH_TOKEN": "test-only-token", "GITHUB_REPOSITORY": "xormania/xorder", "GITHUB_RUN_ID": "42"}):  # nosec B105 # synthetic credential test canary
             evidence = Path(folder) / "proof.json"
             evidence.write_text(encoded(proof))
             published = release.publish(self.line, self.source, Path(folder) / "release", browser_evidence=evidence)
-            consumer.assert_not_called()
+            capabilities.assert_not_called()
             build.assert_not_called()
             self.assertEqual(published["verification"]["completed_at"], proof["completed_at"])
             self.assertEqual(published["platforms"][0]["metrics"]["verification_seconds"], 7)
@@ -161,24 +159,62 @@ class BrowserReleaseTests(unittest.TestCase):
             if component_facts:
                 self.assertEqual(published["build_components"], component_facts)
 
-    def test_controlled_compose_ignores_consumer_infrastructure_and_rejects_host_symlinks(self):
-        spec = importlib.util.spec_from_file_location("parity_profile", ROOT / "examples/uxor/runner.py")
-        runner = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(runner)
-        with tempfile.TemporaryDirectory() as folder:
-            workspace = Path(folder) / "checkout"
-            for name in ("Caddyfile", "conf.d/10-app.ini", "conf.d/20-app.dev.ini"):
-                path = workspace / "demo/frankenphp" / name
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.touch()
-            command = runner.compose_command(workspace, "parity", {"XORDER_PARITY_FIXTURE": "1"})
-            self.assertNotIn(str(workspace / "demo/compose.yaml"), command)
-            self.assertNotIn(str(workspace / "demo/compose.override.yaml"), command)
-            self.assertEqual(command[command.index("--env-file") + 1], os.devnull)
-            target = workspace / "demo/frankenphp/Caddyfile"
-            target.unlink()
-            outside = Path(folder) / "host-config"
-            outside.touch()
-            target.symlink_to(outside)
-            with self.assertRaisesRegex(ValueError, "disposable consumer checkout"):
-                runner.compose_command(workspace, "parity", {"XORDER_PARITY_FIXTURE": "1"})
+    def test_fixture_hash_binds_every_owned_subject_and_not_consumer_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "tests/fixtures/playwright/capabilities"
+            fixture.mkdir(parents=True)
+            entrypoint = root / "scripts/verify-image.sh"
+            entrypoint.parent.mkdir()
+            entrypoint.write_text("owned entry point")
+            checker = fixture / "check.cjs"
+            checker.write_text("owned checker")
+            subject = fixture / "render.html"
+            subject.write_text("owned rendering subject")
+            consumer = fixture.parent / "consumer.json"
+            consumer.write_text("external compatibility pin")
+            with patch.object(browser_release, "ROOT", root):
+                before = browser_release.fixture_hash(self.line)
+                consumer.write_text("another compatibility pin")
+                self.assertEqual(browser_release.fixture_hash(self.line), before)
+                for path in (entrypoint, checker, subject):
+                    original = path.read_text()
+                    path.write_text(original + " changed")
+                    self.assertNotEqual(browser_release.fixture_hash(self.line), before, str(path))
+                    path.write_text(original)
+                subject.chmod(0o755)
+                self.assertNotEqual(browser_release.fixture_hash(self.line), before)
+                subject.chmod(0o644)
+                self.assertEqual(browser_release.fixture_hash(self.line), before)
+                (fixture / "another.css").write_text("body { color: red }")
+                self.assertNotEqual(browser_release.fixture_hash(self.line), before)
+
+    def test_legacy_parity_evidence_cannot_authorize_owned_capability_publication(self):
+        proof = dict(self.proposal(), status="passed", verification_seconds=2)
+        proof.pop("verification_contract")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "legacy-parity.json"
+            path.write_text(encoded(proof))
+            with self.assertRaisesRegex(ValueError, "exact publication inputs"):
+                browser_release.accepted_evidence(self.line, self.source, self.artifact, path)
+
+    def test_failed_capability_check_cannot_write_success_evidence(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {}, clear=True), \
+                patch.object(browser_release.subprocess, "run"), \
+                patch.object(browser_release, "verify", side_effect=RuntimeError("rendering failed")):
+            candidate = Path(directory) / "candidate.json"
+            evidence = Path(directory) / "verification.json"
+            candidate.write_text(encoded(self.proposal()))
+            with self.assertRaisesRegex(RuntimeError, "rendering failed"):
+                browser_release.verify_candidate(candidate, evidence)
+            self.assertFalse(evidence.exists())
+
+    def test_stale_fixture_or_contract_is_rejected_before_docker(self):
+        for changed in ({"fixture_sha256": "0" * 64}, {"verification_contract": "consumer-parity"}):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as directory, \
+                    patch.dict(os.environ, {}, clear=True), patch.object(browser_release.subprocess, "run") as docker:
+                candidate = Path(directory) / "candidate.json"
+                candidate.write_text(encoded(dict(self.proposal(), **changed)))
+                with self.assertRaisesRegex(ValueError, "verifying checkout"):
+                    browser_release.verify_candidate(candidate, Path(directory) / "proof.json")
+                docker.assert_not_called()

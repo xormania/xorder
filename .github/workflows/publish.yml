@@ -316,7 +316,7 @@ jobs:
         with:
           name: browser-candidate-${{ steps.key.outputs.line }}
           path: out/candidate
-      - name: Verify the public digest with controlled consumer infrastructure
+      - name: Verify image capabilities at the public digest
         run: python scripts/browser_release.py verify out/candidate/browser-candidate.json --output out/browser-verification.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

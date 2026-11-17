@@ -11,16 +11,11 @@ or send its `playwright-bump` repository dispatch with `consumer_ref` in the
 payload. The workflow resolves that ref to an immutable commit and requires
 the manifest and lock to agree. It never upgrades to an unrelated latest version.
 
-The canonical application family starts with authored `uxor-dev` 1.0.0 intent.
-Until its verified release is accepted, the migration fixture names that exact
-resource and revision without claiming a public digest. Source validation builds
-and verifies the declared application and its exact parent locally, binds parity
-to the resulting Docker image ID, and marks the parity receipt
-`local-source-validation`. It still executes the full committed screenshot
-comparison. Publication rejects that override and requires the same exact
-application revision in the accepted public catalog before browser verification
-can authorize a release. Newer application revisions never replace this pin
-implicitly.
+The consumer lock is a version demand signal. Preparing or accepting a browser
+image does not require an application image or an application test suite.
+Xorder verifies the browser image's capabilities with its own small subjects;
+the consuming project tests its application and screenshot baselines against
+the selected image digest.
 
 Each runtime minor line has its own npm lock, copied and fingerprinted separately.
 Changing one line does not change another line's package inputs. A patch bump
@@ -35,14 +30,24 @@ base or Debian package refresh therefore reuses the completed payload without
 fetching the browser archives again. Updating the consumer's Playwright pin
 refreshes that line's payload component; another minor line keeps its existing
 component and lock. This component reuse does not replace the final image's
-all-engine launch and screenshot parity checks.
+owned offline all-engine rendering and interaction checks.
 
-Every candidate keeps RGB subpixel rendering, launches Chromium/Firefox/WebKit
-offline, and compares Chromium screenshots with committed baselines at its
-own pinned consumer commit and accepted application-image digest. The watcher
-records that digest when preparing the proposal; later catalog updates do not
-change an existing fixture or retry. Baseline updates and test retries are disabled for
-that parity run. A mismatch stops acceptance and retains the report/diff files.
+Every candidate keeps RGB subpixel rendering and launches Chromium, Firefox and
+WebKit without network access. The owned fixture checks DOM interaction, layout,
+font availability and rendered screenshot pixels. Verification runs against the
+public candidate digest on an anonymous runner with no registry login or
+publication token. Finalization requires evidence bound to that digest, image
+inputs and every owned fixture file; a failing check prevents acceptance.
+Historical published releases retain their original verification records.
+
+The previous UXor application parity fixture remains available for explicit
+compatibility investigation during migration. It is separate from image
+readiness and publication. Its consumer commit, accepted application image,
+application configuration and screenshot baselines belong to the consuming
+project's compatibility check. Existing legacy fixtures retain their complete
+application pins. New files under `tests/fixtures/playwright/consumers/` are
+version-demand provenance only; they deliberately contain no application image
+and cannot serve as legacy parity inputs.
 
 Merge the passing source PR, then review the normal publication/catalog PR.
 After catalog acceptance, the runner discovers the matching verified digest

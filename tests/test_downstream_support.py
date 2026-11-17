@@ -504,28 +504,18 @@ class TrustedSourceProofTests(unittest.TestCase):
         support.write_source_proof(self.proof_path, self.observed, self.source)
         self.env = {"XORDER_SOURCE_VALIDATION_PROOF": str(self.proof_path)}
 
-    def test_builder_authors_actual_allowlist_for_publication_and_discards_inherited_proof(self):
+    def test_image_capability_checks_do_not_invoke_consumer_policy_exemptions(self):
         import build
-        candidates = [("uxor-dev/8.5-trixie", "php"), ("playwright-browser/1.58-trixie", "browser")]
-        for line, service in candidates:
+        for line in ("uxor-dev/8.5-trixie", "playwright-browser/1.58-trixie"):
             with self.subTest(line=line), patch.dict("os.environ", {
                     "XORDER_SOURCE_VALIDATION_PROOF": "/untrusted/inherited.json", "XORDER_PARITY_LOCAL_APPLICATION": "stale"}), \
-                    patch.object(support, "source_commit", return_value=self.source), \
-                    patch.object(support, "observe_source_images", return_value=[{"service": service, "image_id": self.ids[service]}]), \
+                    patch.object(support, "observe_source_images") as observe, \
                     patch.object(build, "inspect"), patch.object(build.subprocess, "run") as run:
-                def verify_fixture(arguments, **kwargs):
-                    path = Path(kwargs["env"]["XORDER_SOURCE_VALIDATION_PROOF"])
-                    self.assertNotEqual(str(path), "/untrusted/inherited.json")
-                    self.assertTrue(path.is_file())
-                    value = support.read_json(path)
-                    self.assertEqual(value["source_commit"], self.source)
-                    self.assertEqual(value["images"], [{"service": service, "image_id": self.ids[service]}])
-                    if service == "browser":
-                        self.assertNotIn("XORDER_PARITY_LOCAL_APPLICATION", kwargs["env"])
-                run.side_effect = verify_fixture
-                # source_validation defaults false, as it does for publication.
                 build.verify(line, IDENTITY, self.root / "inventory.json")
                 run.assert_called_once()
+                observe.assert_not_called()
+                self.assertNotIn("XORDER_SOURCE_VALIDATION_PROOF", run.call_args.kwargs["env"])
+                self.assertNotIn("XORDER_PARITY_LOCAL_APPLICATION", run.call_args.kwargs["env"])
 
     def test_trusted_fixture_adds_companion_only_after_main_candidate_matches(self):
         builder = self.root / "builder.json"

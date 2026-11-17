@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Xorder rendering subject</title>
+<style>
+body { margin: 0; background: white; }
+#color { width: 128px; height: 128px; background: rgb(12, 34, 56); }
+#text { font: 20px monospace; }
+</style>
+<div id="color"></div><p id="text">Image tools: café 123</p>
+<button id="proof">Ready</button><p id="result"></p>
+<script>
+document.querySelector('#proof').onclick = () => {
+  document.querySelector('#result').textContent = 'passed';
+};
+</script></html>

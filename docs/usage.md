@@ -200,10 +200,12 @@ or, when explicitly empty, direct egress. Include service names, localhost and 1
 connections. Host networking policy is not automatically inherited by a Docker
 container. Run the readiness recipe to verify downloads inside the selected image.
 
-Browser parity executes a pinned external consumer checkout in an isolated
-environment. That anonymous verifier accepts credential-free proxy URLs and
-the supplied CA, and rejects proxy URLs containing a username or password before
-consumer execution. Use a credential-free proxy endpoint for browser parity.
+Browser image readiness executes Xorder's own rendering subject with networking
+disabled; no application checkout or dependency download is required. Publication
+verifies the exact public candidate digest on a separate anonymous runner.
+The retained optional consumer parity script is a project compatibility aid; it
+still requires credential-free proxy URLs and rejects proxy credentials before
+executing the external checkout.
 
 For a proxy that signs HTTPS with private CAs, mount **a PEM CA certificate or
 multi-certificate PEM bundle** read-only and set `LIBRARY_CA_FILE` to its absolute

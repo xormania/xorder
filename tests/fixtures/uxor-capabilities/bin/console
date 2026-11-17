@@ -1,0 +1,10 @@
+<?php
+// Minimal owned config response for the image's existing Tailwind seed helper.
+$config = ['binary_version' => trim(file_get_contents('/opt/tailwind/version')),
+           'binary' => '', 'binary_platform' => 'auto'];
+switch (getenv('TAILWIND_FIXTURE_CASE')) {
+    case 'version': $config['binary_version'] = 'v0.0.0'; break;
+    case 'binary': $config['binary'] = '/custom/tailwindcss'; break;
+    case 'platform': $config['binary_platform'] = 'linux-arm64'; break;
+}
+echo json_encode(['symfonycasts_tailwind' => $config], JSON_THROW_ON_ERROR);

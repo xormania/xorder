@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+assert.equal(Number(process.versions.node.split('.')[0]), 22, 'Declared Node runtime');
+const text = fs.readFileSync(path.join(__dirname, 'subject.html'), 'utf8');
+const digest = crypto.createHash('sha256').update(text).digest('hex');
+assert.equal(digest.length, 64);
+fs.writeFileSync('node-proof.txt', digest + '\n');
+assert.equal(fs.readFileSync('node-proof.txt', 'utf8').trim(), digest);
+const cache = process.env.XDG_CACHE_HOME || path.join(process.env.HOME, '.cache');
+fs.mkdirSync(cache, {recursive: true});
+fs.writeFileSync(path.join(cache, 'node-capability-proof'), digest);
+assert.equal(fs.readFileSync(path.join(cache, 'node-capability-proof'), 'utf8'), digest);
+console.log('Node and npm executed a local locked package and wrote workspace/cache files');
