@@ -1,10 +1,11 @@
-# Xorchestrate validation preparation
+# Xorchestrate validation preparation (transitional)
 
 The [native project runner](../examples/xorchestrate/runner.py) prepares an owned
 Xorchestrate validation environment and verifies its scanner before reporting
 success. It follows the UXor runner's preparation, input identity, readiness and
-receipt pattern. Xorchestrate owns dependency versions and validation semantics;
-Xorder supplies the explicit preparation and reuse path.
+receipt pattern. Xorchestrate owns dependency versions, native preparation and
+validation semantics. This existing runner remains available here during its
+transfer to the consumer. It is outside Xorder's image acceptance contract.
 
 ## Supported target and ownership
 
@@ -132,9 +133,10 @@ rerun `prepare` with the same workspace, state directory, interpreter, uv and tm
 The runner re-evaluates the owned environment and verifies it again. Recovery
 does not remove sibling state directories or overwrite the project's locks.
 
-## Native CI acceptance
+## Manual native compatibility check
 
-The `Validate` workflow's `native-xorchestrate` job exercises the exact consumer
+The separate [Manual Xorchestrate native compatibility workflow](../.github/workflows/validate-xorchestrate.yml)
+exercises the exact consumer
 revision outside the Xorder checkout. It derives the Python/uv selections from
 that consumer's CI configuration and provisions the exact uv-managed Python
 before passing its executable to the runner. The initial hosted setup-python
@@ -147,9 +149,19 @@ offline replay runs as the original user and group after namespace creation.
 
 The `native-xorchestrate-acceptance` artifact retains the consumer revision,
 dependency hashes, tool selections, user identity, namespace observations and
-runner results. Runner/fixture/test changes select this job; documentation-only
-changes do not repeat the native acceptance run. The required `checks` aggregate
-requires success whenever the job is selected.
+runner results. Start it explicitly from the repository's Actions page using
+**Run workflow**, selecting the branch to inspect. It has no PR, push, scheduled
+or reusable-workflow trigger and is outside the required Xorder `checks`
+aggregate. Xorder still checks the retained runner's local unit tests and static
+correctness. Its consumer checkout, tool provisioning and scanner run happen
+only in this manual workflow.
+GitHub exposes **Run workflow** after this manual trigger reaches the default
+branch.
+
+This is consumer compatibility evidence, not image readiness evidence: the job
+does not pull or run an Xorder image. Success cannot establish an image digest,
+its Python/SQLite contents or behavior under runtime mounts. Image acceptance
+must exercise the selected image itself.
 
 ## Consumer handoff
 
@@ -157,8 +169,14 @@ The initial integration contract follows Xorder `09f1489c` and Xorchestrate
 `7f226dc2`; current checkout inputs are recorded in the preparation receipt.
 This is a source runner, not a new catalog resource or published image.
 
-Consumers must route their actual worktree/session startup through `prepare`
-and use `check` for current static validation. Existing entry paths and active
+Consumers using this transitional runner route their actual worktree/session
+startup through `prepare` and use `check` for current static validation. Existing entry paths and active
 sessions do not adopt this route automatically. Successful scanner controls
 establish the requested local scanner capability; native agent authentication,
 application behavior and other test suites retain their independent checks.
+
+The next handoff transfers `examples/xorchestrate/`, its acceptance fixture,
+runner unit tests and these usage instructions to Xorchestrate's chosen entry
+point. Preserve existing state-directory ownership and receipt compatibility
+during that transfer. The manual workflow can then move with the runner; an
+image-backed route, if needed, requires its own exact-image verification first.

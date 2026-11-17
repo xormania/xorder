@@ -167,7 +167,6 @@ runtime's setup, tool pins, steps, caching, timeouts, or artifact retention:
 
 | Changed workflow | Runtime checks selected |
 | --- | --- |
-| `validate-xorchestrate.yml` | Xorchestrate native preparation and offline acceptance |
 | `validate-application.yml` | Resource application on host and container |
 | `validate-resources.yml` | Binary, configuration, and context resources |
 | `validate-environments.yml` | Native environments |
@@ -181,6 +180,12 @@ event handling, selection, validated reuse, dependencies, and the required
 `checks` aggregate. Called workflows use this same source revision and preserve
 their own matrices and read-only permissions; they do not create independent PR
 runs or bypass the aggregate.
+
+`validate-xorchestrate.yml` is a transitional manual consumer compatibility
+workflow, outside this coordinator and its required aggregate. It prepares a
+native Xorchestrate environment, so it supplies no Xorder image acceptance
+evidence. Its local runner code retains unit/static checks while ownership moves
+to the consumer; see [the handoff](xorchestrate.md#consumer-handoff).
 
 Changes to shared image selection/build helpers and unknown workflows still
 exercise all images. Adding a new runtime to the shared coordinator deliberately
@@ -209,7 +214,8 @@ python3 scripts/build.py php-dev/8.5-trixie image-library-check:dev \
 ```
 
 Manual `Validate` runs and the weekly Tuesday 06:23 UTC schedule exercise every
-image, resource, environment, and application surface. Unchanged available
+image, legacy resource, native resource environment, and resource-application
+surface. They do not provision consumer-native Xorchestrate environments. Unchanged available
 images are still reused for runtime checks; these runs do not publish images.
 
 After a successful validation of the same PR and unchanged tested base, image,

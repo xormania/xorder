@@ -45,7 +45,6 @@ jobs:
       has_resources: ${{ steps.resources.outputs.has_resources }}
       has_environments: ${{ steps.resources.outputs.has_environments }}
       has_application: ${{ steps.application.outputs.enabled }}
-      has_xorchestrate: ${{ steps.xorchestrate.outputs.enabled }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -113,21 +112,6 @@ jobs:
           enabled = changed is None or any(path in exact or path.startswith(prefixes) for path in changed)
           print("enabled=" + str(enabled).lower())
           PY
-      - id: xorchestrate
-        env:
-          BASE_SHA: ${{ steps.validation-base.outputs.sha }}
-          COMPARE_HEAD: ${{ steps.validation-base.outputs.head }}
-        run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import os, subprocess
-          base = os.environ.get("BASE_SHA", "")
-          head = os.environ.get("COMPARE_HEAD", "HEAD")
-          changed = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines() if base else None
-          prefixes = ("examples/xorchestrate/", "tests/fixtures/xorchestrate-runner/")
-          exact = {"tests/test_xorchestrate_runner.py", ".github/workflows/validate.yml", ".github/workflows/validate-xorchestrate.yml"}
-          enabled = changed is None or any(path in exact or path.startswith(prefixes) for path in changed)
-          print("enabled=" + str(enabled).lower())
-          PY
       - name: Retain the tested source and target context
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -163,12 +147,6 @@ jobs:
     uses: ./.github/workflows/validate-application.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
-  native-xorchestrate:
-    needs: [metadata, fast-checks]
-    if: needs.metadata.outputs.has_xorchestrate == 'true'
-    uses: ./.github/workflows/validate-xorchestrate.yml # zizmor: ignore[self-repository]
-    permissions:
-      contents: read
   resources:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_resources == 'true'
@@ -196,7 +174,7 @@ jobs:
       matrix: ${{ needs.metadata.outputs.matrix }}
   checks:
     if: always()
-    needs: [fast-checks, attribution, metadata, unit-tests, images, resources, environments, application, native-xorchestrate]
+    needs: [fast-checks, attribution, metadata, unit-tests, images, resources, environments, application]
     runs-on: ubuntu-24.04
     steps:
       - env:
@@ -213,8 +191,6 @@ jobs:
           ENVIRONMENTS_SELECTED: ${{ needs.metadata.outputs.has_environments }}
           APPLICATION: ${{ needs.application.result }}
           APPLICATION_SELECTED: ${{ needs.metadata.outputs.has_application }}
-          XORCHESTRATE: ${{ needs.native-xorchestrate.result }}
-          XORCHESTRATE_SELECTED: ${{ needs.metadata.outputs.has_xorchestrate }}
         run: |
           test "$ATTRIBUTION" = success
           test "$FAST_CHECKS" = success
@@ -224,4 +200,3 @@ jobs:
           [[ "$RESOURCES" == success || ("$RESOURCES" == skipped && "$RESOURCES_SELECTED" == false) ]]
           [[ "$ENVIRONMENTS" == success || ("$ENVIRONMENTS" == skipped && "$ENVIRONMENTS_SELECTED" == false) ]]
           [[ "$APPLICATION" == success || ("$APPLICATION" == skipped && "$APPLICATION_SELECTED" == false) ]]
-          [[ "$XORCHESTRATE" == success || ("$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" == false) ]]
