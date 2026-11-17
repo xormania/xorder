@@ -54,7 +54,11 @@ def exercise(definition, artifact, format, root=ROOT):
 def affected(changed, definitions):
     selected = set()
     for path in changed:
-        if path.startswith(("scripts/xorder/", "schemas/resource", "schemas/artifact-release", "schemas/profile", ".github/workflows/validate.yml", ".github/workflows/publish.yml")):
+        if path == ".github/workflows/validate-resources.yml":
+            selected.update(key for key, d in definitions.items() if d["kind"] != "environment")
+        elif path == ".github/workflows/validate-environments.yml":
+            selected.update(key for key, d in definitions.items() if d["kind"] == "environment")
+        elif path.startswith(("scripts/xorder/", "schemas/resource", "schemas/artifact-release", "schemas/profile", ".github/workflows/validate.yml", ".github/workflows/publish.yml")):
             if path.startswith(("scripts/xorder/verify-devenv", "scripts/xorder/bootstrap-devenv")):
                 selected.update(key for key, d in definitions.items() if d["kind"] == "environment")
             elif path == "scripts/xorder/verify-composer.sh":

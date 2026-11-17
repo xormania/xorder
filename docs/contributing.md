@@ -160,12 +160,36 @@ were narrower. The public readiness command and publication retain full
 verification by default. Partial checks record their actual suites in PR metrics
 and do not establish full readiness or publication evidence.
 
-Catalog and known schema-only changes run metadata validation. Shared image
-orchestration changes, including `validate.yml`, and unknown runtime helpers
-still exercise all images because their impact spans the validation path.
+Catalog and known schema-only changes run metadata validation. Runtime job
+definitions live in separate reusable workflows, called from the small
+`validate.yml` coordinator. Change the owning workflow when adjusting one
+runtime's setup, tool pins, steps, caching, timeouts, or artifact retention:
+
+| Changed workflow | Runtime checks selected |
+| --- | --- |
+| `validate-xorchestrate.yml` | Xorchestrate native preparation and offline acceptance |
+| `validate-application.yml` | Resource application on host and container |
+| `validate-resources.yml` | Binary, configuration, and context resources |
+| `validate-environments.yml` | Native environments |
+| `validate-images.yml` | All image readiness checks |
+| `validate.yml` | All runtime surfaces |
+
+These paths are under `.github/workflows/`. Changes to several surfaces combine
+their selections. Real image/component COPY inputs still select their consumers,
+even when the copied path belongs to another workflow. The coordinator retains
+event handling, selection, validated reuse, dependencies, and the required
+`checks` aggregate. Called workflows use this same source revision and preserve
+their own matrices and read-only permissions; they do not create independent PR
+runs or bypass the aggregate.
+
+Changes to shared image selection/build helpers and unknown workflows still
+exercise all images. Adding a new runtime to the shared coordinator deliberately
+checks its cross-job wiring broadly; subsequent edits to its dedicated workflow
+stay scoped. This separation avoids repeatedly changing the shared coordinator
+for routine runtime maintenance. Manual and scheduled full runs remain broad.
 Catalog and policy validation run on every PR. Unit and syntax checks run for
-every new source head. `checks` accepts intentionally skipped runtime jobs while
-failing on failed or cancelled required jobs.
+every new source head. `checks` requires every selected runtime job to succeed;
+only an unselected runtime may be skipped. Failed or cancelled jobs fail the gate.
 
 Inspect selection without building:
 

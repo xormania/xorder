@@ -1,0 +1,77 @@
+name: Validate images
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        description: Selected verification targets from the shared planner
+        required: true
+        type: string
+permissions:
+  contents: read
+  packages: read
+jobs:
+  images:
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Enable local parent images and cache export
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5
+        with:
+          daemon-config: '{"features":{"containerd-snapshotter":true}}'
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver: docker
+      - name: Authenticate private component reads for repository pull requests
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: cache-key
+        env:
+          LINE: ${{ matrix.line }}
+        run: echo "key=$(python scripts/library.py cache-key "$LINE")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: build-cache
+        with:
+          path: /tmp/image-library-build-cache
+          key: buildx-v3-${{ runner.os }}-${{ matrix.line }}-${{ steps.cache-key.outputs.key }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            buildx-v3-${{ runner.os }}-${{ matrix.line }}-${{ steps.cache-key.outputs.key }}-
+            buildx-v3-${{ runner.os }}-${{ matrix.line }}-
+            buildx-v2-${{ runner.os }}-${{ matrix.line }}-
+      - name: Build and exercise the documented recipe
+        env:
+          XORDER_COMPONENTS_READ_AUTH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && '1' || '0' }}
+          GH_TOKEN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.token || '' }}
+          LIBRARY_CACHE_DIR: /tmp/image-library-build-cache
+          XORDER_BUILD_CACHE: '1'
+          LINE: ${{ matrix.line }}
+          SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
+          VERIFY_LINES: ${{ toJSON(matrix.verify_lines) }}
+          VERIFY_SUITES: ${{ toJSON(matrix.verify_suites) }}
+        run: |
+          mkdir -p out
+          python scripts/build.py "$LINE" image-library-check:dev --source "$SOURCE" --cache "${LINE//\//-}" --inventory out/dev.json --children --reuse-accepted --verify-lines "$VERIFY_LINES" --verify-suites "$VERIFY_SUITES"
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ always() && !cancelled() && steps.build-cache.outcome == 'success' && steps.build-cache.outputs.cache-hit != 'true' }}
+        with:
+          path: /tmp/image-library-build-cache
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: inventory-${{ strategy.job-index }}
+          path: out/
+          if-no-files-found: ignore
