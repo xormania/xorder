@@ -109,7 +109,7 @@ jobs:
           head = os.environ.get("COMPARE_HEAD", "HEAD")
           changed = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines() if base else None
           prefixes = ("scripts/xorder/", "artifacts/configuration/", "artifacts/context/", "profiles/", "schemas/resource", "schemas/catalog-v2", "schemas/profile", "schemas/resolution-lock", "schemas/installation-receipt", "tests/fixtures/artifacts/application/")
-          exact = {"scripts/xorder_cli.py", "tests/requirements/resource-application.json", ".github/workflows/validate.yml"}
+          exact = {"scripts/xorder_cli.py", "tests/requirements/resource-application.json", ".github/workflows/validate.yml", ".github/workflows/validate-application.yml"}
           enabled = changed is None or any(path in exact or path.startswith(prefixes) for path in changed)
           print("enabled=" + str(enabled).lower())
           PY
@@ -124,7 +124,7 @@ jobs:
           head = os.environ.get("COMPARE_HEAD", "HEAD")
           changed = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines() if base else None
           prefixes = ("examples/xorchestrate/", "tests/fixtures/xorchestrate-runner/")
-          exact = {"tests/test_xorchestrate_runner.py", ".github/workflows/validate.yml"}
+          exact = {"tests/test_xorchestrate_runner.py", ".github/workflows/validate.yml", ".github/workflows/validate-xorchestrate.yml"}
           enabled = changed is None or any(path in exact or path.startswith(prefixes) for path in changed)
           print("enabled=" + str(enabled).lower())
           PY
@@ -160,236 +160,40 @@ jobs:
   application:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_application == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        surface: [host, container]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: '3.12'
-      - name: Exercise cold application on the host
-        if: matrix.surface == 'host'
-        run: |
-          python -m pip install -r requirements-ci.txt
-          python tests/fixtures/artifacts/application/check.py --output out/application-host.json
-      - name: Exercise cold application in a disposable verified image
-        if: matrix.surface == 'container'
-        run: |
-          image=$(python - <<'PY'
-          import json
-          entries = [item for item in json.load(open("catalog-v2.json"))["resources"] if item["id"] == "image/python-dev/3.14-trixie" and item["lifecycle"] == "available" and item["verification"]["status"] == "passed" and "linux/amd64" in item["targets"]]
-          if not entries:
-              raise SystemExit("No accepted Python image for the application consumer")
-          print(max(entries, key=lambda item: tuple(map(int, item["version"].split("."))))["identity"])
-          PY
-          )
-          docker pull "$image"
-          mkdir -p out
-          printf '%s\n' "$image" > out/application-container-image.txt
-          docker run --rm --platform linux/amd64 \
-            -e PUID="$(id -u)" -e PGID="$(id -g)" \
-            -v "$PWD:/workspace/source:ro" -v "$PWD/out:/out" \
-            -w /workspace/source "$image" bash -euc '
-              python -m venv /tmp/xorder-validation
-              /tmp/xorder-validation/bin/python -m pip install -r requirements-ci.txt
-              /tmp/xorder-validation/bin/python tests/fixtures/artifacts/application/check.py --output /out/application-container.json
-            '
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: application-${{ matrix.surface }}
-          path: out/application-*
-          if-no-files-found: ignore
+    uses: ./.github/workflows/validate-application.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
   native-xorchestrate:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_xorchestrate == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    uses: ./.github/workflows/validate-xorchestrate.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
-    env:
-      CONSUMER_REVISION: 7f226dc27cb5e2e93b27645a164f3a2b1389145e
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Fetch the exact public consumer revision
-        run: |
-          CONSUMER_PATH="$RUNNER_TEMP/xorchestrate-consumer"
-          echo "CONSUMER_PATH=$CONSUMER_PATH" >> "$GITHUB_ENV"
-          echo "ACCEPTANCE_RUNTIME=$RUNNER_TEMP/xorchestrate-native-runtime" >> "$GITHUB_ENV"
-          git init "$CONSUMER_PATH"
-          git -C "$CONSUMER_PATH" fetch --depth 1 https://github.com/xormania/xorchestrate.git "$CONSUMER_REVISION"
-          git -C "$CONSUMER_PATH" checkout --detach FETCH_HEAD
-          test "$(git -C "$CONSUMER_PATH" rev-parse HEAD)" = "$CONSUMER_REVISION"
-      - id: consumer-baseline
-        name: Read the consumer's exact CI tool selections
-        run: python3 tests/fixtures/xorchestrate-runner/acceptance.py baseline --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: ${{ steps.consumer-baseline.outputs.python }}
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
-        with:
-          version: ${{ steps.consumer-baseline.outputs.uv }}
-          checksum: ${{ steps.consumer-baseline.outputs.uv_checksum }}
-          enable-cache: false
-      - id: consumer-python
-        name: Install the consumer's managed Python baseline
-        env:
-          BASELINE_PYTHON: ${{ steps.consumer-baseline.outputs.python }}
-        run: |
-          export UV_PYTHON_INSTALL_DIR="$ACCEPTANCE_RUNTIME/python"
-          uv python install --no-bin "$BASELINE_PYTHON"
-          echo "python=$(uv python find --managed-python --no-project "$BASELINE_PYTHON")" >> "$GITHUB_OUTPUT"
-      - name: Ensure the real native terminal prerequisite is installed
-        run: |
-          if ! command -v tmux >/dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y tmux
-          fi
-      - name: Exercise online preparation and a fresh network-isolated replay
-        env:
-          ACCEPTANCE_PYTHON: ${{ steps.consumer-python.outputs.python }}
-        run: |
-          python tests/fixtures/xorchestrate-runner/acceptance.py run \
-            --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" \
-            --runtime "$ACCEPTANCE_RUNTIME" --output out/xorchestrate-acceptance \
-            --python "$ACCEPTANCE_PYTHON"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: native-xorchestrate-acceptance
-          path: out/xorchestrate-acceptance/
-          if-no-files-found: ignore
-          retention-days: 14
   resources:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_resources == 'true'
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.metadata.outputs.resources) }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      PYTHONPATH: scripts
-      RESOURCE: ${{ matrix.resource }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - run: python -m pip install -r requirements-ci.txt
-      - name: Exercise downloaded or packaged resource bytes
-        run: python -m xorder.verify verify "$RESOURCE"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: resource-check-${{ strategy.job-index }}
-          path: out/resources/
-          if-no-files-found: ignore
+    uses: ./.github/workflows/validate-resources.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+    with:
+      matrix: ${{ needs.metadata.outputs.resources }}
   environments:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_environments == 'true'
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.metadata.outputs.environments) }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    env:
-      PYTHONPATH: scripts
-      RESOURCE: ${{ matrix.resource }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - run: python -m pip install -r requirements-ci.txt
-      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
-        with:
-          extra_nix_config: |
-            extra-substituters = https://devenv.cachix.org
-            extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
-      - name: Install pinned devenv
-        run: nix profile install 'github:cachix/devenv/b904dcb51fe48c30db250038241507f60752f222#devenv'
-      - name: Exercise the packaged native environment
-        run: python -m xorder.verify verify "$RESOURCE"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: environment-check-${{ strategy.job-index }}
-          path: out/resources/
-          if-no-files-found: ignore
+    uses: ./.github/workflows/validate-environments.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+    with:
+      matrix: ${{ needs.metadata.outputs.environments }}
   images:
     needs: [metadata, fast-checks]
     if: needs.metadata.outputs.has_images == 'true'
+    uses: ./.github/workflows/validate-images.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
       packages: read
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.metadata.outputs.matrix) }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Enable local parent images and cache export
-        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5
-        with:
-          daemon-config: '{"features":{"containerd-snapshotter":true}}'
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-        with:
-          driver: docker
-      - name: Authenticate private component reads for repository pull requests
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - id: cache-key
-        env:
-          LINE: ${{ matrix.line }}
-        run: echo "key=$(python scripts/library.py cache-key "$LINE")" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: build-cache
-        with:
-          path: /tmp/image-library-build-cache
-          key: buildx-v3-${{ runner.os }}-${{ matrix.line }}-${{ steps.cache-key.outputs.key }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            buildx-v3-${{ runner.os }}-${{ matrix.line }}-${{ steps.cache-key.outputs.key }}-
-            buildx-v3-${{ runner.os }}-${{ matrix.line }}-
-            buildx-v2-${{ runner.os }}-${{ matrix.line }}-
-      - name: Build and exercise the documented recipe
-        env:
-          XORDER_COMPONENTS_READ_AUTH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && '1' || '0' }}
-          GH_TOKEN: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.token || '' }}
-          LIBRARY_CACHE_DIR: /tmp/image-library-build-cache
-          XORDER_BUILD_CACHE: '1'
-          LINE: ${{ matrix.line }}
-          SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
-          VERIFY_LINES: ${{ toJSON(matrix.verify_lines) }}
-          VERIFY_SUITES: ${{ toJSON(matrix.verify_suites) }}
-        run: |
-          mkdir -p out
-          python scripts/build.py "$LINE" image-library-check:dev --source "$SOURCE" --cache "${LINE//\//-}" --inventory out/dev.json --children --reuse-accepted --verify-lines "$VERIFY_LINES" --verify-suites "$VERIFY_SUITES"
-      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: ${{ always() && !cancelled() && steps.build-cache.outcome == 'success' && steps.build-cache.outputs.cache-hit != 'true' }}
-        with:
-          path: /tmp/image-library-build-cache
-          key: ${{ steps.build-cache.outputs.cache-primary-key }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: inventory-${{ strategy.job-index }}
-          path: out/
-          if-no-files-found: ignore
+    with:
+      matrix: ${{ needs.metadata.outputs.matrix }}
   checks:
     if: always()
     needs: [fast-checks, attribution, metadata, unit-tests, images, resources, environments, application, native-xorchestrate]
@@ -402,9 +206,13 @@ jobs:
           UNIT_TESTS: ${{ needs.unit-tests.result }}
           SAME_HEAD: ${{ needs.metadata.outputs.same_head }}
           IMAGES: ${{ needs.images.result }}
+          IMAGES_SELECTED: ${{ needs.metadata.outputs.has_images }}
           RESOURCES: ${{ needs.resources.result }}
+          RESOURCES_SELECTED: ${{ needs.metadata.outputs.has_resources }}
           ENVIRONMENTS: ${{ needs.environments.result }}
+          ENVIRONMENTS_SELECTED: ${{ needs.metadata.outputs.has_environments }}
           APPLICATION: ${{ needs.application.result }}
+          APPLICATION_SELECTED: ${{ needs.metadata.outputs.has_application }}
           XORCHESTRATE: ${{ needs.native-xorchestrate.result }}
           XORCHESTRATE_SELECTED: ${{ needs.metadata.outputs.has_xorchestrate }}
         run: |
@@ -412,8 +220,8 @@ jobs:
           test "$FAST_CHECKS" = success
           test "$METADATA" = success
           [[ "$UNIT_TESTS" == success || ("$UNIT_TESTS" == skipped && "$SAME_HEAD" == true) ]]
-          [[ "$IMAGES" == success || "$IMAGES" == skipped ]]
-          [[ "$RESOURCES" == success || "$RESOURCES" == skipped ]]
-          [[ "$ENVIRONMENTS" == success || "$ENVIRONMENTS" == skipped ]]
-          [[ "$APPLICATION" == success || "$APPLICATION" == skipped ]]
-          [[ "$XORCHESTRATE" == success || ("$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" != true) ]]
+          [[ "$IMAGES" == success || ("$IMAGES" == skipped && "$IMAGES_SELECTED" == false) ]]
+          [[ "$RESOURCES" == success || ("$RESOURCES" == skipped && "$RESOURCES_SELECTED" == false) ]]
+          [[ "$ENVIRONMENTS" == success || ("$ENVIRONMENTS" == skipped && "$ENVIRONMENTS_SELECTED" == false) ]]
+          [[ "$APPLICATION" == success || ("$APPLICATION" == skipped && "$APPLICATION_SELECTED" == false) ]]
+          [[ "$XORCHESTRATE" == success || ("$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" == false) ]]

@@ -1,0 +1,66 @@
+name: Validate Xorchestrate native preparation
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  native-xorchestrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      CONSUMER_REVISION: 7f226dc27cb5e2e93b27645a164f3a2b1389145e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Fetch the exact public consumer revision
+        run: |
+          CONSUMER_PATH="$RUNNER_TEMP/xorchestrate-consumer"
+          echo "CONSUMER_PATH=$CONSUMER_PATH" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_RUNTIME=$RUNNER_TEMP/xorchestrate-native-runtime" >> "$GITHUB_ENV"
+          git init "$CONSUMER_PATH"
+          git -C "$CONSUMER_PATH" fetch --depth 1 https://github.com/xormania/xorchestrate.git "$CONSUMER_REVISION"
+          git -C "$CONSUMER_PATH" checkout --detach FETCH_HEAD
+          test "$(git -C "$CONSUMER_PATH" rev-parse HEAD)" = "$CONSUMER_REVISION"
+      - id: consumer-baseline
+        name: Read the consumer's exact CI tool selections
+        run: python3 tests/fixtures/xorchestrate-runner/acceptance.py baseline --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ steps.consumer-baseline.outputs.python }}
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: ${{ steps.consumer-baseline.outputs.uv }}
+          checksum: ${{ steps.consumer-baseline.outputs.uv_checksum }}
+          enable-cache: false
+      - id: consumer-python
+        name: Install the consumer's managed Python baseline
+        env:
+          BASELINE_PYTHON: ${{ steps.consumer-baseline.outputs.python }}
+        run: |
+          export UV_PYTHON_INSTALL_DIR="$ACCEPTANCE_RUNTIME/python"
+          uv python install --no-bin "$BASELINE_PYTHON"
+          echo "python=$(uv python find --managed-python --no-project "$BASELINE_PYTHON")" >> "$GITHUB_OUTPUT"
+      - name: Ensure the real native terminal prerequisite is installed
+        run: |
+          if ! command -v tmux >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y tmux
+          fi
+      - name: Exercise online preparation and a fresh network-isolated replay
+        env:
+          ACCEPTANCE_PYTHON: ${{ steps.consumer-python.outputs.python }}
+        run: |
+          python tests/fixtures/xorchestrate-runner/acceptance.py run \
+            --consumer "$CONSUMER_PATH" --revision "$CONSUMER_REVISION" \
+            --runtime "$ACCEPTANCE_RUNTIME" --output out/xorchestrate-acceptance \
+            --python "$ACCEPTANCE_PYTHON"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: native-xorchestrate-acceptance
+          path: out/xorchestrate-acceptance/
+          if-no-files-found: ignore
+          retention-days: 14

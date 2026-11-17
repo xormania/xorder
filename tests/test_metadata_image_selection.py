@@ -50,10 +50,26 @@ class MetadataImageSelectionTests(unittest.TestCase):
         with patch("components._files_current", side_effect=AssertionError("Container payloads were hashed")):
             self.assertEqual(affected_suites(paths, self.defs, self.root), {})
 
+    def test_reusable_runtime_workflows_select_images_only_for_the_image_owner(self):
+        for owner in ("resources", "environments", "application", "xorchestrate"):
+            with self.subTest(owner=owner), \
+                    patch("components._files_current", side_effect=AssertionError("Container payloads were hashed")):
+                self.assertEqual(affected_suites([f".github/workflows/validate-{owner}.yml"], self.defs, self.root), {})
+        self.assertEqual(affected_suites([".github/workflows/validate-images.yml"], self.defs, self.root),
+                         {"app/line": ["full"]})
+
+    def test_mixed_workflow_and_runtime_edits_keep_the_runtime_selection(self):
+        for path in ("images/app/Dockerfile", "scripts/unknown-runtime.py", ".github/workflows/unrecognized.yml"):
+            with self.subTest(path=path):
+                self.assertEqual(affected_suites([".github/workflows/validate-resources.yml", path], self.defs, self.root),
+                                 {"app/line": ["full"]})
+
     def test_component_copy_of_metadata_and_test_paths_still_checks_consumer(self):
         original = self.component_recipe.read_text()
         for name in ("README.md", "tests/test_example.py", "scripts/setup_checks.py",
-                     "examples/xorchestrate/runner.py", "tests/fixtures/xorchestrate-runner/proof.py"):
+                     "examples/xorchestrate/runner.py", "tests/fixtures/xorchestrate-runner/proof.py",
+                     ".github/workflows/validate-resources.yml", ".github/workflows/validate-environments.yml",
+                     ".github/workflows/validate-application.yml", ".github/workflows/validate-xorchestrate.yml"):
             with self.subTest(name=name):
                 source = self.root / name
                 source.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +89,9 @@ class MetadataImageSelectionTests(unittest.TestCase):
 
     def test_image_copy_of_metadata_path_still_checks_consumer(self):
         for name in ("README.md", "tests/test_example.py", "scripts/setup_checks.py",
-                     "examples/xorchestrate/runner.py", "tests/fixtures/xorchestrate-runner/proof.py"):
+                     "examples/xorchestrate/runner.py", "tests/fixtures/xorchestrate-runner/proof.py",
+                     ".github/workflows/validate-resources.yml", ".github/workflows/validate-environments.yml",
+                     ".github/workflows/validate-application.yml", ".github/workflows/validate-xorchestrate.yml"):
             with self.subTest(name=name):
                 source = self.root / name
                 source.parent.mkdir(parents=True, exist_ok=True)
@@ -100,7 +118,8 @@ class MetadataImageSelectionTests(unittest.TestCase):
     def test_shared_and_unknown_runtime_helpers_still_check_images(self):
         for path in ("scripts/artifact_identity.py", "scripts/components.py", "scripts/unknown-runtime.py",
                      "examples/unknown-runtime/runner.py", "tests/fixtures/xorchestrate-unknown/check.py",
-                     "schemas/component.schema.json", ".github/workflows/validate.yml"):
+                     "schemas/component.schema.json", ".github/workflows/validate.yml",
+                     ".github/workflows/unknown-runtime.yml", ".github/workflows/validate-resources-extra.yml"):
             with self.subTest(path=path):
                 self.assertEqual(affected_suites([path], self.defs, self.root), {"app/line": ["full"]})
 

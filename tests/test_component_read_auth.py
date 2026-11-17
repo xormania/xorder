@@ -71,8 +71,13 @@ class ComponentReadAuthTests(unittest.TestCase):
         self.assertEqual(resolve.call_args.kwargs, {"authenticated": True, "pull_only": True})
 
     def test_image_workflow_restricts_login_and_token_to_repository_prs(self):
-        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/validate.yml").read_text()
-        job = workflow.split("\n  images:\n", 1)[1].split("\n  checks:\n", 1)[0]
+        caller = (ROOT / ".github/workflows/validate.yml").read_text()
+        selection = caller.split("\n  images:\n", 1)[1].split("\n  checks:\n", 1)[0]
+        self.assertIn("uses: ./.github/workflows/validate-images.yml", selection)
+        self.assertIn("packages: read", selection)
+        self.assertNotIn("packages: write", selection)
+        workflow = (ROOT / ".github/workflows/validate-images.yml").read_text()
+        job = workflow.split("\n  images:\n", 1)[1]
         self.assertIn("packages: read", job)
         self.assertNotIn("packages: write", job)
         login = job.split("      - name: Authenticate private component reads", 1)[1].split("      - id: cache-key", 1)[0]

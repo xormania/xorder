@@ -1,0 +1,40 @@
+name: Validate native environments
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        description: Selected verification targets from the shared planner
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  environments:
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: scripts
+      RESOURCE: ${{ matrix.resource }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python -m pip install -r requirements-ci.txt
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        with:
+          extra_nix_config: |
+            extra-substituters = https://devenv.cachix.org
+            extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+      - name: Install pinned devenv
+        run: nix profile install 'github:cachix/devenv/b904dcb51fe48c30db250038241507f60752f222#devenv'
+      - name: Exercise the packaged native environment
+        run: python -m xorder.verify verify "$RESOURCE"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: environment-check-${{ strategy.job-index }}
+          path: out/resources/
+          if-no-files-found: ignore

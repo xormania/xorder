@@ -122,19 +122,21 @@ class ValidationWorkflowTests(unittest.TestCase):
 
     def test_native_consumer_is_read_only_and_required_when_selected(self):
         source = WORKFLOW.read_text()
-        job = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
-        self.assertIn("if: needs.metadata.outputs.has_xorchestrate == 'true'", job)
-        self.assertIn("persist-credentials: false", job)
-        self.assertIn("permissions:\n      contents: read", job)
-        self.assertNotIn("github.token", job)
-        self.assertIn("steps.consumer-baseline.outputs.python", job)
-        self.assertIn("steps.consumer-baseline.outputs.uv", job)
+        caller = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
+        self.assertIn("if: needs.metadata.outputs.has_xorchestrate == 'true'", caller)
+        self.assertIn("uses: ./.github/workflows/validate-xorchestrate.yml", caller)
+        runtime = WORKFLOW.with_name("validate-xorchestrate.yml").read_text()
+        self.assertIn("persist-credentials: false", runtime)
+        self.assertIn("permissions:\n  contents: read", runtime)
+        self.assertNotIn("github.token", runtime)
+        self.assertIn("steps.consumer-baseline.outputs.python", runtime)
+        self.assertIn("steps.consumer-baseline.outputs.uv", runtime)
         aggregate = source.split("  checks:\n", 1)[1]
         self.assertIn("needs.native-xorchestrate.result", aggregate)
-        self.assertIn('"$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" != true', aggregate)
+        self.assertIn('"$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" == false', aggregate)
 
     def test_native_consumer_passes_the_managed_interpreter_to_preparation(self):
-        source = WORKFLOW.read_text()
+        source = WORKFLOW.with_name("validate-xorchestrate.yml").read_text()
         job = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
         managed = re.search(r"^      - id: consumer-python\n(.*?)(?=^      - )", job, re.M | re.S)[1]
         exercise = re.search(r"^      - name: Exercise online preparation.*?\n(.*?)(?=^      - )", job, re.M | re.S)[1]
@@ -247,12 +249,19 @@ class IncrementalComparisonTests(unittest.TestCase):
                                ("tests/fixtures/xorchestrate-runner/acceptance.py", True),
                                ("tests/test_xorchestrate_runner.py", True),
                                (".github/workflows/validate.yml", True),
+                               (".github/workflows/validate-xorchestrate.yml", True),
+                               (".github/workflows/validate-images.yml", False),
                                ("examples/other/runner.py", False)):
             with self.subTest(path=path):
                 current = self.commit(path, "changed input\n")
                 self.assertEqual(self.native_xorchestrate(previous, current), "enabled=" + str(expected).lower())
                 self.assertEqual(self.native_xorchestrate(current, current), "enabled=false")
                 previous = current
+
+    def test_application_workflow_changes_select_only_the_application_surface(self):
+        current = self.commit(".github/workflows/validate-application.yml", "application recipe\n")
+        self.assertEqual(self.application(self.merge, current), "enabled=true")
+        self.assertEqual(self.native_xorchestrate(self.merge, current), "enabled=false")
 
     def test_same_source_head_behind_the_base_ignores_already_tested_merge_inputs(self):
         context = self.context(self.source, self.source)

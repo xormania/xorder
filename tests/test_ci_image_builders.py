@@ -38,8 +38,8 @@ def evaluate(expression, line):
 
 class ImageBuilderWorkflowTests(unittest.TestCase):
     def test_every_parent_tree_can_share_images_and_export_cache(self):
-        source = (ROOT / ".github/workflows/validate.yml").read_text()
-        images = source.split("\n  images:\n", 1)[1].split("\n  checks:\n", 1)[0]
+        source = (ROOT / ".github/workflows/validate-images.yml").read_text()
+        images = source.split("\n  images:\n", 1)[1]
         docker = re.search(r"^      - name: [^\n]+\n"
                            r"(?:(?!^      - ).)*docker/setup-docker-action@"
                            r"(?:(?!^      - ).)*", images, re.M | re.S)[0]

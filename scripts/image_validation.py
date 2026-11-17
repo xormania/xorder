@@ -22,6 +22,10 @@ METADATA_WORKFLOWS = {
     ".github/workflows/aliases.yml", ".github/workflows/catalog.yml",
     ".github/workflows/browser-refresh.yml",
     ".github/workflows/release-groups.yml", ".github/workflows/fast-checks.yml",
+    # Runtime workflows have independent owners. The shared coordinator and
+    # validate-images.yml intentionally retain full image verification.
+    ".github/workflows/validate-resources.yml", ".github/workflows/validate-environments.yml",
+    ".github/workflows/validate-application.yml", ".github/workflows/validate-xorchestrate.yml",
 }
 METADATA_SCHEMAS = {
     "schemas/definition.schema.json", "schemas/release-record.schema.json",
