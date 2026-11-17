@@ -1,7 +1,7 @@
 # Fast static checks, isolated from image/runtime dependencies.
 bandit==1.9.4
 ruff==0.17.3
-zizmor==1.31.1
+zizmor==1.32.0
 PyYAML==6.0.3
 stevedore==5.9.1
 rich==15.0.0
