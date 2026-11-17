@@ -274,10 +274,8 @@ class ReadinessNetworkTests(unittest.TestCase):
         self.assertEqual(self.captured(), [])
         self.assertNotIn("private-password", result.stderr)
 
-    def test_harness_readiness_filters_online_containers_but_keeps_host_git_proxy(self):
+    def test_harness_readiness_filters_online_containers_without_consumer_fetches(self):
         self.write("tests/fixtures/harness-live/run.sh", (ROOT / "tests/fixtures/harness-live/run.sh").read_text())
-        self.write("tests/fixtures/harness-live/consumer.json",
-                   json.dumps({"repository": "https://fixture.invalid/consumer.git", "commit": "a" * 40}))
         git = self.bin / "git"
         git.write_text('''#!/usr/bin/env python3
 import json, os, sys
@@ -298,9 +296,14 @@ if "rev-parse" in sys.argv:
             self.assertEqual(call["container_environment"]["HTTPS_PROXY"], "")
             self.assertEqual(call["container_environment"]["https_proxy"], "")
             self.assertIn("LIBRARY_CA_FILE=/run/library-proxy.pem", call["args"])
-        git_calls = [json.loads(line) for line in git_log.read_text().splitlines()]
-        self.assertTrue(any("fetch" in call["args"] for call in git_calls))
-        self.assertTrue(all(call["proxy"] == proxy for call in git_calls))
+        self.assertFalse(git_log.exists(), "Image readiness must not fetch a consuming project")
+        offline = [call for call in self.captured() if call["args"][-1] == "/proof/check.py"]
+        self.assertEqual(len(offline), 2)
+        for call in offline:
+            self.assertIn("--network=none", call["args"])
+            self.assertTrue(any("dst=/runtime,readonly" in arg for arg in call["args"]))
+            self.assertTrue(any("dst=/workspace" in arg for arg in call["args"]))
+            self.assertFalse(any("dst=/consumer" in arg for arg in call["args"]))
 
     def prepare_parity(self):
         self.write("tests/fixtures/playwright/parity.sh", (ROOT / "tests/fixtures/playwright/parity.sh").read_text())

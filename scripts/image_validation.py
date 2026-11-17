@@ -185,6 +185,8 @@ def _full_affected_lines(changed, defs, root, previous_tools=None, previous_defi
                 continue
             elif path.startswith("tests/fixtures/harness-live/"):
                 families = {"harness-live"}
+            elif path.startswith("tests/fixtures/native-runtime/"):
+                families = {"harness-live", "python-matrix"}
             elif path.startswith(("tests/fixtures/php/", "tests/fixtures/mutation/")):
                 families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev",
                             "php-mago-serena", "php-chrome-dev"}
