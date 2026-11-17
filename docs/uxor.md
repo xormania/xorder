@@ -1,28 +1,31 @@
 # uxor development and tests
 
-This optional profile targets the actual
+The image supplies PHP/FrankenPHP, Node, npm and prepared Tailwind tools.
+Xorder verifies those capabilities with its own small fixtures.
+
+This retained project integration profile targets the actual
 [`xormania/uxor`](https://github.com/xormania/uxor) repository.
 For Claude cloud sessions, read the [session quick start](claude-cloud.md)
 before starting a stack or importing another worktree's dependencies.
 
-The canonical runner is `examples/uxor/run.sh`, with `UXOR_PROJECT` for an
+The project integration runner remains `examples/uxor/run.sh`, with `UXOR_PROJECT` for an
 explicit stack name. Default Compose names, relay keys and local stack state use
 uxor identities. The authored `uxor-dev` family becomes available only after
 normal image publication and accepted release evidence; source definitions do
 not establish public availability. Historical releases remain in git history
 and their original public Release assets.
 
-The acceptance fixture pins commit
-[`8fff45d`](https://github.com/xormania/uxor/tree/8fff45dd72bc11dc4fda29d51e93cb6ea12c9d9a):
-Symfony 8.1, UX 3.5.1, PHP 8.5/FrankenPHP workers,
-Node 22, Playwright 1.58.2 and Tailwind v4.3.3. Both PHP 8.4 and 8.5 profiles
-exercise this baseline, including the PHPUnit suite. Choose 8.4 for the
-minimum-version checks and 8.5 for the browser CI runtime.
-This pin includes the upstream calendar fix for three existing WebKit behavior
-failures: preserving unchanged day text avoids losing a click during focus
-rendering. Its stronger upstream Turbo navigation helper also removes the need
-for the former fixture overlay. The separate browser release parity fixture
-keeps its own reviewed consumer pin.
+The legacy compatibility fixture pins commit
+[`8fff45d`](https://github.com/xormania/uxor/tree/8fff45dd72bc11dc4fda29d51e93cb6ea12c9d9a).
+It remains explicitly runnable during the ownership transition:
+
+```sh
+bash tests/fixtures/uxor/run.sh "$IMAGE"
+```
+
+That suite exercises the pinned application's setup, PHPUnit and browser behavior.
+It does not run as image readiness or authorize image publication. UXor owns
+validation of its application and screenshots against its chosen image digests.
 
 | Part | Supplied by |
 | --- | --- |
@@ -318,23 +321,19 @@ directories for the chosen user. Set `CA_CERTIFICATE=/absolute/proxy-ca.pem`
 for the shared [CA trust option](usage.md#network-access); the Node browser
 companion gets the mounted certificate as an extra trusted CA as well.
 
-The readiness recipe tests persistent workers and executed-line Xdebug coverage
-plus the shared PHP/native/TLS/user contract. It then starts the pinned real
-consuming repository as a linked Git worktree, checks Git access, builds Tailwind
-from the seeded binary, runs PHPUnit with a nonempty Clover coverage report,
-and runs calendar, dropzone, both data-table and both editor lab specs. PHP 8.5
-executes these 45 behavior cases in Chromium, Firefox and WebKit using each
-engine's desktop device profile, for 135 cases; PHP 8.4 retains 45 Chromium cases.
-The three-engine suite has a ten-minute total budget, a 30-second per-test limit,
-and zero retries; its receipt must contain all 135 executed passes.
-Both inspect the actual default 4 GiB browser container limit. The 8.5 fixture
-also checks a real child OOM in an isolated browser-service container, including
-the original failed command exit and current-window cgroup evidence. This probe
-still runs when a consumer assertion fails, and the fixture preserves that
-original failure. Receipts, logs and failing traces survive cleanup under
-`out/uxor-runtime/`. It never updates screenshot baselines. A source update
-to `tests/fixtures/uxor/consumer.json` deliberately updates that consumer
-baseline; ordinary users run their current checkout.
+The public readiness recipe tests persistent workers, actual PHP extensions,
+PostgreSQL and Redis round trips, executed-line coverage, quality tools, native
+compilation, TLS trust, user ownership and cache reuse. For `uxor-dev`, it also
+runs a locked local npm package and compiles an owned Tailwind utility subject
+with the prepared image binary. Those Node/npm/Tailwind operations run with
+networking disabled and `/workspace` plus persistent `/home/dev` mounts.
+
+The browser companion independently launches Chromium, Firefox and WebKit with
+networking disabled. Its owned subject checks DOM interaction, Unicode text,
+monospace font metrics, known rendered screenshot pixels and RGB font settings.
+No UXor checkout, application setup or consumer screenshot baseline participates
+in either image's acceptance. Historical release records retain the verification
+that actually ran when those artifacts were published.
 
 References:
 

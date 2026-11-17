@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import subprocess
-import tempfile
 import time
 from pathlib import Path
 from library import ROOT, children, definitions, read, records, reusable_record, validate_inventory
@@ -239,26 +238,13 @@ def verify(line, image, destination, *, source_validation=False, source=None, su
     if not full:
         command += suites
     environment = dict(os.environ)
-    # A caller cannot smuggle an unconstrained fixture exemption through the
-    # builder. The trusted verify entry point authors its own observed proof.
+    # Image capability fixtures need no consumer-policy exemption. Discard
+    # inherited legacy overrides before invoking the owned readiness recipe.
     environment.pop("XORDER_SOURCE_VALIDATION_PROOF", None)
-    if family == "playwright-browser":
-        environment.pop("XORDER_PARITY_LOCAL_APPLICATION", None)
-    if full and source_validation and family == "playwright-browser":
-        fixture = read(ROOT / "tests/fixtures/playwright/consumers" / (line.split("/", 1)[1] + ".json"))
-        local_app = prepare_parity_application(fixture, source)
-        if local_app:
-            environment["XORDER_PARITY_LOCAL_APPLICATION"] = local_app
-    if full and family in ("uxor-dev", "playwright-browser"):
-        from xorder.downstream import observe_source_images, source_commit, write_source_proof
-        service = "browser" if family == "playwright-browser" else "php"
-        with tempfile.TemporaryDirectory(prefix="xorder-source-proof-") as proof_directory:
-            proof_path = Path(proof_directory) / "builder-proof.json"
-            write_source_proof(proof_path, observe_source_images({service: image}), source_commit(ROOT))
-            environment["XORDER_SOURCE_VALIDATION_PROOF"] = str(proof_path)
-            subprocess.run(command, check=True, env=environment)
-    else:
-        subprocess.run(command, check=True, env=environment)
+    environment.pop("XORDER_PARITY_LOCAL_APPLICATION", None)
+    # Image readiness uses owned capability fixtures. Consumer application
+    # preparation and downstream runner exemptions are separate explicit work.
+    subprocess.run(command, check=True, env=environment)
     inspect(line, image, destination)
 
 

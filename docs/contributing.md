@@ -291,15 +291,17 @@ is a source change and reruns behavior, rather than substituting the fixture's
 dependency versions for the consuming project's own lock. No global PHPUnit,
 Panther, CUE or speculative Cargo tools are bundled.
 
-Browser parity also pins the accepted application-image digest alongside its
-consumer commit. Publication stages a candidate without executing consumer
-code. A separate job with no repository permissions, persisted checkout
-credentials, or registry login verifies that public digest. Its Compose
-configuration belongs to xorder, ignores consumer Compose/dotenv files, and
-rejects bind paths escaping the disposable checkout. The runner receives an
-explicit minimal environment. Finalization requires successful evidence bound
-to the exact digest, source, image inputs and parity fixture; it does not rerun
-consumer code with publication credentials.
+Browser publication stages a candidate without executing verification code.
+A separate job with no repository permissions, persisted checkout credentials,
+or registry login verifies that exact public digest using Xorder-owned fixtures.
+Chromium, Firefox and WebKit launch with networking disabled and exercise DOM
+interaction, fonts and rendered screenshots. Finalization requires passed
+`image-capabilities-v1` evidence bound to the exact digest, source, image inputs
+and owned fixture bytes. Consumer application revisions and screenshot baselines
+are independent project compatibility checks and cannot authorize publication.
+Historical releases retain their original evidence; verification-only changes
+that leave every build input unchanged reuse accepted image bytes and do not
+allocate a redundant image revision.
 
 To add a family/line, inspect the target project's requirements, choose an
 official upstream base and resolve its digest, define its intended profile,

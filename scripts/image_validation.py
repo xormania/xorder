@@ -9,7 +9,7 @@ METADATA_SCRIPTS = {
     "scripts/release.py", "scripts/writeback.py", "scripts/refresh.py", "scripts/github_http.py",
     "scripts/registry.py", "scripts/xorder_cli.py", "scripts/validation_base.py",
     "scripts/catalog_checks.py", "scripts/catalog_summary.py",
-    "scripts/refresh_browser.py", "scripts/browser_release.py",
+    "scripts/refresh_browser.py", "scripts/browser_release.py", "scripts/playwright_fixture.py",
     "scripts/image_assurance.py", "scripts/agent_eval.py",
     "scripts/claude_prompt_clock.py", "scripts/components.py", "scripts/setup_checks.py", "scripts/fetch_build_input.py",
     "scripts/release_groups.py", "scripts/group_writeback.py",
@@ -41,11 +41,15 @@ METADATA_PREFIXES = (
     "scripts/xorder/", "artifacts/", "profiles/", "discovery/", "lifecycle/", "tests/agent-evals/", "tests/scenarios/",
     "tests/fixtures/devenv/", "tests/fixtures/artifacts/", "examples/resources/", "examples/devenv/",
     "examples/xorchestrate/", "tests/fixtures/xorchestrate-runner/",
+    # Legacy consumer runners/compatibility fixtures are retained for migration;
+    # their application behavior no longer supplies image acceptance evidence.
+    "examples/uxor/", "tests/fixtures/uxor/", "tests/fixtures/playwright/consumers/",
     "tests/test_", "tests/requirements/",
 )
 # These paths previously selected no image unless they were real COPY inputs.
 METADATA_ONLY_PREFIXES = ("docs/", "release-records/", "retired-records/", "checks/")
-METADATA_ONLY_FILES = {"README.md", "AGENTS.md", "CLAUDE.md", "catalog.json", "catalog-v2.json", "discovery.json"}
+METADATA_ONLY_FILES = {"README.md", "AGENTS.md", "CLAUDE.md", "catalog.json", "catalog-v2.json", "discovery.json",
+                       "tests/fixtures/playwright/parity.sh", "tests/fixtures/playwright/consumer.json"}
 COMPONENT_POLICY_INPUTS = {"scripts/components.py", "scripts/artifact_identity.py", "schemas/component.schema.json"}
 
 
@@ -196,17 +200,13 @@ def _full_affected_lines(changed, defs, root, previous_tools=None, previous_defi
                 families = {"php-chrome-dev"}
             elif path.startswith(("examples/serena/", "tests/fixtures/serena/")):
                 families = {"php-serena"}
-            elif path.startswith("tests/fixtures/playwright/consumers/"):
-                selected.update(line for line, d in defs.items() if d["family"] == "playwright-browser"
-                                and path == f"tests/fixtures/playwright/consumers/{d['line']}.json")
-                continue
-            elif path == "scripts/playwright_fixture.py" or path.startswith("tests/fixtures/playwright/"):
+            elif path.startswith("tests/fixtures/playwright/"):
                 families = {"playwright-browser"}
             elif path.startswith("tests/fixtures/frankenphp/"):
                 families = {"php-frankenphp", "uxor-dev"}
             elif path.startswith(("examples/shared/", "tests/fixtures/network/")):
                 families = {"uxor-dev", "php-toolkit"}
-            elif path.startswith(("examples/uxor/", "tests/fixtures/uxor/")):
+            elif path.startswith("tests/fixtures/uxor-capabilities/"):
                 families = {"uxor-dev"}
             elif path.startswith("examples/php/"):
                 families = {"php-dev", "php-browser", "php-toolkit", "php-serena", "php-frankenphp", "uxor-dev", "python-dev",

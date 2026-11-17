@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage browsers with credentials; verify consumers on a separate anonymous runner."""
+"""Stage browsers with credentials; verify image capabilities anonymously."""
 import argparse
 import hashlib
 import math
@@ -14,19 +14,20 @@ from library import ROOT, definitions, encoded, fingerprint, read, records, reco
 from registry import resolve
 
 
+VERIFICATION_CONTRACT = "image-capabilities-v1"
+
+
 def fixture_hash(line):
-    folder = ROOT / "tests/fixtures/playwright"
-    path = folder / "consumers" / (line.split("/", 1)[1] + ".json")
-    if not path.exists():
-        path = folder / "consumer.json"
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def public_parity_application(line):
-    """Publication always resolves the fixture against accepted public records."""
-    from playwright_fixture import inputs
-    fixture = ROOT / "tests/fixtures/playwright/consumers" / (line.split("/", 1)[1] + ".json")
-    return inputs(read(fixture), read(ROOT / "catalog-v2.json"))
+    """Bind evidence to every owned browser subject and its verification entry point."""
+    folder = ROOT / "tests/fixtures/playwright/capabilities"
+    files = [ROOT / "scripts/verify-image.sh", *sorted(path for path in folder.rglob("*") if path.is_file())]
+    if not (folder / "check.cjs").is_file():
+        raise ValueError("Owned browser capability fixture is missing")
+    inputs = [{"path": str(path.relative_to(ROOT)),
+               "mode": "0755" if path.stat().st_mode & 0o111 else "0644",
+               "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in files]
+    payload = {"contract": VERIFICATION_CONTRACT, "line": line, "files": inputs}
+    return hashlib.sha256(encoded(payload).encode()).hexdigest()
 
 
 def stage(line, source, destination):
@@ -34,7 +35,7 @@ def stage(line, source, destination):
     from artifact_identity import build_key
     definition = definitions()[line]
     if definition["family"] != "playwright-browser":
-        raise ValueError("Only browser images use staged parity verification")
+        raise ValueError("Only browser images use staged capability verification")
     # A direct stage invocation must enforce the same allocation guard as
     # final publication, before reserving or building a redundant candidate.
     reusable_record(definition, records())
@@ -77,7 +78,7 @@ def stage(line, source, destination):
              "input_fingerprint": fp, "build_key_version": 1,
              "build_key": build_key(definition, root=ROOT, tools=attempt['tools']) if not prior else
                           build_key(definition, root=ROOT, tools=prior['tools']),
-             "fixture_sha256": fixture_hash(line), **measurements}
+             "verification_contract": VERIFICATION_CONTRACT, "fixture_sha256": fixture_hash(line), **measurements}
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(encoded(value))
     return value
@@ -92,13 +93,11 @@ def verify_candidate(candidate, destination):
                       value.get('build_key_version') == 1 and value.get('build_key') == build_key(definition, root=ROOT))
     if (definition["family"] != "playwright-browser" or value["version"] != definition["revision"]
             or not matched_inputs
+            or value.get("verification_contract") != VERIFICATION_CONTRACT
             or value["fixture_sha256"] != fixture_hash(value["line"])):
         raise ValueError("Staged browser inputs differ from the verifying checkout")
     if os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"):
-        raise ValueError("Consumer parity must run without GitHub publication credentials")
-    if "XORDER_PARITY_LOCAL_APPLICATION" in os.environ:
-        raise ValueError("Publication parity requires an accepted application resource; local overrides are source-validation only")
-    public_parity_application(value["line"])
+        raise ValueError("Browser capability verification must run without GitHub publication credentials")
     subprocess.run(["docker", "pull", value["artifact"]], check=True)
     inventory = destination.with_suffix(".inventory.json")
     started = time.monotonic()
@@ -113,10 +112,10 @@ def accepted_evidence(line, source, artifact, path, *, definition=None, input_fi
     definition = definition or definitions()[line]
     value = read(path)
     expected = {"line": line, "source": source, "version": definition["revision"], "artifact": artifact,
-                "input_fingerprint": input_fingerprint or fingerprint(definition), "fixture_sha256": fixture_hash(line), "status": "passed"}
+                "input_fingerprint": input_fingerprint or fingerprint(definition),
+                "verification_contract": VERIFICATION_CONTRACT, "fixture_sha256": fixture_hash(line), "status": "passed"}
     if any(value.get(key) != item for key, item in expected.items()):
-        raise ValueError("Browser parity evidence does not match the exact publication inputs")
-    public_parity_application(line)
+        raise ValueError("Browser capability evidence does not match the exact publication inputs")
     seconds = value["verification_seconds"]
     if not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or seconds < 0:
         raise ValueError("Invalid browser verification duration")

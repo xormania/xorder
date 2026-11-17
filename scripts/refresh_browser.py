@@ -8,7 +8,6 @@ import subprocess
 import urllib.parse
 
 from library import ROOT, encoded, version
-from playwright_fixture import application_image
 from github_http import fetch_json
 
 REPOSITORY = "xormania/uxor"
@@ -64,11 +63,10 @@ def prepare(pin, root=ROOT):
         return False
     if previous and version(previous["playwright_version"]) > version(browser_version):
         raise ValueError("Refusing an automatic browser downgrade")
-    fixture_pin = dict(pin, application_image=application_image(json.loads((root / "catalog-v2.json").read_text())))
     proposal = copy.deepcopy(previous or definition["lines"][sorted(definition["lines"])[-1]])
     proposal.update(runtime_line=f"{major}.{minor}", playwright_version=browser_version,
                     revision="1.0.0" if previous is None else ".".join(map(str, (*version(previous["revision"])[:2], version(previous["revision"])[2] + 1))),
-                    changes=[f"Match the consumer's Playwright {browser_version} pin; retain RGB rendering and verify committed screenshot parity."],
+                    changes=[f"Match the consumer's Playwright {browser_version} pin; retain RGB rendering and verify owned browser capabilities."],
                     migration="Select the verified digest matching the consuming lock after publication and catalog acceptance. Existing exact releases remain available.")
     packages = root / "images/playwright-browser/lines" / line
     packages.mkdir(parents=True, exist_ok=True)
@@ -85,7 +83,7 @@ def prepare(pin, root=ROOT):
     path.write_text(encoded(definition))
     fixture = root / "tests/fixtures/playwright/consumers" / (line + ".json")
     fixture.parent.mkdir(parents=True, exist_ok=True)
-    fixture.write_text(encoded(fixture_pin))
+    fixture.write_text(encoded(pin))
     return True
 
 
@@ -122,7 +120,7 @@ def main():
         run("git", "push", "origin", branch)
         fixture = json.loads((ROOT / "tests/fixtures/playwright/consumers" / (".".join(pin["playwright_version"].split(".")[:2]) + "-trixie.json")).read_text())
         upsert_pr(branch, "Match consumer Playwright " + pin["playwright_version"],
-            f"The consumer pins Playwright {pin['playwright_version']} at {fixture['commit']}. This proposes the matching locked browser line with RGB rendering. CI must pass all-engine launch and committed screenshot parity before merge. Publication and catalog acceptance then expose the verified digest. Exact existing image pins remain unchanged.\n\nMerge through normal review; this workflow does not enable automatic merge. LIBRARY_BOT_TOKEN allows PR checks to start automatically.")
+            f"The consumer pins Playwright {pin['playwright_version']} at {fixture['commit']}. This proposes the matching locked browser line with RGB rendering. CI must pass the owned offline all-engine rendering and interaction checks before merge. Publication and catalog acceptance then expose the verified digest. Exact existing image pins remain unchanged.\n\nMerge through normal review; this workflow does not enable automatic merge. LIBRARY_BOT_TOKEN allows PR checks to start automatically.")
 
 
 if __name__ == "__main__":

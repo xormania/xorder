@@ -101,10 +101,21 @@ class ImageSelectionTests(unittest.TestCase):
             "family": "extra-profile", "base": {"parent": "uxor-dev/8.5-trixie"}}
         # The added node has no Dockerfile, so inspect COPY consumers only for real families.
         with patch("image_validation.consumes", return_value=False):
-            selected = affected_lines(["tests/fixtures/uxor/run.sh"], defs, ROOT)
+            selected = affected_lines(["tests/fixtures/uxor-capabilities/run.sh"], defs, ROOT)
         self.assertEqual(selected, ["uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
         self.assertEqual(descendants(["php-frankenphp/8.5-trixie"], defs), [
             "extra-profile/8.5-trixie", "php-frankenphp/8.5-trixie", "uxor-dev/8.5-trixie"])
+
+    def test_consumer_compatibility_paths_do_not_select_images(self):
+        for path in ("examples/uxor/runner.py", "examples/uxor/run.sh", "tests/fixtures/uxor/run.sh",
+                     "tests/fixtures/uxor/consumer.json", "scripts/playwright_fixture.py",
+                     "tests/fixtures/playwright/parity.sh", "tests/fixtures/playwright/consumers/1.58-trixie.json"):
+            with self.subTest(path=path):
+                self.assertEqual(self.selected(path), [])
+        self.assertEqual(self.selected("tests/fixtures/playwright/capabilities/render.html"),
+                         ["playwright-browser/1.58-trixie"])
+        self.assertEqual(self.selected("tests/fixtures/uxor-capabilities/check.cjs"),
+                         ["uxor-dev/8.4-trixie", "uxor-dev/8.5-trixie"])
 
     def test_one_definition_line_change_and_new_line_are_scoped(self):
         path = "images/php-dev/definition.json"

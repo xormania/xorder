@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the public readiness recipe on a disposable real consuming project.
+# Runs Xorder-owned capability fixtures against the selected image.
 set -euo pipefail
 line=${1:?Usage: verify-image.sh LINE_ID IMAGE [SUITE...]}
 image=${2:?Supply image reference}
@@ -53,10 +53,9 @@ if [[ "$family" = playwright-browser ]]; then
   mkdir -p "$root/out/playwright"
   docker run --rm --network=none --init --shm-size=1g \
     -e PUID="$(id -u)" -e PGID="$(id -g)" \
-    -v "$work:/workspace" -v "$root/tests/fixtures/playwright:/proof:ro" \
+    -v "$work:/workspace" -v "$root/tests/fixtures/playwright/capabilities:/proof:ro" \
     "$image" node /proof/check.cjs | tee "$root/out/playwright/acceptance.json"
   test -s "$work/chromium.png" && test -s "$work/firefox.png" && test -s "$work/webkit.png"
-  bash "$root/tests/fixtures/playwright/parity.sh" "$image" "$line"
   exit 0
 fi
 if [[ "$family" = harness-live ]]; then
@@ -125,7 +124,14 @@ fi
 verify_native "$work" "$project-cache"
 verify_trust
 if [[ "$family" = uxor-dev ]]; then
-  bash "$root/tests/fixtures/uxor/run.sh" "$image"
+  cp -a "$root/tests/fixtures/uxor-capabilities/." "$work/node-proof"
+  docker run --rm --network=none --init \
+    -e PUID="$PUID" -e PGID="$PGID" \
+    --mount "type=bind,src=$work,dst=/workspace" \
+    --mount "type=volume,src=$project-cache,dst=/home/dev" \
+    -w /workspace/node-proof "$image" bash run.sh
+  test "$(stat -c %u "$work/node-proof/node-proof.txt")" = "$PUID"
+  test "$(stat -c %u "$work/node-proof/output.css")" = "$PUID"
 fi
 if [[ "$family" = php-toolkit ]]; then
   IMAGE="$image" TOOLKIT_LOCAL_IMAGE=1 TOOLKIT_REQUIRE_PREPARED=1 bash "$root/tests/fixtures/php-toolkit/run.sh"

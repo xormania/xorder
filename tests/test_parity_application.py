@@ -1,5 +1,6 @@
-"""Source-only pending application builds cannot become publication evidence."""
+"""Legacy application preparation is explicit and separate from image readiness."""
 import copy
+import importlib.util
 import os
 from pathlib import Path
 import tempfile
@@ -7,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 import build
-import browser_release
+from library import ROOT
 
 
 class ParityApplicationTests(unittest.TestCase):
@@ -74,42 +75,37 @@ class ParityApplicationTests(unittest.TestCase):
             with patch.object(build, "image_facts", return_value=facts), self.assertRaisesRegex(ValueError, "validating source"):
                 build.prepare_parity_application(self.fixture, self.source)
 
-    def test_source_mode_scopes_override_and_publication_rejects_it(self):
+    def test_browser_readiness_never_prepares_an_application_or_propagates_overrides(self):
         browser_line = "playwright-browser/1.58-trixie"
         with patch.object(build, "definitions", return_value={browser_line: {"family": "playwright-browser"}}), \
-                patch.object(build, "read", return_value=self.fixture), \
-                patch.object(build, "prepare_parity_application", return_value=self.image_id), \
-                patch("xorder.downstream.source_commit", return_value=self.source), \
-                patch("xorder.downstream.observe_source_images", return_value=[{"service": "browser", "image_id": self.image_id}]), \
-                patch.object(build, "inspect"), patch.object(build.subprocess, "run") as run:
+                patch.object(build, "prepare_parity_application") as prepare, \
+                patch.object(build, "read", side_effect=AssertionError("Image readiness must not read consumer pins")), \
+                patch.object(build, "inspect"), patch.object(build.subprocess, "run") as run, \
+                patch.dict(os.environ, {"XORDER_PARITY_LOCAL_APPLICATION": self.image_id,
+                                        "XORDER_SOURCE_VALIDATION_PROOF": "/stale/proof.json"}):
             build.verify(browser_line, "browser:test", Path("out/inventory.json"), source_validation=True, source=self.source)
-            self.assertEqual(run.call_args.kwargs["env"]["XORDER_PARITY_LOCAL_APPLICATION"], self.image_id)
-            with patch.dict(os.environ, {"XORDER_PARITY_LOCAL_APPLICATION": "stale"}):
-                build.prepare_parity_application.return_value = None
-                build.verify(browser_line, "browser:test", Path("out/inventory.json"), source_validation=True, source=self.source)
-                self.assertNotIn("XORDER_PARITY_LOCAL_APPLICATION", run.call_args.kwargs["env"])
-        candidate = {"line": browser_line, "version": "1.0.2", "input_fingerprint": "f", "fixture_sha256": "g", "artifact": "browser:test"}
-        definition = {"family": "playwright-browser", "revision": "1.0.2"}
-        with patch.object(browser_release, "read", return_value=candidate), \
-                patch.object(browser_release, "definitions", return_value={browser_line: definition}), \
-                patch.object(browser_release, "fingerprint", return_value="f"), \
-                patch.object(browser_release, "fixture_hash", return_value="g"), \
-                patch.dict(os.environ, {"XORDER_PARITY_LOCAL_APPLICATION": self.image_id}, clear=True), \
-                patch.object(browser_release.subprocess, "run") as docker:
-            with self.assertRaisesRegex(ValueError, "source-validation only"):
-                browser_release.verify_candidate(Path("candidate.json"), Path("verified.json"))
-            docker.assert_not_called()
+            prepare.assert_not_called()
+            self.assertNotIn("XORDER_PARITY_LOCAL_APPLICATION", run.call_args.kwargs["env"])
+            self.assertNotIn("XORDER_SOURCE_VALIDATION_PROOF", run.call_args.kwargs["env"])
 
-    def test_publication_waits_for_accepted_application_even_without_an_override(self):
-        line = "playwright-browser/1.58-trixie"
-        candidate = {"line": line, "version": "1.0.2", "input_fingerprint": "f", "fixture_sha256": "g", "artifact": "browser:test"}
-        definition = {"family": "playwright-browser", "revision": "1.0.2"}
-        with patch.object(browser_release, "read", return_value=candidate), \
-                patch.object(browser_release, "definitions", return_value={line: definition}), \
-                patch.object(browser_release, "fingerprint", return_value="f"), \
-                patch.object(browser_release, "fixture_hash", return_value="g"), \
-                patch.object(browser_release, "public_parity_application", side_effect=ValueError("Application not accepted")), \
-                patch.dict(os.environ, {}, clear=True), patch.object(browser_release.subprocess, "run") as docker:
-            with self.assertRaisesRegex(ValueError, "not accepted"):
-                browser_release.verify_candidate(Path("candidate.json"), Path("verified.json"))
-            docker.assert_not_called()
+    def test_controlled_compose_ignores_consumer_infrastructure_and_rejects_host_symlinks(self):
+        spec = importlib.util.spec_from_file_location("parity_profile", ROOT / "examples/uxor/runner.py")
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        with tempfile.TemporaryDirectory() as folder:
+            workspace = Path(folder) / "checkout"
+            for name in ("Caddyfile", "conf.d/10-app.ini", "conf.d/20-app.dev.ini"):
+                path = workspace / "demo/frankenphp" / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+            command = runner.compose_command(workspace, "parity", {"XORDER_PARITY_FIXTURE": "1"})
+            self.assertNotIn(str(workspace / "demo/compose.yaml"), command)
+            self.assertNotIn(str(workspace / "demo/compose.override.yaml"), command)
+            self.assertEqual(command[command.index("--env-file") + 1], os.devnull)
+            target = workspace / "demo/frankenphp/Caddyfile"
+            target.unlink()
+            outside = Path(folder) / "host-config"
+            outside.touch()
+            target.symlink_to(outside)
+            with self.assertRaisesRegex(ValueError, "disposable consumer checkout"):
+                runner.compose_command(workspace, "parity", {"XORDER_PARITY_FIXTURE": "1"})
