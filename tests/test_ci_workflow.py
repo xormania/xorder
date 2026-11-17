@@ -24,7 +24,7 @@ class ValidationWorkflowTests(unittest.TestCase):
     def test_runtime_checks_start_from_metadata_without_waiting_for_unit_tests(self):
         source = workflow()
         self.assertNotIn('unittest discover', job(source, 'metadata'))
-        for name in ('images', 'resources', 'environments', 'application', 'native-xorchestrate', 'unit-tests'):
+        for name in ('images', 'resources', 'environments', 'application', 'unit-tests'):
             with self.subTest(job=name):
                 self.assertIn('    needs: [metadata, fast-checks]\n', job(source, name))
         units = job(source, 'unit-tests')
@@ -37,8 +37,7 @@ class ValidationWorkflowTests(unittest.TestCase):
         for name, filename, output in (('images', 'images', 'matrix'),
                                        ('resources', 'resources', 'resources'),
                                        ('environments', 'environments', 'environments'),
-                                       ('application', 'application', None),
-                                       ('native-xorchestrate', 'xorchestrate', None)):
+                                       ('application', 'application', None)):
             with self.subTest(surface=name):
                 caller = job(source, name)
                 self.assertIn('uses: ./.github/workflows/validate-' + filename + '.yml', caller)
@@ -89,7 +88,7 @@ class ValidationWorkflowTests(unittest.TestCase):
         script = textwrap.dedent(source.split('        run: |\n', 1)[1])
         bindings = re.findall(r'([A-Z_]+): \$\{\{ needs\.([a-z-]+)\.result \}\}', source)
         selected = re.findall(r'([A-Z_]+_SELECTED): \$\{\{ needs\.metadata\.outputs\.([a-z_]+) \}\}', source)
-        self.assertEqual(len(selected), 5)
+        self.assertEqual(len(selected), 4)
         environment = {**os.environ, **{name: 'success' for name, _ in bindings},
                        **{name: 'false' for name, _ in selected}, 'SAME_HEAD': ''}
         for flag, _ in selected:

@@ -1,6 +1,7 @@
-name: Validate Xorchestrate native preparation
+name: Manual Xorchestrate native compatibility
+# Transitional consumer-owned preparation; outside Xorder image acceptance.
 on:
-  workflow_call:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

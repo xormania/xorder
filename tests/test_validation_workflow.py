@@ -98,7 +98,7 @@ class ValidationWorkflowTests(unittest.TestCase):
 
     def test_all_runtime_surfaces_share_the_validated_incremental_baseline(self):
         source = WORKFLOW.read_text()
-        for step in ("matrix", "resources", "application", "xorchestrate"):
+        for step in ("matrix", "resources", "application"):
             with self.subTest(step=step):
                 block = re.search(r"^      - id: " + step + r"\n(.*?)(?=^      - |^  [a-z]|\Z)",
                                   source, re.M | re.S)[1]
@@ -120,20 +120,17 @@ class ValidationWorkflowTests(unittest.TestCase):
                             source, re.M | re.S)[1]
         self.assertNotIn("\n        if:", catalog)
 
-    def test_native_consumer_is_read_only_and_required_when_selected(self):
+    def test_native_consumer_has_no_automatic_or_reusable_entry_point(self):
         source = WORKFLOW.read_text()
-        caller = re.search(r"^  native-xorchestrate:\n(.*?)(?=^  [a-z]|\Z)", source, re.M | re.S)[1]
-        self.assertIn("if: needs.metadata.outputs.has_xorchestrate == 'true'", caller)
-        self.assertIn("uses: ./.github/workflows/validate-xorchestrate.yml", caller)
+        self.assertNotIn("xorchestrate", source.lower())
         runtime = WORKFLOW.with_name("validate-xorchestrate.yml").read_text()
+        events = re.search(r"^on:\n(.*?)(?=^[a-z])", runtime, re.M | re.S)[1]
+        self.assertEqual(events.strip(), "workflow_dispatch:")
         self.assertIn("persist-credentials: false", runtime)
         self.assertIn("permissions:\n  contents: read", runtime)
         self.assertNotIn("github.token", runtime)
         self.assertIn("steps.consumer-baseline.outputs.python", runtime)
         self.assertIn("steps.consumer-baseline.outputs.uv", runtime)
-        aggregate = source.split("  checks:\n", 1)[1]
-        self.assertIn("needs.native-xorchestrate.result", aggregate)
-        self.assertIn('"$XORCHESTRATE" == skipped && "$XORCHESTRATE_SELECTED" == false', aggregate)
 
     def test_native_consumer_passes_the_managed_interpreter_to_preparation(self):
         source = WORKFLOW.with_name("validate-xorchestrate.yml").read_text()
@@ -234,34 +231,9 @@ class IncrementalComparisonTests(unittest.TestCase):
         return subprocess.check_output([sys.executable, "-c", textwrap.dedent(script)],
                                        cwd=self.root, env=env, text=True).strip()
 
-    def native_xorchestrate(self, base, head):
-        source = WORKFLOW.read_text()
-        block = re.search(r"^      - id: xorchestrate\n(.*?)(?=^      - |^  [a-z]|\Z)", source, re.M | re.S)[1]
-        script = re.search(r"^          python - <<'PY'.*?\n(.*?)^          PY$", block, re.M | re.S)[1]
-        return subprocess.check_output([sys.executable, "-c", textwrap.dedent(script)], cwd=self.root,
-                                       env={**self.env, "BASE_SHA": base, "COMPARE_HEAD": head}, text=True).strip()
-
-    def test_native_consumer_runs_for_its_inputs_without_docs_only_reruns(self):
-        previous = self.merge
-        for path, expected in (("docs/xorchestrate.md", False),
-                               ("examples/xorchestrate/runner.py", True),
-                               ("examples/xorchestrate/native.py", True),
-                               ("tests/fixtures/xorchestrate-runner/acceptance.py", True),
-                               ("tests/test_xorchestrate_runner.py", True),
-                               (".github/workflows/validate.yml", True),
-                               (".github/workflows/validate-xorchestrate.yml", True),
-                               (".github/workflows/validate-images.yml", False),
-                               ("examples/other/runner.py", False)):
-            with self.subTest(path=path):
-                current = self.commit(path, "changed input\n")
-                self.assertEqual(self.native_xorchestrate(previous, current), "enabled=" + str(expected).lower())
-                self.assertEqual(self.native_xorchestrate(current, current), "enabled=false")
-                previous = current
-
     def test_application_workflow_changes_select_only_the_application_surface(self):
         current = self.commit(".github/workflows/validate-application.yml", "application recipe\n")
         self.assertEqual(self.application(self.merge, current), "enabled=true")
-        self.assertEqual(self.native_xorchestrate(self.merge, current), "enabled=false")
 
     def test_same_source_head_behind_the_base_ignores_already_tested_merge_inputs(self):
         context = self.context(self.source, self.source)
