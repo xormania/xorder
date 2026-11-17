@@ -50,7 +50,7 @@ Panther with Chromium; Playwright browser tasks matching the consuming project l
 | [image/php-browser/8.4-trixie](../docs/images/php-browser-8.4-trixie.md) | 1.2.7 | linux/amd64 |
 | [image/php-browser/8.5-trixie](../docs/images/php-browser-8.5-trixie.md) | 1.2.7 | linux/amd64 |
 | [image/playwright-browser/1.58-trixie](../docs/images/playwright-browser-1.58-trixie.md) | 1.0.8 | linux/amd64 |
-| [image/php-chrome-dev/8.4-trixie](../docs/images/php-chrome-dev-8.4-trixie.md) | 1.0.0 | linux/amd64 |
+| [image/php-chrome-dev/8.4-trixie](../docs/images/php-chrome-dev-8.4-trixie.md) | 1.0.1 | linux/amd64 |
 
 ### PHP coverage and analysis
 
@@ -73,8 +73,8 @@ Serena v2 REPL; PHP language-server navigation.
 
 | Available resource | Current revision | Targets |
 | --- | --- | --- |
-| [image/php-serena/8.5-trixie](../docs/images/php-serena-8.5-trixie.md) | 1.1.9 | linux/amd64 |
-| [image/php-mago-serena/8.4-trixie](../docs/images/php-mago-serena-8.4-trixie.md) | 1.0.0 | linux/amd64 |
+| [image/php-serena/8.5-trixie](../docs/images/php-serena-8.5-trixie.md) | 1.1.10 | linux/amd64 |
+| [image/php-mago-serena/8.4-trixie](../docs/images/php-mago-serena-8.4-trixie.md) | 1.0.1 | linux/amd64 |
 
 ### Isolated Symfony UX Toolkit validation
 

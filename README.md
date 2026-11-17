@@ -63,13 +63,13 @@ prerequisites, release records, and evidence as new resources become available.
 | [harness-live/trixie](docs/images/harness-live-trixie.md) | 1.0.4 | linux/amd64 | `ghcr.io/xormania/harness-live:trixie-v1.0.4` |
 | [php-browser/8.4-trixie](docs/images/php-browser-8.4-trixie.md) | 1.2.7 | linux/amd64 | `ghcr.io/xormania/php-browser:8.4-trixie-v1.2.7` |
 | [php-browser/8.5-trixie](docs/images/php-browser-8.5-trixie.md) | 1.2.7 | linux/amd64 | `ghcr.io/xormania/php-browser:8.5-trixie-v1.2.7` |
-| [php-chrome-dev/8.4-trixie](docs/images/php-chrome-dev-8.4-trixie.md) | 1.0.0 | linux/amd64 | `ghcr.io/xormania/php-chrome-dev:8.4-trixie-v1.0.0` |
+| [php-chrome-dev/8.4-trixie](docs/images/php-chrome-dev-8.4-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/php-chrome-dev:8.4-trixie-v1.0.1` |
 | [php-dev/8.4-trixie](docs/images/php-dev-8.4-trixie.md) | 1.2.7 | linux/amd64 | `ghcr.io/xormania/php-dev:8.4-trixie-v1.2.7` |
 | [php-dev/8.5-trixie](docs/images/php-dev-8.5-trixie.md) | 1.2.7 | linux/amd64 | `ghcr.io/xormania/php-dev:8.5-trixie-v1.2.7` |
 | [php-frankenphp/8.4-trixie](docs/images/php-frankenphp-8.4-trixie.md) | 1.1.7 | linux/amd64 | `ghcr.io/xormania/php-frankenphp:8.4-trixie-v1.1.7` |
 | [php-frankenphp/8.5-trixie](docs/images/php-frankenphp-8.5-trixie.md) | 1.1.7 | linux/amd64 | `ghcr.io/xormania/php-frankenphp:8.5-trixie-v1.1.7` |
-| [php-mago-serena/8.4-trixie](docs/images/php-mago-serena-8.4-trixie.md) | 1.0.0 | linux/amd64 | `ghcr.io/xormania/php-mago-serena:8.4-trixie-v1.0.0` |
-| [php-serena/8.5-trixie](docs/images/php-serena-8.5-trixie.md) | 1.1.9 | linux/amd64 | `ghcr.io/xormania/php-serena:8.5-trixie-v1.1.9` |
+| [php-mago-serena/8.4-trixie](docs/images/php-mago-serena-8.4-trixie.md) | 1.0.1 | linux/amd64 | `ghcr.io/xormania/php-mago-serena:8.4-trixie-v1.0.1` |
+| [php-serena/8.5-trixie](docs/images/php-serena-8.5-trixie.md) | 1.1.10 | linux/amd64 | `ghcr.io/xormania/php-serena:8.5-trixie-v1.1.10` |
 | [php-toolkit/8.4-trixie](docs/images/php-toolkit-8.4-trixie.md) | 1.0.7 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.4-trixie-v1.0.7` |
 | [php-toolkit/8.5-trixie](docs/images/php-toolkit-8.5-trixie.md) | 1.0.7 | linux/amd64 | `ghcr.io/xormania/php-toolkit:8.5-trixie-v1.0.7` |
 | [playwright-browser/1.58-trixie](docs/images/playwright-browser-1.58-trixie.md) | 1.0.8 | linux/amd64 | `ghcr.io/xormania/playwright-browser:1.58-trixie-v1.0.8` |
