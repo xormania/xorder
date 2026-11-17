@@ -1,6 +1,10 @@
-# Maintaining and expanding xorder
+# Maintaining xorder images
 
-Use feature branches and PRs against master. The canonical source layout is:
+Use feature branches and PRs against master. Xorder owns image supply;
+consumers own application operation and validation. Follow the
+[responsibility boundary](responsibility-boundary.md) when deciding where work
+belongs. The canonical source layout includes compatibility code awaiting
+transfer:
 
 | Path | Responsibility |
 | --- | --- |
@@ -19,15 +23,21 @@ Use feature branches and PRs against master. The canonical source layout is:
 | `catalog.json`, `catalog-v2.json`, `discovery.json`, README tables, `docs/capabilities.md`, `docs/images/`, `docs/resources/index.md`, `docs/releases/` | Generated outputs |
 | `scripts/` | Small build, inventory, release, generation and refresh helpers |
 | `scripts/xorder/` | Shared typed model, resolution, transport, application, and artifact release helpers |
-| `tests/fixtures/`, `tests/requirements/` | Locked real consumer fixtures and independent mock requirements |
+| `tests/fixtures/`, `tests/requirements/` | Image capability subjects, compatibility fixtures awaiting separation, and independent selection requirements |
 
-The image paths remain stable. [Architecture](architecture.md) describes the
-extension boundaries for binaries, environments, configuration, context, and
-profiles. Add a new path with its first meaningful definition or implementation;
-do not create empty category directories or list an unverified resource as
-available. Keep one normalized resource model and generate any compatibility
-views from it. Existing image selection inputs and outputs are compatibility
-contracts while generic discovery is introduced.
+The image paths remain stable. [Architecture](architecture.md) distinguishes
+image infrastructure from the existing broader resource implementation. Keep
+image selection and generated compatibility views consistent while separating
+that implementation. New products in Xorder must be images; do not expand the
+independent binary, native environment, configuration or context product lines.
+Maintain existing integrations until their reviewed transfer is complete.
+
+An image fixture should exercise the supplied capability with a small disposable
+subject owned by Xorder. Consumer lockfiles can inform compatibility requests
+and diagnostics, but consumer application behavior must have its own validation
+owner. Before removing an existing consumer fixture, replace the image behavior
+it proves and update both validation and publication paths. Preserve advertised
+image capabilities and the existing support enforcement during that transfer.
 
 Local metadata validation:
 
@@ -91,7 +101,8 @@ pull-request footer for the normal project configuration. It is a convenience,
 not an enforcement boundary: higher-precedence local, command-line, or managed
 settings can override it. The history audit remains the repository policy gate.
 
-For a downloadable resource, pin an exact upstream URL and SHA-256 or declare
+For maintenance of an existing downloadable resource pending transfer, pin an
+exact upstream URL and SHA-256 or declare
 every authored payload file. Set its prerequisites, owned destination paths,
 limitations, usage page, and behavior verifier in the definition. Allocate a new
 SemVer packaging revision for changed input bytes, executable modes, destination
@@ -307,11 +318,11 @@ extend the build/inventory/behavior recipes, add independent selection scenarios
 and keep it unavailable until the shared publication path produces a verified
 record. Extend platform schema/build/tests together before adding arm64.
 Keep discovery usable from the repository URL without a pipeline service, MCP
-server, or installed discovery skill. A selected context resource may contain a
-skill; that payload is independent of the discovery entry point. Reuse common
-release evidence and orchestration, with kind-specific build/verification and
-application behavior. Configuration/context changes must not rebuild unrelated
-images.
+server, or installed discovery skill. Existing selected context resources may
+contain skills; those compatibility payloads are independent of the discovery
+entry point. Preserve shared release evidence and orchestration while separating
+non-image build, verification and application behavior. Existing configuration
+or context changes must not rebuild unrelated images.
 
 Pins make build inputs traceable; apt repositories and project download
 services still change. Byte-for-byte reproducible rebuilds are not claimed.

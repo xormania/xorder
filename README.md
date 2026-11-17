@@ -1,7 +1,8 @@
 # xorder
 
-xorder distributes prepared software, development environments, configuration,
-and agent context for computers and containers. **Give an agent
+xorder builds, verifies, publishes and maintains prepared container images.
+Projects use those images and own their application setup, services and tests.
+**Give an agent
 https://github.com/xormania/xorder together with its project task.** This README,
 the capability guide, and the linked usage pages provide discovery without an
 installed CLI, skill, plugin, or discovery service.
@@ -20,20 +21,26 @@ Start here:
 5. Report any missing capability or prerequisite precisely. Keep an established
    compatible project pin unless an update is requested.
 
-## Resource kinds
+## Responsibility boundary
 
-| Kind | Purpose |
+| Xorder owns | The consuming project owns |
 | --- | --- |
-| Images | Ready-to-pull PHP/Symfony, browser, Rust, and Python toolchains |
-| Binaries | Downloadable software with exact hashes and explicit runtime/platform prerequisites |
-| Environments | Reusable native definitions, starting with devenv and its locked inputs |
-| Configuration | Independently versioned settings installed into explicit owned scopes |
-| Context | Selected guidance or skills for an explicit task, role, or harness |
+| Image recipes, runtime/tool pins and packaged dependencies | Application dependencies and lockfiles |
+| Image startup, UID/GID, mounts, trust and image-owned caches | Application preparation, service topology and project state |
+| Tests of advertised image capabilities using disposable subjects | Application regression suites, snapshots and validation policy |
+| Digests, inventories, provenance, assurance and image support | Image selection, compatible project pins and adoption of updates |
 
-[Architecture](docs/architecture.md) describes the extension boundaries and
-profiles that compose resources. Only verified releases in the generated tables
-and catalog are selectable; authored definitions remain unavailable until accepted.
-Reading the catalog does not activate context bundles.
+[Responsibility boundaries](docs/responsibility-boundary.md) describes this scope
+and the staged transfer of existing project runners, native preparation and
+non-image products. Those integrations still exist; this documentation change
+does not complete their transfer. Image tooling, prepared payloads, build reuse
+and lifecycle enforcement remain Xorder responsibilities.
+
+The current generated discovery also exposes previously released downloadable
+resources and profiles. They remain compatibility surfaces during migration,
+rather than a direction for expansion. Only verified releases in the generated
+tables and catalog are selectable; authored definitions remain unavailable
+until accepted. Reading the catalog does not activate context bundles.
 
 Image support follows [weekly release groups](docs/release-groups.md). Unchanged
 digests can join a new group without another image. Groups have 28 days of
@@ -41,7 +48,7 @@ support, a seven-day warning, and a fourteen-day removal grace period. Existing
 consumers must adopt the [downstream support check](docs/downstream-support.md)
 by November 11, 2026, 08:00 UTC; local image caches do not extend support.
 
-## Available downloadable resources
+## Existing downloadable resources during migration
 
 <!-- resources:start -->
 | Resource | Revision | Target | Prerequisites | Exact identity |
@@ -53,7 +60,7 @@ by November 11, 2026, 08:00 UTC; local image caches do not extend support.
 <!-- resources:end -->
 
 The generated [resource index](docs/resources/index.md) links verified usage,
-prerequisites, release records, and evidence as new resources become available.
+prerequisites, release records, and evidence for these compatibility surfaces.
 
 ## Available images
 
@@ -130,6 +137,7 @@ and direct usage pages remains sufficient.
 - [Agent enablement: selection, verification and recovery](docs/enablement.md)
 - [Real-agent evaluations and measured setup/recovery outcomes](docs/agent-evaluations.md)
 - [Architecture, resource boundaries, and discovery](docs/architecture.md)
+- [Image ownership and transfer of existing integrations](docs/responsibility-boundary.md)
 - [Verified downloadable resources and prerequisites](docs/resources/index.md)
 - [Applying locks, ownership, recovery, and rollback](docs/application.md)
 - [URL discovery and host/container acceptance](docs/discovery.md)
@@ -158,7 +166,7 @@ and direct usage pages remains sufficient.
 - [Versions, pins, upgrades, and rollback](docs/versioning.md)
 - [Verified release measurements](docs/metrics.md)
 - [Publication, retry, and repository setup](docs/releases.md)
-- [Contributing resources and refreshing dependencies](docs/contributing.md)
+- [Maintaining images and refreshing dependencies](docs/contributing.md)
 - [Implementation status](docs/implementation.md)
 
 Generated inventories describe measured released artifacts. Supported upstream

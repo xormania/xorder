@@ -2,8 +2,17 @@
 
 Read [README.md](README.md), [the release contract](docs/versioning.md), and
 [contributing](docs/contributing.md). [Architecture](docs/architecture.md) defines
-the broader resource boundaries. No installed skill or helper is required for
+the image supply boundary and the compatibility surfaces awaiting transfer.
+[Responsibility boundaries](docs/responsibility-boundary.md) assigns ownership
+and describes the migration. No installed skill or helper is required for
 discovery from the public repository URL.
+
+Xorder builds, verifies, publishes and maintains images. Consumers own their
+application dependencies, services, tests and native environment preparation.
+Use Xorder-owned disposable fixtures to prove advertised image capabilities;
+consumer application suites must move to the consumer's own validation.
+Tools and prepared dependencies may be packaged in images at pinned versions.
+Packaging a tool does not transfer its project's lifecycle or policy to Xorder.
 
 Image intent belongs in `images/*/definition.json`; measured facts belong in
 verified `release-records/`. Generate `catalog.json`, the README availability
@@ -13,10 +22,14 @@ Explicit image recommendation retirement belongs in `retired-records/`: bind
 each removed record's exact byte hash and original source commit to accepted
 git history. The catalog gate verifies those deletions; historical publication
 facts stay unchanged in that history and the original public Release assets.
-New resource kinds follow the same separation of authored intent and verified
-release evidence. Profiles select resources rather than duplicate their facts.
-Generate compatibility views from one shared model; do not maintain a second
-independent catalog. Optional context payloads activate only when selected.
+Existing non-image resources, application helpers and project runners remain
+compatibility surfaces pending explicit transfer. Do not add new non-image
+products, expand resource kinds or add project lifecycle responsibilities.
+Preserve their accepted records, interfaces and owned state until a reviewed
+migration supplies the receiving integration. Keep generated compatibility views
+consistent; do not maintain a second independent catalog. Optional context
+payloads activate only when selected. Image support checks and published
+retirement commitments remain in force during transfer.
 
 Use feature branches and PRs against master. Run `python3 scripts/library.py check`
 and `python3 -m unittest discover -s tests`. Container behavior is checked by
