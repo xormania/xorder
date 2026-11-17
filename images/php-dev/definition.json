@@ -66,14 +66,14 @@
         "PHP_TOOLS_IMAGE": "php-tools-portable"
       },
       "changes": [
-        "Compose PHP CLI foundations, ABI-matched native extensions and retained portable tool payloads independently; preserve the existing development contract."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.7",
+      "revision": "1.2.8",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
@@ -87,14 +87,14 @@
         "PHP_TOOLS_IMAGE": "php-tools-portable"
       },
       "changes": [
-        "Compose PHP CLI foundations, ABI-matched native extensions and retained portable tool payloads independently; preserve the existing development contract."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.7",
+      "revision": "1.2.8",
       "runtime_line": "8.5"
     }
   },

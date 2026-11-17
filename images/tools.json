@@ -3,19 +3,19 @@
   "apt_indexes": {
     "https://deb.debian.org/debian/dists/trixie-updates/Release": "eea860c5dea11680e64299adb2736c2367c4235763a66f2b70ca61ce1b51978a",
     "https://deb.debian.org/debian/dists/trixie/Release": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
-    "https://security.debian.org/debian-security/dists/trixie-security/Release": "5f9fc5aa45642005a7d58bf8782e6fe1a483b9082f4e1918dfb186fa490d2a20"
+    "https://security.debian.org/debian-security/dists/trixie-security/Release": "8485847b0ef3312d768062bd90338e0f26d325b8f4b527faf9f9ad04046a6e13"
   },
   "composer": {
-    "digest": "sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0",
+    "digest": "sha256:ca11f643d7791ebdd90a34fc20caf11380d434007ae539a9ea75cd9212e13dca",
     "tag": "docker.io/library/composer:2"
   },
   "infection": {
-    "sha256": "c9b332af194380b2043eb6e309b308653f221073f41825b54e862fbef606a094",
-    "url": "https://github.com/infection/infection/releases/download/0.35.9/infection.phar",
-    "version": "0.35.9"
+    "sha256": "aa8ac8aeb3d7b96d4e66119908c1654c6bbf29472ef8bf1d1e84900fd01d6b31",
+    "url": "https://github.com/infection/infection/releases/download/0.35.10/infection.phar",
+    "version": "0.35.10"
   },
   "node": {
-    "digest": "sha256:c46850e69b4fab3c4f225aa36b777c8cc001d1cd5b2136e1ea024796f6d3bbbb",
+    "digest": "sha256:c103d7b5aa3bf627c8b98db941d52556f04e0b5d9352b3d7b6391245d26620f8",
     "tag": "docker.io/library/node:22-trixie"
   },
   "pcov_version": "1.0.12",
@@ -32,7 +32,7 @@
     "version": "v4.3.3"
   },
   "uv": {
-    "digest": "sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490",
+    "digest": "sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85",
     "tag": "ghcr.io/astral-sh/uv:latest"
   },
   "xdebug_version": "3.5.3"
