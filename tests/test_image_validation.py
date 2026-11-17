@@ -83,7 +83,7 @@ class ImageSelectionTests(unittest.TestCase):
 
     def test_harness_recipe_and_real_consumer_fixture_stay_opt_in(self):
         for path in ("images/harness-live/Dockerfile", "images/harness-live/harness-pins.json",
-                     "tests/fixtures/harness-live/run.sh", "tests/fixtures/harness-live/consumer.json"):
+                     "tests/fixtures/harness-live/run.sh", "tests/fixtures/harness-live/check.py"):
             with self.subTest(path=path):
                 self.assertEqual(self.selected(path), ["harness-live/trixie"])
 
@@ -186,12 +186,10 @@ class ImageSelectionTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("matrix_native_consumer", fixture)
         checker = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(checker)
-        consumer = json.loads((fixture.parent / "consumer.json").read_text())
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(checker, "ROOT", Path(directory)), \
                 patch.object(checker, "run") as run, \
                 patch.object(checker.subprocess, "run"), \
-                patch.object(checker.subprocess, "check_output", return_value=consumer["commit"]), \
                 patch("sys.argv", [str(fixture), "matrix-test-image"]), \
                 patch("sys.stdout", new_callable=io.StringIO):
             checker.main()

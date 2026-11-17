@@ -1,4 +1,4 @@
-"""Matrix identity, SQLite behavior and scoped consumer validation."""
+"""Matrix identity, SQLite behavior and scoped image capability validation."""
 import copy
 import hashlib
 import importlib.util
@@ -18,12 +18,16 @@ class PythonMatrixTests(unittest.TestCase):
         defs = definitions()
         for path in ("images/python-matrix/Dockerfile", "images/python-matrix/versions.json",
                      "images/python-matrix/pip-bootstrap.json", "images/python-matrix/install.py",
-                     "tests/fixtures/python-matrix/check.py", "tests/fixtures/python-matrix/consumer.json"):
+                     "tests/fixtures/python-matrix/check.py", "tests/fixtures/python-matrix/run.py"):
             with self.subTest(path=path):
                 selected = affected_lines([path], defs, ROOT)
                 self.assertEqual(selected, ["python-matrix/trixie"])
                 self.assertEqual(matrix(selected, defs), {"include": [{
                     "line": "python-dev/3.14-trixie", "verify_lines": ["python-matrix/trixie"]}]})
+
+    def test_shared_native_runtime_changes_select_only_both_consuming_images(self):
+        selected = affected_lines(["tests/fixtures/native-runtime/check.py"], definitions(), ROOT)
+        self.assertEqual(selected, ["harness-live/trixie", "python-matrix/trixie"])
 
     def test_measured_inventory_requires_every_interpreter_sqlite_and_tmux(self):
         definition = definitions()["python-matrix/trixie"]

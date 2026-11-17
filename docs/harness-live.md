@@ -111,7 +111,7 @@ subject to the corresponding vendor's terms.
 The [ordinary image network guidance](usage.md#network-access) applies to pulls,
 proxy forwarding and `CA_CERTIFICATE`. The root entrypoint installs the supplied
 CA before dropping privileges; Node receives `NODE_EXTRA_CA_CERTS`. Host Docker
-pulls and host-side consumer checkout fetches need their own working trust path.
+pulls need their own working trust path.
 Never disable certificate validation.
 
 | Harness | API and authentication hosts | Installation and additional hosts |
@@ -136,12 +136,16 @@ CA_CERTIFICATE='/absolute/path/to/proxy-ca.pem' \
   bash scripts/verify-image.sh 'harness-live/trixie' "$IMAGE"
 ```
 
-The readiness fixture fetches the exact consumer commit in
-[its source lock](../tests/fixtures/harness-live/consumer.json), starts with a
-fresh private home volume and installs the pinned CLIs. It then disables container
-network access and uses xordination's actual `doctor` implementation to check
-versions, Codex JSON schema, Claude options and Grok ACP help. It also runs
-xordination's real private-socket tmux self-check. Fresh-container reuse is checked
+The Xorder-owned readiness fixture starts with a fresh private home volume and
+installs the pinned CLIs. It then disables container network access, verifies
+selected versions, installation integrity and release provenance, and proves
+that `harnesses ensure` preserves the existing installation receipts. It directly
+executes each CLI, generates and parses Codex JSON schemas, and exercises Claude
+help and Grok agent stdio help. No consumer checkout, adapter import or application
+test suite is involved. An empty workspace is mounted alongside the private HOME.
+A shared image fixture proves writes under both mounts as the configured UID, exchanges PTY and Unix-socket
+messages, checks `/proc`, and creates, communicates with and cleans up a real tmux
+session on a private socket. Fresh-container reuse is checked
 independently as UID 1000 and UID 0 with a dedicated HOME for each. It also forges
 an executable and receipt as UID 1000, verifies root startup rejects that volume
 before ownership changes or execution, and compares the unchanged state afterward.
@@ -149,6 +153,17 @@ Root ownership/permissions tests run inside the container so host UID namespace
 limitations cannot skip them. No credentials are supplied, and no authenticated
 session or model turn is started. The fixture removes its disposable home volumes.
 
-This establishes local capability readiness, not live communication acceptance.
-The operator runs xordination's `doctor --harness` and live launcher with their
-private authenticated home; xordination owns that paid live-matrix evidence.
+The schema-2 acceptance files identify the Xorder capability fixture; previously
+published consumer-based evidence remains unchanged. Fixture changes do not
+change image bytes or allocate a replacement image revision.
+
+The currently shipped harness manager still applies its existing vendor feature
+probes at installation, including orchestration-specific Codex schema fields and
+a Claude development-channel parser check bearing a historical `xordination`
+label. Separating that packaged policy is a follow-up image change requiring
+normal compatibility review and a fresh revision. The readiness fixture no
+longer imports or executes that project's code.
+
+This establishes local capability readiness. The consuming project owns its
+adapter compatibility, authenticated communication and paid model acceptance,
+using the operator's private authenticated home.

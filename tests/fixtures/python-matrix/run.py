@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Exercise every preinstalled interpreter and the pinned consumer's real tmux."""
+"""Exercise image-owned subjects with every preinstalled interpreter offline."""
 import argparse
 import json
-import os
 from pathlib import Path
 import platform
 import shutil
@@ -10,6 +9,10 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import zipfile
+
+
+PYTHON_LINES = ("3.10", "3.12", "3.14")
 
 
 def sqlite_check(expected_line):
@@ -50,7 +53,21 @@ def sqlite_check(expected_line):
 
 
 def command(*args, **kwargs):
-    return subprocess.run(args, check=True, **kwargs)
+    return subprocess.run(args, check=True, timeout=90, **kwargs)
+
+
+def wheel_fixture(destination):
+    """Build a tiny deterministic wheel without a build backend or downloads."""
+    files = {"xorder_image_probe.py": "VALUE = 42\n",
+             "xorder_image_probe-1.0.0.dist-info/METADATA":
+                 "Metadata-Version: 2.1\nName: xorder-image-probe\nVersion: 1.0.0\n",
+             "xorder_image_probe-1.0.0.dist-info/WHEEL":
+                 "Wheel-Version: 1.0\nGenerator: xorder\nRoot-Is-Purelib: true\nTag: py3-none-any\n"}
+    record = "xorder_image_probe-1.0.0.dist-info/RECORD"
+    files[record] = "".join(path + ",,\n" for path in (*files, record))
+    with zipfile.ZipFile(destination, "w") as archive:
+        for path, contents in files.items():
+            archive.writestr(zipfile.ZipInfo(path, date_time=(1980, 1, 1, 0, 0, 0)), contents)
 
 
 def pip_check(executable, pin):
@@ -60,7 +77,7 @@ def pip_check(executable, pin):
         "import ensurepip,json,pip,ssl; import pip._vendor.certifi as certifi; "
         "context=ssl.create_default_context(cafile=certifi.where()); "
         "print(json.dumps(dict(pip=pip.__version__, ensurepip=ensurepip.version(), "
-        "certifi=certifi.__version__, ca_count=context.cert_store_stats()['x509_ca'])))"], text=True))
+        "certifi=certifi.__version__, ca_count=context.cert_store_stats()['x509_ca'])))"], text=True, timeout=30))
     def version(value):
         return tuple(map(int, value.split(".")))
     if (version(facts["pip"]) < version(pin["version"])
@@ -78,62 +95,47 @@ def main():
     if args.sqlite_only:
         print(json.dumps(sqlite_check(args.sqlite_only), sort_keys=True))
         return
-    fixture = Path(__file__).resolve().parent
-    consumer = json.loads((fixture / "consumer.json").read_text())
     versions = json.loads(Path("/opt/xorder/python-matrix/versions.json").read_text())
     bootstrap = json.loads(Path("/opt/xorder/python-matrix/pip-bootstrap.json").read_text())
     output = Path("/evidence")
-    evidence = {"consumer": consumer, "network": "none", "interpreters": {}}
-    for line in consumer["python_lines"]:
+    if set(versions) != set(PYTHON_LINES):
+        raise RuntimeError("Installed matrix pins do not match the advertised interpreter lines")
+    evidence = {"schema_version": 2, "fixture": "xorder-python-image-capabilities",
+                "network": "none", "interpreters": {}}
+    for line in PYTHON_LINES:
         executable = shutil.which("python" + line)
         if not executable:
             raise RuntimeError("Missing preinstalled interpreter python" + line)
         facts = json.loads(subprocess.check_output(
-            [executable, str(Path(__file__).resolve()), "--sqlite-only", line], text=True))
+            [executable, str(Path(__file__).resolve()), "--sqlite-only", line], text=True, timeout=30))
         if facts["python"] != versions[line]:
             raise RuntimeError(f"Python {line} does not match its build pin: {facts}")
-        if Path(executable).resolve().is_relative_to(Path("/home/dev")):
-            raise RuntimeError("Interpreter was installed in the persistent home volume")
+        if any(Path(executable).resolve().is_relative_to(Path(path))
+               for path in ("/home/dev", "/workspace")):
+            raise RuntimeError("Interpreter was installed under a runtime mount")
         facts["installed_pip"] = pip_check(executable, bootstrap)
         with tempfile.TemporaryDirectory(prefix="xorder-venv-" + line + "-") as directory:
             venv = Path(directory) / "venv"
             command(executable, "-m", "venv", str(venv))
             command(str(venv / "bin/python"), "-m", "pip", "--version")
             facts["fresh_venv_pip"] = pip_check(venv / "bin/python", bootstrap)
+            wheel = Path(directory) / "xorder_image_probe-1.0.0-py3-none-any.whl"
+            wheel_fixture(wheel)
+            command(str(venv / "bin/python"), "-m", "pip", "--isolated", "install",
+                    "--no-index", "--no-deps", "--disable-pip-version-check", str(wheel))
+            command(str(venv / "bin/python"), "-I", "-c",
+                    "import xorder_image_probe; assert xorder_image_probe.VALUE == 42")
         facts["checks"].append("offline-venv-with-pip")
         facts["checks"].extend(["installed-pip-vendored-certifi", "offline-venv-security-floor"])
-        # Temporary selection/report paths cannot accidentally reuse a preceding
-        # interpreter's run. sys.executable propagates into consumer subprocesses.
-        with tempfile.TemporaryDirectory(prefix="xorder-contracts-" + line + "-") as directory:
-            selection = Path(directory) / "selection.json"
-            report = output / ("contracts-" + line + ".json")
-            command(executable, "scripts/ci/select_checks.py", "--event", "workflow_dispatch",
-                    "--selection-file", str(selection))
-            command(executable, "scripts/ci/run_contracts.py", "--selection", str(selection),
-                    "--report", str(report), env=dict(os.environ, PYTHONPATH="src"))
-            census = json.loads(report.read_text())
-            expected = consumer["contract_count"]
-            if (not census["full"] or not census["required_exercised"]
-                    or any(census[key] for key in ("skipped", "not_run", "failures", "errors",
-                                                   "expected_failures", "unexpected_successes"))
-                    or any(census[key] != expected for key in ("collected", "started", "executed"))):
-                raise RuntimeError(f"Incomplete contract acceptance for Python {line}: {census}")
-            facts["contracts"] = {key: census[key] for key in
-                                  ("collected", "started", "executed", "duration_seconds")}
+        facts["checks"].append("offline-wheel-install-and-import")
+        facts["native_runtime"] = json.loads(subprocess.check_output(
+            [executable, "-I", "/runtime/check.py"], text=True, timeout=90))
         evidence["interpreters"][line] = facts
     with tempfile.TemporaryDirectory(prefix="xorder-native-") as directory:
         executable = Path(directory) / "native-proof"
         command("cc", "/native-check.c", "-o", str(executable))
         command(str(executable))
     evidence["checks"] = ["native-compiler"]
-    tmux = subprocess.check_output(["tmux", "-V"], text=True).strip()
-    if not tmux.startswith("tmux 3."):
-        raise RuntimeError("Expected tmux 3.x, observed " + tmux)
-    checks = json.loads(subprocess.check_output(
-        ["python3.14", "scripts/testing/live_tmux.py", "self-check"], text=True))
-    if not checks or not all(value is True for value in checks.values()):
-        raise RuntimeError(f"Real tmux self-check did not pass every check: {checks}")
-    evidence["tmux"] = {"version": tmux, "self_check": checks}
     (output / "acceptance.json").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
     print(json.dumps(evidence, indent=2, sort_keys=True))
 
