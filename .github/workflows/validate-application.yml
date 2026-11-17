@@ -1,0 +1,53 @@
+name: Validate resource application
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  application:
+    strategy:
+      fail-fast: false
+      matrix:
+        surface: [host, container]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Exercise cold application on the host
+        if: matrix.surface == 'host'
+        run: |
+          python -m pip install -r requirements-ci.txt
+          python tests/fixtures/artifacts/application/check.py --output out/application-host.json
+      - name: Exercise cold application in a disposable verified image
+        if: matrix.surface == 'container'
+        run: |
+          image=$(python - <<'PY'
+          import json
+          entries = [item for item in json.load(open("catalog-v2.json"))["resources"] if item["id"] == "image/python-dev/3.14-trixie" and item["lifecycle"] == "available" and item["verification"]["status"] == "passed" and "linux/amd64" in item["targets"]]
+          if not entries:
+              raise SystemExit("No accepted Python image for the application consumer")
+          print(max(entries, key=lambda item: tuple(map(int, item["version"].split("."))))["identity"])
+          PY
+          )
+          docker pull "$image"
+          mkdir -p out
+          printf '%s\n' "$image" > out/application-container-image.txt
+          docker run --rm --platform linux/amd64 \
+            -e PUID="$(id -u)" -e PGID="$(id -g)" \
+            -v "$PWD:/workspace/source:ro" -v "$PWD/out:/out" \
+            -w /workspace/source "$image" bash -euc '
+              python -m venv /tmp/xorder-validation
+              /tmp/xorder-validation/bin/python -m pip install -r requirements-ci.txt
+              /tmp/xorder-validation/bin/python tests/fixtures/artifacts/application/check.py --output /out/application-container.json
+            '
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: application-${{ matrix.surface }}
+          path: out/application-*
+          if-no-files-found: ignore
