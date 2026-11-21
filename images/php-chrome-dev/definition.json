@@ -32,21 +32,21 @@
       "base": {
         "parent": "php-mago-serena/8.4-trixie"
       },
+      "build_components": {
+        "CHROME_IMAGE": "chrome-for-testing-157",
+        "MCP_IMAGE": "chrome-devtools-mcp-1-12",
+        "NODE_IMAGE": "node-chrome-22"
+      },
       "changes": [
-        "Inherit the Mago/Serena dependency security refresh with filelock 4.2.1 and Werkzeug 3.1.9."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible dependency security update. Adopt the newly verified digest after project validation; existing exact releases retain their original contents.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.1",
-      "runtime_line": "8.4",
-      "build_components": {
-        "NODE_IMAGE": "node-chrome-22",
-        "CHROME_IMAGE": "chrome-for-testing-157",
-        "MCP_IMAGE": "chrome-devtools-mcp-1-12"
-      }
+      "revision": "1.0.2",
+      "runtime_line": "8.4"
     }
   },
   "purpose": "PHP 8.4 Mago/Serena development plus Node 22, Chrome for Testing and Chrome DevTools MCP.",
