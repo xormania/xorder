@@ -2,7 +2,7 @@
 bandit==1.9.4
 ruff==0.17.3
 zizmor==1.31.1
-PyYAML==6.0.3
+PyYAML==6.0.4
 stevedore==5.9.1
 rich==15.0.0
 markdown-it-py==4.2.0
