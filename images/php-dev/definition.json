@@ -57,7 +57,7 @@
   "lines": {
     "8.4-trixie": {
       "base": {
-        "digest": "sha256:d63e8b80cd4c6cfd01cfa7c910522e299cdc7ca1a2b6d6563db48df3c17e6c55",
+        "digest": "sha256:150f2510d8d74a01a9dffa2fcaf1ec59050b9b8d6cf5c29ffa32b668f4fa0f01",
         "tag": "docker.io/library/php:8.4-cli-trixie"
       },
       "build_components": {
@@ -66,19 +66,19 @@
         "PHP_TOOLS_IMAGE": "php-tools-portable"
       },
       "changes": [
-        "Compose PHP CLI foundations, ABI-matched native extensions and retained portable tool payloads independently; preserve the existing development contract."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.7",
+      "revision": "1.2.8",
       "runtime_line": "8.4"
     },
     "8.5-trixie": {
       "base": {
-        "digest": "sha256:50956f094e90a716d43bea28087d447555ad80510e386ab8c9c10d8c70d781a9",
+        "digest": "sha256:e33c9c494e41d56e18c4e9609b98dbdeac68682916cd7d2917582492a6e15618",
         "tag": "docker.io/library/php:8.5-cli-trixie"
       },
       "build_components": {
@@ -87,14 +87,14 @@
         "PHP_TOOLS_IMAGE": "php-tools-portable"
       },
       "changes": [
-        "Compose PHP CLI foundations, ABI-matched native extensions and retained portable tool payloads independently; preserve the existing development contract."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible packaging change. Adopt the newly verified digest after project validation; retain existing exact releases for rollback.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.2.7",
+      "revision": "1.2.8",
       "runtime_line": "8.5"
     }
   },
