@@ -2,29 +2,29 @@
   "apcu_version": "5.1.28",
   "apt_indexes": {
     "https://deb.debian.org/debian/dists/trixie-updates/Release": "eea860c5dea11680e64299adb2736c2367c4235763a66f2b70ca61ce1b51978a",
-    "https://deb.debian.org/debian/dists/trixie/Release": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
-    "https://security.debian.org/debian-security/dists/trixie-security/Release": "5f9fc5aa45642005a7d58bf8782e6fe1a483b9082f4e1918dfb186fa490d2a20"
+    "https://deb.debian.org/debian/dists/trixie/Release": "be3d7d96a040eda0505c1808cccc67f183bbc05dff0842c50f88e6c396557412",
+    "https://security.debian.org/debian-security/dists/trixie-security/Release": "c482615d5b19c6b5991d443d03654e5cb899dc96aae96de89581c9a25eb1f267"
   },
   "composer": {
-    "digest": "sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0",
+    "digest": "sha256:5b2137f112f939a92788ceb5e55f54859d9dbf467a44037cf7760bdda949f365",
     "tag": "docker.io/library/composer:2"
   },
   "infection": {
-    "sha256": "c9b332af194380b2043eb6e309b308653f221073f41825b54e862fbef606a094",
-    "url": "https://github.com/infection/infection/releases/download/0.35.9/infection.phar",
-    "version": "0.35.9"
+    "sha256": "b7e9a28e23daf8178c80bb768bc3fd12047e92ef16ea5724af432314a4c01964",
+    "url": "https://github.com/infection/infection/releases/download/0.35.12/infection.phar",
+    "version": "0.35.12"
   },
   "node": {
-    "digest": "sha256:c46850e69b4fab3c4f225aa36b777c8cc001d1cd5b2136e1ea024796f6d3bbbb",
+    "digest": "sha256:f92a4668ece057eff6b83ed531b5f6277892b5c8fa8c1df4ea4ef470bf92b91e",
     "tag": "docker.io/library/node:22-trixie"
   },
   "pcov_version": "1.0.12",
   "redis_version": "6.3.0",
   "schema_version": 1,
   "symfony": {
-    "sha256": "9e9cf056087f9e0320f592dce76d491fc21579e6d915b2bb3b32949c2d7a4ef5",
-    "url": "https://github.com/symfony-cli/symfony-cli/releases/download/v5.22.2/symfony-cli_linux_amd64.tar.gz",
-    "version": "5.22.2"
+    "sha256": "c6680aa22d1e15b4f742fd95b4e6af3e28d3e611d364b4bba3ec24dbfa6f3d0c",
+    "url": "https://github.com/symfony-cli/symfony-cli/releases/download/v5.23.0/symfony-cli_linux_amd64.tar.gz",
+    "version": "5.23.0"
   },
   "tailwind": {
     "sha256": "dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a",
@@ -32,7 +32,7 @@
     "version": "v4.3.3"
   },
   "uv": {
-    "digest": "sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490",
+    "digest": "sha256:a3ea1357342c1a4bf9a0c53a3deb1b55379aefa037338d8113d5771efa01774f",
     "tag": "ghcr.io/astral-sh/uv:latest"
   },
   "xdebug_version": "3.5.3"

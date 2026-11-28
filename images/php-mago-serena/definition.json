@@ -1,4 +1,10 @@
 {
+  "build_components": {
+    "MAGO_BASELINE_IMAGE": "mago-baseline",
+    "MAGO_IMAGE": "mago-lsp",
+    "NATIVE_MAGO_IMAGE": "mago-native",
+    "SERENA_IMAGE": "serena-deps"
+  },
   "capabilities": [
     "mago",
     "mago-lsp-extensions",
@@ -44,14 +50,14 @@
         "parent": "php-browser/8.4-trixie"
       },
       "changes": [
-        "Update Serena dependencies to filelock 4.2.1 and Werkzeug 3.1.9 to address the November 2026 Dependabot alerts, retaining the reviewed Serena application source."
+        "Refresh locked upstream inputs and Debian packages; preserve the advertised development contract."
       ],
-      "migration": "Compatible dependency security update. Adopt the newly verified digest after project validation; existing exact releases retain their original contents.",
+      "migration": "Compatible refresh. Update the digest deliberately after project validation; retain the previous exact release for rollback.",
       "os": "debian-trixie",
       "platforms": [
         "linux/amd64"
       ],
-      "revision": "1.0.1",
+      "revision": "1.0.2",
       "runtime_line": "8.4"
     }
   },
@@ -67,11 +73,5 @@
     "chromedriver",
     "mago-native",
     "library-symfony-mago"
-  ],
-  "build_components": {
-    "MAGO_IMAGE": "mago-lsp",
-    "MAGO_BASELINE_IMAGE": "mago-baseline",
-    "NATIVE_MAGO_IMAGE": "mago-native",
-    "SERENA_IMAGE": "serena-deps"
-  }
+  ]
 }
